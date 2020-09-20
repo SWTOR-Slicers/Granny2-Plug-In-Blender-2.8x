@@ -20,7 +20,7 @@ bl_info = {
     "version": (2, 80, 0),
     "blender": (2, 80, 0),
     "location": "File > Import-Export",
-    "description": "Import-Export SWTOR model with bone weights, UV's and materials",
+    "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
     "support": 'COMMUNITY',
     "category": "Import-Export"}
 

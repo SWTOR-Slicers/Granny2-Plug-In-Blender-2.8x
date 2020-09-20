@@ -15,7 +15,8 @@ from struct import unpack
 import bpy
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Matrix
-from .material_nodes import HairShader, HeadMaterial, EyeShader, SkinBShader, GarmentShader, UberShader
+
+from .material_nodes import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
 
 
 def ruint8(file):  # Function to read unsigned byte
@@ -67,11 +68,11 @@ class GR2MeshPiece():
     def __init__(self, f, offset):
         f.seek(offset)
 
-        self.startIndex = ruint32(f)  # Relative offset for this piece's faces
-        self.numFaces = ruint32(f)    # Number of faces used by this piece
-        self.materialId = ruint32(f)  # Mesh piece material id
-        self.pieceIndex = ruint32(f)  # Mesh piece enumerator (1 x uint32)
-        f.seek(0x20, 1)               # Bounding box (8 x 4 bytes)
+        self.startIndex = ruint32(f)    # Relative offset for this piece's faces
+        self.numFaces = ruint32(f)      # Number of faces used by this piece
+        self.materialIdx = ruint32(f)   # Mesh piece material id
+        self.pieceIndex = ruint32(f)    # Mesh piece enumerator (1 x uint32)
+        f.seek(0x24, 1)                 # Bounding box (8 x 4 bytes)
 
 
 class GR2Vertex():
@@ -93,17 +94,17 @@ class GR2Vertex():
             f.seek(0x05, 1)
 
         if bitFlag2 & 0x10:
-            f.seek(0x04, 1)
+            f.seek(0x04, 1)       # Color (RGBA)
 
         if bitFlag2 & 0x20:
             self.u = rfloat16(f)  # Texture Map (U)
             self.v = rfloat16(f)  # Texture Map (V)
 
         if bitFlag2 & 0x40:
-            f.seek(0x04, 1)
+            f.seek(0x04, 1)       # Texture Map 2 (UV)
 
         if bitFlag2 & 0x80:
-            f.seek(0x04, 1)
+            f.seek(0x04, 1)       # Texture Map 3 (UV)
 
     def __iter__(self):
         return iter([self.x, self.y, self.z])
@@ -167,9 +168,14 @@ class GR2Mesh():
 
         if self.bitFlag2 & 0x20:
             # Link Materials
-            for material in meshLoader.materials:
-                me.materials.append(bpy.data.materials[material])
-            materialIndex = [enum for enum, piece in enumerate(self.pieces) for _ in range(piece.numFaces)]
+            materialIndex = []
+            for enum, piece in enumerate(self.pieces):
+                if piece.materialIdx == 4294967295:  # UInt32: -1
+                    me.materials.append(bpy.data.materials[meshLoader.materials[enum]])
+                else:
+                    me.materials.append(bpy.data.materials[meshLoader.materials[piece.materialIdx]])
+                for _ in range(piece.numFaces):
+                    materialIndex.append(enum)
 
             # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
             #       we can only set custom loop normals *after* calling it.
@@ -179,8 +185,8 @@ class GR2Mesh():
                 loopIndices = list(poly.loop_indices)
                 for e, loop_index in enumerate(loopIndices):
                     v = self.vertices[list(self.faces[i])[e]]
-                    me.loops[loop_index].normal = [v.nx, v.ny, v.nz]    # Loop Normals
-                    me.uv_layers[0].data[loop_index].uv = [v.u, 1-v.v]  # Loop UVs
+                    me.loops[loop_index].normal = [v.nx, v.ny, v.nz]      # Loop Normals
+                    me.uv_layers[0].data[loop_index].uv = [v.u, 1 - v.v]  # Loop UVs
                 # Map Materials to Faces
                 poly.material_index = materialIndex[i]
 
@@ -290,24 +296,24 @@ class GR2Loader():
 
         if self.fileType in [0, 1]:
             # Create Template Materials
-            if "Template: Hair Shader" not in bpy.data.materials:
-                template = HairShader("Template: Hair Shader")
-                template.build()
-
-            if "Template Material: Head" not in bpy.data.materials:
-                template = HeadMaterial("Template Material: Head")
+            if "Template: Creature Shader" not in bpy.data.materials:
+                template = CreatureShader("Template: Creature Shader")
                 template.build()
 
             if "Template: Eye Shader" not in bpy.data.materials:
                 template = EyeShader("Template: Eye Shader")
                 template.build()
 
-            if "Template: SkinB Shader" not in bpy.data.materials:
-                template = SkinBShader("Template: SkinB Shader")
-                template.build()
-
             if "Template: Garment Shader" not in bpy.data.materials:
                 template = GarmentShader("Template: Garment Shader")
+                template.build()
+
+            if "Template: HairC Shader" not in bpy.data.materials:
+                template = HairCShader("Template: HairC Shader")
+                template.build()
+
+            if "Template: SkinB Shader" not in bpy.data.materials:
+                template = SkinBShader("Template: SkinB Shader")
                 template.build()
 
             if "Template: Uber Shader" not in bpy.data.materials:
