@@ -16,7 +16,10 @@ import bpy
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Matrix
 
-from .material_nodes import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
+if bpy.app.version < (2, 90, 0):
+    from .material_nodes_blender_2_8x import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
+else:
+    from .material_nodes_blender_2_9x import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
 
 
 def ruint8(file):  # Function to read unsigned byte
