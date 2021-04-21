@@ -4,6 +4,7 @@ import bpy
 
 from bpy.props import (
     BoolProperty,
+    CollectionProperty,
     StringProperty
 )
 from bpy_extras.io_utils import (
@@ -22,7 +23,8 @@ bl_info = {
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
     "support": 'COMMUNITY',
-    "category": "Import-Export"}
+    "category": "Import-Export"
+}
 
 
 class ImportGR2(bpy.types.Operator, ImportHelper):
@@ -36,9 +38,22 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
 
     import_collision: BoolProperty(name="Import Collision Mesh", default=False)
 
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    # directory
+    directory = StringProperty(subtype='DIR_PATH')
+    print(directory)
+
+    from . import import_gr2
     def execute(self, context):
-        from . import import_gr2
-        return import_gr2.load(self, context, self.filepath)
+        import os
+        status = ""
+        for j, i in enumerate(self.files):
+            path = os.path.join(self.directory, i.name)
+            print(path)
+            status = import_gr2.load(self, context, path)
+
+        return {"FINISHED"}
 
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
