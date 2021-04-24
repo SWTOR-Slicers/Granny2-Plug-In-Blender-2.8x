@@ -92,27 +92,64 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
         return export_gr2.save(self, context, **keywords)
 
 
-def menu_func_import(self, context):
+class ImportJBA(bpy.types.Operator, ImportHelper):
+    """Import from SWTOR JBA file format (.jba)"""
+    bl_idname = "import_scene.jba"
+    bl_label = "Import SWTOR (.jba)"
+    bl_options = {'UNDO'}
+
+    filename_ext = ".jba"
+    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    # directory
+    directory = StringProperty(subtype='DIR_PATH')
+    print(directory)
+
+    from . import import_jba
+    def execute(self, context):
+        import os
+        status = ""
+        for j, i in enumerate(self.files):
+            path = os.path.join(self.directory, i.name)
+            print(path)
+            status = import_jba.load(self, context, path)
+
+        return {"FINISHED"}
+
+
+def menu_func_import_gr2(self, context):
     self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-def menu_func_export(self, context):
+def menu_func_export_gr2(self, context):
     self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-classes = (ImportGR2, ExportGR2)
+def menu_func_import_jba(self, context):
+    self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
+
+
+classes = (
+    ImportGR2,
+    ExportGR2,
+    ImportJBA
+)
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_gr2)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export_gr2)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_jba)
 
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_gr2)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_gr2)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_jba)
 
     for cls in classes:
         bpy.utils.unregister_class(cls)
