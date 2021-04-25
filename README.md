@@ -10,4 +10,4 @@ This add-on is aware of the version of Blender it is running on, and will create
 
 To install the add-on in Blender, download the file "io_scene_gr2_addon_for_blender_2.8x_and_2.9x.zip", don't unzip it, and install it in your Blender app through the usual means (Edit menu > Preferences > Add-ons > Install).
 
-For directions on its usage, please consult the [SWTOR-Extractors-Modders-Dataminers WikiPedia](https://github.com/SWTOR-Extractors-Modders-Dataminers/WikiPedia).
+For directions on its usage, please consult the [SWTOR-Slicers WikiPedia](https://github.com/SWTOR-Slicers/WikiPedia/wiki).
