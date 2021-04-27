@@ -294,7 +294,7 @@ class GR2Loader():
 
             for b in self.bones:
                 bone = armature.edit_bones.new(b.name)
-                bone.tail = [0.00001, 0, 0]
+                bone.tail = [0, 0.00001, 0]
 
             for i, b in enumerate(self.bones):
                 bone = armature.edit_bones[i]
