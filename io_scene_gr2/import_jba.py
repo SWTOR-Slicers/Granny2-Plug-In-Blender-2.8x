@@ -29,13 +29,13 @@ class JBAAnimation():
 
 
 class JBABone():
-    def __init__(self, translation_stride, translation_base, rotation_stride, rotation_base):
+    def __init__(self, translation_stride, translation_base, rotation_stride, rotation_base, num_frames):
         self.translation_stride = translation_stride
         self.translation_base = translation_base
         self.rotation_stride = rotation_stride
         self.rotation_base = rotation_base
-        self.translations = []
-        self.rotations = []
+        self.translations = [None]*num_frames
+        self.rotations = [None]*num_frames
         self.name = ""
 
 
@@ -78,7 +78,7 @@ class JBALoader():
 
             # Bone Data
             f.seek((f.tell() + 0x7f) & -0x80)
-            bones = self._read_bone_data(f, num_bones)
+            bones = self._read_bone_data(f, num_bones, num_frames)
 
             # Block Data
             f.seek((f.tell() + 0x7f) & -0x80)
@@ -102,8 +102,6 @@ class JBALoader():
                 # Keyframes
                 for j in range(num_bones):
                     bone = bones[j]
-                    bone.translations = [None]*block.num_frames
-                    bone.rotations = [None]*block.num_frames
 
                     # Rotations
                     for k in range(block.num_frames):
@@ -146,14 +144,14 @@ class JBALoader():
         ignore(file, num_blocks * 4) # unknown
         return blocks
 
-    def _read_bone_data(self, file, num_bones):
+    def _read_bone_data(self, file, num_bones, num_frames):
         bones = [None]*num_bones
         for i in range(num_bones):
             translation_stride = Vector([rfloat32(file) for _ in range(3)])
             translation_base = Vector([rfloat32(file) for _ in range(3)])
             rotation_stride = Vector([rfloat32(file) for _ in range(3)])
             rotation_base = Vector([rfloat32(file) for _ in range(3)])
-            bones[i] = JBABone(translation_stride, translation_base, rotation_stride, rotation_base)
+            bones[i] = JBABone(translation_stride, translation_base, rotation_stride, rotation_base, num_frames)
         return bones
 
     def _read_rotation_compressed(self, file, base, stride):
@@ -220,18 +218,20 @@ class JBALoader():
         action = bpy.data.actions.new(anim_name)
         obj.animation_data.action = action
 
+        # Enter Pose mode
+        bpy.ops.object.mode_set(mode='POSE')
+
         # Create armature keyframes
         morpheme_space = Matrix([[1000, 0, 0, 0], [0, 0, -1000, 0], [0, 1000, 0, 0], [0, 0, 0, 1]])
         morpheme_space_inv = morpheme_space.inverted()
-        bpy.ops.object.mode_set(mode='POSE')
         for frame in range(self.animation.num_frames):
             for anim_bone in self.animation.bones:
                 bone_name = anim_bone.name
                 if bone_name in obj.pose.bones:
                     pose_bone = obj.pose.bones[bone_name]
-                    mat_rot = anim_bone.rotations[frame].to_matrix().to_4x4()
                     mat_trans = Matrix.Translation(anim_bone.translations[frame])
-                    pose_bone.matrix_basis = morpheme_space_inv @ mat_rot @ mat_trans @ morpheme_space
+                    mat_rot = anim_bone.rotations[frame].to_matrix().to_4x4()
+                    pose_bone.matrix_basis = morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
                     pose_bone.keyframe_insert(data_path="location", frame=frame+1)
                     pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame+1)
 
