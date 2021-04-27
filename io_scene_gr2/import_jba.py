@@ -127,7 +127,7 @@ class JBALoader():
             # Bone Names
             bone_names = self._read_bone_names(f)
             for i, name in enumerate(bone_names):
-                bones[i].name = name
+                bones[i].name = name if name != "GOD" else "Bip01"
 
             self.animation = JBAAnimation(length, fps, num_frames, bones, world_space)
 
@@ -232,8 +232,8 @@ class JBALoader():
                     mat_trans = Matrix.Translation(anim_bone.translations[frame])
                     mat_rot = anim_bone.rotations[frame].to_matrix().to_4x4()
                     pose_bone.matrix_basis = morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
-                    pose_bone.keyframe_insert(data_path="location", frame=frame+1)
-                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame+1)
+                    pose_bone.keyframe_insert(data_path="location", frame=self.animation.fps*frame+1)
+                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=self.animation.fps*frame+1)
 
 
 def load(operator, context, filepath=""):
