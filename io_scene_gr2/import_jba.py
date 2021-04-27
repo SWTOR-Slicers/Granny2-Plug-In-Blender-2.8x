@@ -224,7 +224,7 @@ class JBALoader():
         # Create armature keyframes
         morpheme_space = Matrix([[1000, 0, 0, 0], [0, 0, -1000, 0], [0, 1000, 0, 0], [0, 0, 0, 1]])
         morpheme_space_inv = morpheme_space.inverted()
-        for frame in range(self.animation.num_frames):
+        for anim_frame in range(self.animation.num_frames):
             for anim_bone in self.animation.bones:
                 bone_name = anim_bone.name
                 if bone_name in obj.pose.bones:
@@ -232,11 +232,12 @@ class JBALoader():
                     mat_rest = pose_bone.bone.matrix_local
                     if pose_bone.parent:
                         mat_rest = pose_bone.parent.bone.matrix_local.inverted() @ mat_rest
-                    mat_trans = Matrix.Translation(anim_bone.translations[frame])
-                    mat_rot = anim_bone.rotations[frame].to_matrix().to_4x4()
+                    mat_trans = Matrix.Translation(anim_bone.translations[anim_frame])
+                    mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
                     pose_bone.matrix_basis = mat_rest.inverted() @ morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
-                    pose_bone.keyframe_insert(data_path="location", frame=self.animation.fps*frame+1)
-                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=self.animation.fps*frame+1)
+                    frame = self.animation.fps * self.animation.length * anim_frame / self.animation.num_frames + 1
+                    pose_bone.keyframe_insert(data_path="location", frame=frame)
+                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 
 
 def load(operator, context, filepath=""):
