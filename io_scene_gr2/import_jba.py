@@ -229,13 +229,22 @@ class JBALoader():
                 bone_name = anim_bone.name
                 if bone_name in obj.pose.bones:
                     pose_bone = obj.pose.bones[bone_name]
+
                     mat_rest = pose_bone.bone.matrix_local
                     if pose_bone.parent:
                         mat_rest = pose_bone.parent.bone.matrix_local.inverted() @ mat_rest
-                    mat_trans = Matrix.Translation(anim_bone.translations[anim_frame])
+
                     mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
-                    pose_bone.matrix_basis = mat_rest.inverted() @ morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
+
+                    if operator.root_only_translation and bone_name != "Root":
+                        mat_trans = Matrix.Translation(mat_rest.to_translation())
+                        mat_bone = mat_rest.inverted() @ mat_trans @ morpheme_space_inv @ mat_rot @ morpheme_space
+                    else:
+                        mat_trans = Matrix.Translation(anim_bone.translations[anim_frame])
+                        mat_bone = mat_rest.inverted() @ morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
+
                     frame = self.animation.fps * self.animation.length * anim_frame / self.animation.num_frames + 1
+                    pose_bone.matrix_basis = mat_bone
                     pose_bone.keyframe_insert(data_path="location", frame=frame)
                     pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 
