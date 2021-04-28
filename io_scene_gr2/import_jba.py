@@ -222,7 +222,8 @@ class JBALoader():
         bpy.ops.object.mode_set(mode='POSE')
 
         # Create armature keyframes
-        morpheme_space = Matrix([[1000, 0, 0, 0], [0, 0, -1000, 0], [0, 1000, 0, 0], [0, 0, 0, 1]])
+        scale = 1000 * operator.scale_factor
+        morpheme_space = Matrix([[scale, 0, 0, 0], [0, 0, -scale, 0], [0, scale, 0, 0], [0, 0, 0, 1]])
         morpheme_space_inv = morpheme_space.inverted()
         for anim_frame in range(self.animation.num_frames):
             for anim_bone in self.animation.bones:
@@ -234,17 +235,15 @@ class JBALoader():
                     if pose_bone.parent:
                         mat_rest = pose_bone.parent.bone.matrix_local.inverted() @ mat_rest
 
-                    mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
-
-                    if operator.root_only_translation and bone_name != "Root":
-                        mat_trans = Matrix.Translation(mat_rest.to_translation())
-                        mat_bone = mat_rest.inverted() @ mat_trans @ morpheme_space_inv @ mat_rot @ morpheme_space
+                    if operator.ignore_facial_bones and bone_name.lower().startswith("fc_"):
+                        mat_bone = mat_rest
                     else:
                         mat_trans = Matrix.Translation(anim_bone.translations[anim_frame])
-                        mat_bone = mat_rest.inverted() @ morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
+                        mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
+                        mat_bone = morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
 
                     frame = self.animation.fps * self.animation.length * anim_frame / self.animation.num_frames + 1
-                    pose_bone.matrix_basis = mat_bone
+                    pose_bone.matrix_basis = mat_rest.inverted() @ mat_bone
                     pose_bone.keyframe_insert(data_path="location", frame=frame)
                     pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 
