@@ -101,6 +101,8 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
     filename_ext = ".jba"
     filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
 
+    root_only_translation: BoolProperty(name="Root-only Translations", description="Translation keyframes only affect the Root bone")
+
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
     # directory
