@@ -103,7 +103,7 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
 
     scale_factor: FloatProperty(name="Scale Factor", description="Scale factor of the animation (try 1.05 for character animations)", default=1.0, soft_min=0.1, soft_max=2.0)
-    ignore_facial_bones: BoolProperty(name="Ignore Facial Bones", description="Do not add keyframes for facial bones", default=True)
+    ignore_facial_bones: BoolProperty(name="Ignore Facial Bones", description="Ignore translation keyframes for facial bones", default=True)
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 

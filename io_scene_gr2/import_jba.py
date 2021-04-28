@@ -235,11 +235,13 @@ class JBALoader():
                     if pose_bone.parent:
                         mat_rest = pose_bone.parent.bone.matrix_local.inverted() @ mat_rest
 
+                    mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
+
                     if operator.ignore_facial_bones and bone_name.lower().startswith("fc_"):
-                        mat_bone = mat_rest
+                        mat_trans = Matrix.Translation(mat_rest.to_translation())
+                        mat_bone = mat_trans @ morpheme_space_inv @ mat_rot @ morpheme_space
                     else:
                         mat_trans = Matrix.Translation(anim_bone.translations[anim_frame])
-                        mat_rot = anim_bone.rotations[anim_frame].to_matrix().to_4x4()
                         mat_bone = morpheme_space_inv @ mat_trans @ mat_rot @ morpheme_space
 
                     frame = self.animation.fps * self.animation.length * anim_frame / self.animation.num_frames + 1
