@@ -123,6 +123,33 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
+class ImportCLO(bpy.types.Operator, ImportHelper):
+    """Import from SWTOR CLO file format (.clo)"""
+    bl_idname = "import_scene.clo"
+    bl_label = "Import SWTOR (.clo)"
+    bl_options = {'UNDO'}
+
+    filename_ext = ".clo"
+    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    # directory
+    directory = StringProperty(subtype='DIR_PATH')
+    print(directory)
+
+    from . import import_clo
+    def execute(self, context):
+        import os
+        status = ""
+        for j, i in enumerate(self.files):
+            path = os.path.join(self.directory, i.name)
+            print(path)
+            status = import_clo.load(self, context, path)
+
+        return {"FINISHED"}
+
+
 def menu_func_import_gr2(self, context):
     self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
@@ -135,10 +162,15 @@ def menu_func_import_jba(self, context):
     self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
 
 
+def menu_func_import_clo(self, context):
+    self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
+
+
 classes = (
     ImportGR2,
     ExportGR2,
-    ImportJBA
+    ImportJBA,
+    ImportCLO
 )
 
 def register():
@@ -148,12 +180,14 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_gr2)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_gr2)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_jba)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_clo)
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_gr2)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_gr2)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_jba)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_clo)
 
     for cls in classes:
         bpy.utils.unregister_class(cls)
