@@ -145,6 +145,7 @@ class CLOLoader():
         pin_group = None
 
         # Select vertex groups by cloth bone names
+        bpy.ops.mesh.select_all(action='DESELECT')
         for bone in self.cloth.bones:
             if (not bone.is_cloth) or (not bone.name in obj.vertex_groups):
                 continue
