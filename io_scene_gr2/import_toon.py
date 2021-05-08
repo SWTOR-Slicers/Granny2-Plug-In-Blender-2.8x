@@ -234,13 +234,29 @@ class ToonLoader():
                                 new_mat.node_tree.links.remove(l3)
                                 new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FacepaintMap Alpha").default_value = 0.0
                             else:
-                                i6 = bpy.data.images.load(vals_info["ddsPaths"]["complexionMap"])
-                                new_mat.node_tree.nodes.get("ComplexionMap").image = i6
-                                new_mat.node_tree.nodes.get("ComplexionMap").image.colorspace_settings.name = 'Raw'
+                                try:
+                                    i6 = bpy.data.images.load(vals_info["ddsPaths"]["complexionMap"])
+                                    new_mat.node_tree.nodes.get("ComplexionMap").image = i6
+                                    new_mat.node_tree.nodes.get("ComplexionMap").image.colorspace_settings.name = 'Raw'
                                 
-                                i7 = bpy.data.images.load(vals_info["ddsPaths"]["facepaintMap"])
-                                new_mat.node_tree.nodes.get("FacepaintMap").image = i7
-                                new_mat.node_tree.nodes.get("FacepaintMap").image.colorspace_settings.name = 'Raw'
+                                except:
+                                    l1 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("ComplexionMap Color").links[0]
+                                    new_mat.node_tree.links.remove(l1)
+                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("ComplexionMap Color").default_value = (1, 1, 1, 1)
+                                
+                                try:
+                                    i7 = bpy.data.images.load(vals_info["ddsPaths"]["facepaintMap"])
+                                    new_mat.node_tree.nodes.get("FacepaintMap").image = i7
+                                    new_mat.node_tree.nodes.get("FacepaintMap").image.colorspace_settings.name = 'Raw'
+
+                                except:
+                                    l2 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FacepaintMap Color").links[0]
+                                    new_mat.node_tree.links.remove(l2)
+                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FacepaintMap Color").default_value = (1, 1, 1, 1)
+
+                                    l3 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FacepaintMap Alpha").links[0]
+                                    new_mat.node_tree.links.remove(l3)
+                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FacepaintMap Alpha").default_value = 0.0                        
 
                         elif derived == "HairC":
                             vals_info = slot.mat_info
