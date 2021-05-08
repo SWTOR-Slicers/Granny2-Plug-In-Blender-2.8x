@@ -168,7 +168,10 @@ class ToonLoader():
                         new_mat = bpy.data.materials[slot.slot_name + derived]
                     except:
                         mat = bpy.data.materials["Template: " + derived + " Shader"]
-                        uses_skin = slot.mat_info["otherValues"]["materialSkinIndex"] == i
+                        uses_skin = False
+                        try:
+                            uses_skin = slot.mat_info["otherValues"]["materialSkinIndex"] == i
+                        
                         if uses_skin:
                             mat = bpy.data.materials["Template: SkinB Shader"]
 
