@@ -886,11 +886,11 @@ class CommonGroups():
 
         # Add AdjustLightness node group
         if 'AdjustSkinLightness' not in bpy.data.node_groups:
-            CommonGroups.AdjustLightness()
+            CommonGroups.AdjustSkinLightness()
         Lit = NodeGroup.nodes.new(type='ShaderNodeGroup')
-        Lit.name = "Adjust Lightness"
+        Lit.name = "Adjust Skin Lightness"
         Lit.location = (-113, -134)
-        Lit.node_tree = bpy.data.node_groups['AdjustLightness']
+        Lit.node_tree = bpy.data.node_groups['AdjustSkinLightness']
 
         # Add HSLtoRGB node group
         if 'HSLtoRGB' not in bpy.data.node_groups:
