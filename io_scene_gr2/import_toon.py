@@ -79,13 +79,8 @@ class skin_mats_obj():
     def __init__(self, dict_from_json, json_path):
         self.slot_name = dict_from_json['slotName']
         self.mat_info = dict_from_json['materialInfo']
-        self.mat_info["ddsPaths"] = {
-            "paletteMap": "",
-            "paletteMaskMap": "",
-            "diffuseMap": "",
-            "glossMap": "",
-            "rotationMap": ""
-        }
+        self.mat_info["ddsPaths"] = dict_from_json['ddsPaths']
+        self.mat_info["otherValues"] = dict_from_json['otherValues']
         dds_dict = dict_from_json['ddsPaths']
         textures = [
             json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name + dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):] if 'paletteMap'in dds_dict else None,
@@ -128,7 +123,7 @@ class ToonLoader():
     def parse(self, operator):
         data = self.read_paths(self.filepath)
         parsed_objs = []
-        skin_mats = []
+        skin_mats = None
         global eyeMatInfo
         for entry in data:
             if entry['slotName'] == "skinMats":
@@ -136,7 +131,7 @@ class ToonLoader():
                 for mat in entry['materialInfo']['mats']:
                     to_push.mats.append(skin_mats_obj(mat, self.filepath))
 
-                skin_mats.append(to_push)
+                skin_mats = to_push
 
             else:
                 try:
@@ -175,6 +170,8 @@ class ToonLoader():
                         uses_skin = False
                         try:
                             uses_skin = slot.mat_info["otherValues"]["materialSkinIndex"] == i
+                        except:
+                            uses_skin = False
                         
                         if uses_skin:
                             mat = bpy.data.materials["Template: SkinB Shader"]
@@ -183,17 +180,20 @@ class ToonLoader():
                         new_mat.name = "Eye Shader" if slot.slot_name == "head" and i == 1 else slot.slot_name + derived
 
                         if derived == "SkinB":
-                            skin_mat = next((mat for mat in self.skin_mats if mat.slot_name == slot.slot_name), None)
-                            vals_info = skin_mat if uses_skin and slot.slot_name != "head" else slot.mat_info
+                            if slot.slot_name != "head":
+                                uses_skin = True
+                            
+                            skin_mat = next((mat for mat in self.skin_mats.mats if mat.slot_name == slot.slot_name), None)
+                            vals_info = skin_mat.mat_info if uses_skin and slot.slot_name != "head" else slot.mat_info
                             vals = vals_info["otherValues"]
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.X").default_value = vals["palette1"][0]
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.Y").default_value = vals["palette1"][1]
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.Z").default_value = vals["palette1"][2]
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.W").default_value = vals["palette1"][3]
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.X").default_value = float(vals["palette1"][0])
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.Y").default_value = float(vals["palette1"][1])
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.Z").default_value = float(vals["palette1"][2])
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1.W").default_value = float(vals["palette1"][3])
                             
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Specular").default_value = (vals["palette1Specular"][0], vals["palette1Specular"][1], vals["palette1Specular"][2], 1)
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Metallic Specular").default_value = (vals["palette1MetallicSpecular"][0], vals["palette1MetallicSpecular"][1], vals["palette1MetallicSpecular"][2], 1)
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Specular").default_value = (float(vals["palette1Specular"][0]), float(vals["palette1Specular"][1]), float(vals["palette1Specular"][2]), 1)
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Metallic Specular").default_value = (float(vals["palette1MetallicSpecular"][0]), float(vals["palette1MetallicSpecular"][1]), float(vals["palette1MetallicSpecular"][2]), 1)
 
                             new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FlushTone.X").default_value = float(vals["flush"][0])
                             new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("FlushTone.Y").default_value = float(vals["flush"][1])
@@ -251,8 +251,8 @@ class ToonLoader():
                             new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1.Z").default_value = float(vals["palette1"][2])
                             new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1.W").default_value = float(vals["palette1"][3])
                             
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Specular").default_value = (vals["palette1Specular"][0], vals["palette1Specular"][1], vals["palette1Specular"][2], 1)
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Metallic Specular").default_value = (vals["palette1MetallicSpecular"][0], vals["palette1MetallicSpecular"][1], vals["palette1MetallicSpecular"][2], 1)
+                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Specular").default_value = (float(vals["palette1Specular"][0]), float(vals["palette1Specular"][1]), float(vals["palette1Specular"][2]), 1)
+                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Metallic Specular").default_value = (float(vals["palette1MetallicSpecular"][0]), float(vals["palette1MetallicSpecular"][1]), float(vals["palette1MetallicSpecular"][2]), 1)
                             
                             i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
                             new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
@@ -278,13 +278,13 @@ class ToonLoader():
                             vals_info = eyeMatInfo.mat_info
                             vals = vals_info["otherValues"]
 
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.X").default_value = vals["palette1"][0]
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.Y").default_value = vals["palette1"][1]
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.Z").default_value = vals["palette1"][2]
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.W").default_value = vals["palette1"][3]
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.X").default_value = float(vals["palette1"][0])
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.Y").default_value = float(vals["palette1"][1])
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.Z").default_value = float(vals["palette1"][2])
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1.W").default_value = float(vals["palette1"][3])
                             
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Specular").default_value = (vals["palette1Specular"][0], vals["palette1Specular"][1], vals["palette1Specular"][2], 1)
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Metallic Specular").default_value = (vals["palette1MetallicSpecular"][0], vals["palette1MetallicSpecular"][1], vals["palette1MetallicSpecular"][2], 1)
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Specular").default_value = (float(vals["palette1Specular"][0]), float(vals["palette1Specular"][1]), float(vals["palette1Specular"][2]), 1)
+                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Metallic Specular").default_value = (float(vals["palette1MetallicSpecular"][0]), float(vals["palette1MetallicSpecular"][1]), float(vals["palette1MetallicSpecular"][2]), 1)
                             
                             i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
                             new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
@@ -310,21 +310,21 @@ class ToonLoader():
                             vals_info = slot.mat_info
                             vals = vals_info["otherValues"]
 
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.X").default_value = vals["palette1"][0]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Y").default_value = vals["palette1"][1]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Z").default_value = vals["palette1"][2]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.W").default_value = vals["palette1"][3]
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.X").default_value = float(vals["palette1"][0])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Y").default_value = float(vals["palette1"][0])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Z").default_value = float(vals["palette1"][2])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.W").default_value = float(vals["palette1"][3])
                             
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Specular").default_value = (vals["palette1Specular"][0], vals["palette1Specular"][1], vals["palette1Specular"][2], 1)
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Metallic Specular").default_value = (vals["palette1MetallicSpecular"][0], vals["palette1MetallicSpecular"][1], vals["palette1MetallicSpecular"][2], 1)
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Specular").default_value = (float(vals["palette1Specular"][0]), float(vals["palette1Specular"][1]), float(vals["palette1Specular"][2]), 1)
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Metallic Specular").default_value = (float(vals["palette1MetallicSpecular"][0]), float(vals["palette1MetallicSpecular"][1]), float(vals["palette1MetallicSpecular"][2]), 1)
 
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.X").default_value = vals["palette2"][0]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.Y").default_value = vals["palette2"][1]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.Z").default_value = vals["palette2"][2]
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.W").default_value = vals["palette2"][3]
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.X").default_value = float(vals["palette2"][0])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.Y").default_value = float(vals["palette2"][1])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.Z").default_value = float(vals["palette2"][2])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2.W").default_value = float(vals["palette2"][3])
                             
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Specular").default_value = (vals["palette2Specular"][0], vals["palette2Specular"][1], vals["palette2Specular"][2], 1)
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Metallic Specular").default_value = (vals["palette2MetallicSpecular"][0], vals["palette2MetallicSpecular"][1], vals["palette2MetallicSpecular"][2], 1)
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Specular").default_value = (float(vals["palette2Specular"][0]), float(vals["palette2Specular"][1]), float(vals["palette2Specular"][2]), 1)
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Metallic Specular").default_value = (float(vals["palette2MetallicSpecular"][0]), float(vals["palette2MetallicSpecular"][1]), float(vals["palette2MetallicSpecular"][2]), 1)
                             
                             i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
                             new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
