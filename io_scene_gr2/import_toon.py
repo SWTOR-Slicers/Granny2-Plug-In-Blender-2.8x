@@ -139,11 +139,15 @@ class ToonLoader():
                 skin_mats.append(to_push)
 
             else:
-                s = slot_obj(entry, self.filepath)
-                if s.slot_name == "head":
-                    eyeMatInfo = slot_obj_mat_only(entry["materialInfo"]["eyeMatInfo"], self.filepath)
-                
-                parsed_objs.append(s)
+                try:
+                    s = slot_obj(entry, self.filepath)
+                    if s.slot_name == "head":
+                        eyeMatInfo = slot_obj_mat_only(entry["materialInfo"]["eyeMatInfo"], self.filepath)
+                    
+                    parsed_objs.append(s)
+
+                except:
+                    print(".")
         
         self.slots = parsed_objs
         self.skin_mats = skin_mats
