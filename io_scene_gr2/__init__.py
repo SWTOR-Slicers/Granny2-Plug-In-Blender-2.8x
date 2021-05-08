@@ -56,6 +56,34 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
 
         return {"FINISHED"}
 
+class ImportToon(bpy.types.Operator, ImportHelper):
+    """Import from JSON file format (.json)"""
+    bl_idname = "import_scene.json"
+    bl_label = "Import SWTOR (.json)"
+    bl_options = {'UNDO'}
+
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
+
+    import_collision: BoolProperty(name="Import Collision Mesh", default=False)
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    # directory
+    directory = StringProperty(subtype='DIR_PATH')
+    print(directory)
+
+    from . import import_toon
+    def execute(self, context):
+        import os
+        status = ""
+        for j, i in enumerate(self.files):
+            path = os.path.join(self.directory, i.name)
+            print(path)
+            status = import_toon.load(self, context, path)
+
+        return {"FINISHED"}
+
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ExportGR2(bpy.types.Operator, ExportHelper):
@@ -165,12 +193,16 @@ def menu_func_import_jba(self, context):
 def menu_func_import_clo(self, context):
     self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
 
+def menu_func_import_toon(self, context):
+    self.layout.operator(ImportToon.bl_idname, text="SW:TOR (.json)")
+
 
 classes = (
     ImportGR2,
     ExportGR2,
     ImportJBA,
-    ImportCLO
+    ImportCLO,
+    ImportToon
 )
 
 def register():
@@ -181,6 +213,7 @@ def register():
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export_gr2)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_jba)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import_clo)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_toon)
 
 
 def unregister():
@@ -188,6 +221,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_gr2)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_jba)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_clo)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_toon)
 
     for cls in classes:
         bpy.utils.unregister_class(cls)
