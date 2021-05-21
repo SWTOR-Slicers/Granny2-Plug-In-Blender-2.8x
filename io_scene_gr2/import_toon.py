@@ -327,7 +327,7 @@ class ToonLoader():
                             vals = vals_info["otherValues"]
 
                             new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.X").default_value = float(vals["palette1"][0])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Y").default_value = float(vals["palette1"][0])
+                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Y").default_value = float(vals["palette1"][1])
                             new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.Z").default_value = float(vals["palette1"][2])
                             new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1.W").default_value = float(vals["palette1"][3])
                             
