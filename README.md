@@ -10,7 +10,7 @@ This add-on is aware of the version of Blender it is running on, and will create
 
 ### Installation
 
-[**Download add-on "io_scene_gr2.zip"**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/raw/master/io_scene_gr2.zip).
+[**Download the "io_scene_gr2.zip" add-on**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/raw/master/io_scene_gr2.zip).
 
 Once downloaded, don't unzip it, and install it in your Blender app through the usual means (Edit menu > Preferences > Add-ons > Install).
 
