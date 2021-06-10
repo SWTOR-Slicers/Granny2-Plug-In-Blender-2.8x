@@ -1,6 +1,6 @@
 # SWTOR Granny2 (.gr2) Import/Export add-on for both Blender 2.8x and 2.9x
 
-## WARNING: this add-on breaks when running on Blender 2.93. For the time being we recommend to stay on Blender 2.92 or older while we solve the bug (or import objects on 2.92 to append them to 2.93 projects).
+## WARNING: this add-on breaks when running on Blender 2.93. For the time being we recommend to stay on Blender 2.92 while we solve the bug, or import objects on 2.92 and then move them to 2.93.
 
 This add-on provides Blender with an import/export feature for the Star Wars: The Old Republic (SWTOR) specific flavor of the .gr2 3D model format, including rigging data (vertex groups, weights) and armatures.
 
