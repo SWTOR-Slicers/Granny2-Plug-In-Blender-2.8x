@@ -16,7 +16,7 @@ import bpy
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Matrix, Quaternion, Vector
 
-from .parse import *
+from .utils import *
 
 
 class JBAAnimation():
@@ -68,9 +68,9 @@ class JBALoader():
             length = rfloat32(f)
             fps = rfloat32(f)
             num_blocks = ruint32(f)
-            ignore(f, 2 * 4) # unknown
+            ignore(f, 2 * 4)  # unknown
             num_bones = ruint32(f)
-            ignore(f, 3 * 4) # unknown
+            ignore(f, 3 * 4)  # unknown
 
             # Block Headers
             num_frames = round(length * fps) + 1
@@ -88,15 +88,15 @@ class JBALoader():
 
                 num_block_bones = ruint32(f)
                 assert(num_block_bones == num_bones)
-                ignore(f, 4) # unknown
+                ignore(f, 4)  # unknown
 
                 # Keyframe Layout
                 has_translations = [None]*num_block_bones
                 for j in range(num_block_bones):
                     num_rotations = ruint32(f)
-                    ignore(f, 4) # unknown
+                    ignore(f, 4)  # unknown
                     num_translations = ruint32(f)
-                    ignore(f, 4) # unknown
+                    ignore(f, 4)  # unknown
                     has_translations[j] = num_translations > 0
 
                 # Keyframes
@@ -105,13 +105,15 @@ class JBALoader():
 
                     # Rotations
                     for k in range(block.num_frames):
-                        bone.rotations[block.start_frame + k] = self._read_rotation_compressed(f, bone.rotation_base, bone.rotation_stride)
+                        bone.rotations[block.start_frame +
+                                       k] = self._read_rotation_compressed(f, bone.rotation_base, bone.rotation_stride)
 
                     # Translations
                     f.seek((f.tell() + 3) & -4)
                     if has_translations[j]:
                         for k in range(block.num_frames):
-                            bone.translations[block.start_frame + k] = self._read_translation_compressed(f, bone.translation_base, bone.translation_stride)
+                            bone.translations[block.start_frame + k] = self._read_translation_compressed(
+                                f, bone.translation_base, bone.translation_stride)
                     else:
                         for k in range(block.num_frames):
                             pos_x = bone.translation_base.x + 0x7ff * bone.translation_stride.x
@@ -141,7 +143,7 @@ class JBALoader():
                 blocks[i - 1].num_frames = 1 + blocks[i].start_frame - blocks[i - 1].start_frame
             if i + 1 == num_blocks:
                 blocks[i].num_frames = num_frames - blocks[i].start_frame
-        ignore(file, num_blocks * 4) # unknown
+        ignore(file, num_blocks * 4)  # unknown
         return blocks
 
     def _read_bone_data(self, file, num_bones, num_frames):
@@ -173,7 +175,7 @@ class JBALoader():
         return Vector((pos_x, pos_y, pos_z))
 
     def _read_world_space(self, file, num_frames):
-        ignore(file, 4) # unknown
+        ignore(file, 4)  # unknown
         fps = rfloat32(file)
         translation_stride = Vector([rfloat32(file) for _ in range(3)])
         translation_base = Vector([rfloat32(file) for _ in range(3)])
@@ -181,23 +183,24 @@ class JBALoader():
         rotation_base = Vector([rfloat32(file) for _ in range(3)])
         num_rotations = ruint32(file)
         assert(num_rotations == num_frames)
-        ignore(file, 4) # unknown
+        ignore(file, 4)  # unknown
         num_translations = ruint32(file)
         assert(num_rotations == num_frames)
-        ignore(file, 4) # unknown
+        ignore(file, 4)  # unknown
         rotations = [self._read_rotation_compressed(file, rotation_base, rotation_stride) for _ in range(num_frames)]
         file.seek((file.tell() + 3) & -4)
-        translations = [self._read_translation_compressed(file, translation_base, translation_stride) for _ in range(num_frames)]
+        translations = [self._read_translation_compressed(
+            file, translation_base, translation_stride) for _ in range(num_frames)]
         return JBAWorldSpace(rotations, translations)
 
     def _read_bone_names(self, file):
         names_start = file.tell()
         num_names = ruint32(file)
-        ignore(file, 4) # unknown
+        ignore(file, 4)  # unknown
         off_indices = ruint32(file)
         off_offsets = ruint32(file)
         off_names = ruint32(file)
-        ignore(file, num_names * 4) # numbers from 0 to number of names - 1
+        ignore(file, num_names * 4)  # numbers from 0 to number of names - 1
         name_offsets = [ruint32(file) for _ in range(num_names)]
         names = [None]*num_names
         for i in range(num_names):

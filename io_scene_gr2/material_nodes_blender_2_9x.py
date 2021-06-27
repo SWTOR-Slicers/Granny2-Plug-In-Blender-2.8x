@@ -757,7 +757,7 @@ class CommonGroups():
         Sub2.location = (0, -100)
         Sub2.operation = 'SUBTRACT'
         Sub2.inputs[0].default_value = 1.0
-        
+
         # Add a Combine XYZ node
         ComXYZ = NodeGroup.nodes.new(type='ShaderNodeCombineXYZ')
         ComXYZ.name = "Combine XYZ"

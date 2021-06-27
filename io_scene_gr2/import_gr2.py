@@ -15,12 +15,35 @@ import bpy
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Matrix
 
-from .parse import *
+from .utils import (
+    ruint8,
+    ruint16,
+    ruint32,
+    rfloat8,
+    rfloat16,
+    rfloat32,
+    rstring,
+    unpack
+)
 
 if bpy.app.version < (2, 90, 0):
-    from .material_nodes_blender_2_8x import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
+    from .material_nodes_blender_2_8x import (
+        CreatureShader,
+        EyeShader,
+        GarmentShader,
+        HairCShader,
+        SkinBShader,
+        UberShader
+    )
 else:
-    from .material_nodes_blender_2_9x import CreatureShader, EyeShader, GarmentShader, HairCShader, SkinBShader, UberShader
+    from .material_nodes_blender_2_9x import (
+        CreatureShader,
+        EyeShader,
+        GarmentShader,
+        HairCShader,
+        SkinBShader,
+        UberShader
+    )
 
 
 class GR2MeshPiece():
@@ -109,17 +132,20 @@ class GR2Mesh():
         self.offsetBones = ruint32(f)     # The start address (offset) of the bone list of this mesh
 
         # Mesh pieces
-        self.pieces = [GR2MeshPiece(f, self.offsetPieces + p * 0x30) for p in range(self.numPieces)]
+        self.pieces = [GR2MeshPiece(f, self.offsetPieces + p * 0x30)
+                       for p in range(self.numPieces)]
 
         # Vertices
-        self.vertices = [GR2Vertex(f, self.offsetVertices + v * self.vertexSize, self.bitFlag2) for v in
-                         range(self.numVertices)]
+        self.vertices = [GR2Vertex(f, self.offsetVertices + v * self.vertexSize, self.bitFlag2)
+                         for v in range(self.numVertices)]
 
         # Face indicies
-        self.faces = [GR2Face(f, self.offsetIndicies + i * 0x06) for i in range(self.numIndicies // 3)]
+        self.faces = [GR2Face(f, self.offsetIndicies + i * 0x06)
+                      for i in range(self.numIndicies // 3)]
 
         # Bones
-        self.bones = [GR2MeshBone(f, self.offsetBones + b * 0x1C) for b in range(self.numUsedBones)]
+        self.bones = [GR2MeshBone(f, self.offsetBones + b * 0x1C)
+                      for b in range(self.numUsedBones)]
 
     def build(self, meshLoader):
         me = bpy.data.meshes.new(self.name)
@@ -128,13 +154,13 @@ class GR2Mesh():
         if self.bitFlag2 & 0x20:
             # Link Materials
             materialIndex = []
-            for enum, piece in enumerate(self.pieces):
-                if piece.materialIdx == 4294967295:  # UInt32: -1
-                    me.materials.append(bpy.data.materials[meshLoader.materials[enum]])
+            for enm, pc in enumerate(self.pieces):
+                if pc.materialIdx == 4294967295:  # UInt32: -1
+                    me.materials.append(bpy.data.materials[meshLoader.materials[enm]])
                 else:
-                    me.materials.append(bpy.data.materials[meshLoader.materials[piece.materialIdx]])
-                for _ in range(piece.numFaces):
-                    materialIndex.append(enum)
+                    me.materials.append(bpy.data.materials[meshLoader.materials[pc.materialIdx]])
+                for _ in range(pc.numFaces):
+                    materialIndex.append(enm)
 
             # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
             #       we can only set custom loop normals *after* calling it.
@@ -209,7 +235,8 @@ class GR2Loader():
 
             # Cancel import if this is a non Bio-Ware Austin / SWTOR GR2 file
             if f.read(4) != b'GAWB':
-                operator.report({'ERROR'}, ("\'%s\' is not a valid SWTOR gr2 file.") % self.filepath)
+                operator.report({'ERROR'}, ("\'%s\' is not a valid SWTOR gr2 file.")
+                                % self.filepath)
                 return {'CANCELLED'}
 
             f.seek(0x14)
@@ -222,12 +249,13 @@ class GR2Loader():
 
             f.seek(0x54)
 
-            self.offsetMeshHeader = ruint32(f)      # Mesh header offset address
-            self.offsetMaterialHeader = ruint32(f)  # Material header offset address
-            self.offsetBoneStructure = ruint32(f)   # Bone structure offset address
+            self.offsetMeshHeader = ruint32(f)       # Mesh header offset address
+            self.offsetMaterialHeader = ruint32(f)   # Material header offset address
+            self.offsetBoneStructure = ruint32(f)    # Bone structure offset address
 
             # Meshes
-            self.meshes = [GR2Mesh(f, self.offsetMeshHeader + mesh * 0x28) for mesh in range(self.numMeshes)]
+            self.meshes = [GR2Mesh(f, self.offsetMeshHeader + mesh * 0x28)
+                           for mesh in range(self.numMeshes)]
 
             # Materials
             # NOTE: I wish there was a more efficient way to do this!

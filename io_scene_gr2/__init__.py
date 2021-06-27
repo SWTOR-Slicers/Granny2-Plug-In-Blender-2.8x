@@ -1,6 +1,7 @@
 # <pep8 compliant>
 
 import bpy
+import os
 
 from bpy.props import (
     BoolProperty,
@@ -19,8 +20,8 @@ from bpy_extras.io_utils import (
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa",
-    "version": (2, 83, 0),
-    "blender": (2, 83, 0),
+    "version": (2, 93, 1),
+    "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
     "support": 'COMMUNITY',
@@ -41,20 +42,20 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    # directory
-    directory = StringProperty(subtype='DIR_PATH')
-    print(directory)
+    if bpy.app.version < (2, 93, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
 
-    from . import import_gr2
     def execute(self, context):
-        import os
-        status = ""
-        for j, i in enumerate(self.files):
-            path = os.path.join(self.directory, i.name)
-            print(path)
-            status = import_gr2.load(self, context, path)
+        from . import import_gr2
+
+        for file in self.files:
+            path = os.path.join(self.directory, file.name)
+            import_gr2.load(self, context, path)
 
         return {"FINISHED"}
+
 
 class ImportToon(bpy.types.Operator, ImportHelper):
     """Import from JSON file format (.json)"""
@@ -69,18 +70,80 @@ class ImportToon(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    # directory
-    directory = StringProperty(subtype='DIR_PATH')
-    print(directory)
+    if bpy.app.version < (2, 93, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
 
-    from . import import_toon
     def execute(self, context):
-        import os
-        status = ""
-        for j, i in enumerate(self.files):
-            path = os.path.join(self.directory, i.name)
-            print(path)
-            status = import_toon.load(self, context, path)
+        from . import import_toon
+
+        for file in self.files:
+            path = os.path.join(self.directory, file.name)
+            import_toon.load(self, context, path)
+
+        return {"FINISHED"}
+
+
+class ImportJBA(bpy.types.Operator, ImportHelper):
+    """Import from SWTOR JBA file format (.jba)"""
+    bl_idname = "import_scene.jba"
+    bl_label = "Import SWTOR (.jba)"
+    bl_options = {'UNDO'}
+
+    filename_ext = ".jba"
+    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
+
+    scale_factor: FloatProperty(name="Scale Factor",
+                                description="Scale factor of the animation (try 1.05 for character animations)",
+                                default=1.0,
+                                soft_min=0.1,
+                                soft_max=2.0
+                                )
+    ignore_facial_bones: BoolProperty(name="Ignore Facial Bones",
+                                      description="Ignore translation keyframes for facial bones",
+                                      default=True
+                                      )
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    if bpy.app.version < (2, 93, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    def execute(self, context):
+        from . import import_jba
+
+        for file in self.files:
+            path = os.path.join(self.directory, file.name)
+            import_jba.load(self, context, path)
+
+        return {"FINISHED"}
+
+
+class ImportCLO(bpy.types.Operator, ImportHelper):
+    """Import from SWTOR CLO file format (.clo)"""
+    bl_idname = "import_scene.clo"
+    bl_label = "Import SWTOR (.clo)"
+    bl_options = {'UNDO'}
+
+    filename_ext = ".clo"
+    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    if bpy.app.version < (2, 93, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    def execute(self, context):
+        from . import import_clo
+
+        for file in self.files:
+            path = os.path.join(self.directory, file.name)
+            import_clo.load(self, context, path)
 
         return {"FINISHED"}
 
@@ -95,10 +158,10 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
     filename_ext = ".gr2"
     filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
 
-    has_clo: BoolProperty(
-        name="Has .clo file?",
-        description="Enable if there is a corresponding .clo file to go with this model.",
-        default=False)
+    has_clo: BoolProperty(name="Has .clo file?",
+                          description="Enable if there is a corresponding .clo file to go with this model.",
+                          default=False
+                          )
 
     check_extension = True
 
@@ -121,63 +184,6 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
         return export_gr2.save(self, context, **keywords)
 
 
-class ImportJBA(bpy.types.Operator, ImportHelper):
-    """Import from SWTOR JBA file format (.jba)"""
-    bl_idname = "import_scene.jba"
-    bl_label = "Import SWTOR (.jba)"
-    bl_options = {'UNDO'}
-
-    filename_ext = ".jba"
-    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
-
-    scale_factor: FloatProperty(name="Scale Factor", description="Scale factor of the animation (try 1.05 for character animations)", default=1.0, soft_min=0.1, soft_max=2.0)
-    ignore_facial_bones: BoolProperty(name="Ignore Facial Bones", description="Ignore translation keyframes for facial bones", default=True)
-
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
-
-    # directory
-    directory = StringProperty(subtype='DIR_PATH')
-    print(directory)
-
-    from . import import_jba
-    def execute(self, context):
-        import os
-        status = ""
-        for j, i in enumerate(self.files):
-            path = os.path.join(self.directory, i.name)
-            print(path)
-            status = import_jba.load(self, context, path)
-
-        return {"FINISHED"}
-
-
-class ImportCLO(bpy.types.Operator, ImportHelper):
-    """Import from SWTOR CLO file format (.clo)"""
-    bl_idname = "import_scene.clo"
-    bl_label = "Import SWTOR (.clo)"
-    bl_options = {'UNDO'}
-
-    filename_ext = ".clo"
-    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
-
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
-
-    # directory
-    directory = StringProperty(subtype='DIR_PATH')
-    print(directory)
-
-    from . import import_clo
-    def execute(self, context):
-        import os
-        status = ""
-        for j, i in enumerate(self.files):
-            path = os.path.join(self.directory, i.name)
-            print(path)
-            status = import_clo.load(self, context, path)
-
-        return {"FINISHED"}
-
-
 def menu_func_import_gr2(self, context):
     self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
@@ -193,6 +199,7 @@ def menu_func_import_jba(self, context):
 def menu_func_import_clo(self, context):
     self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
 
+
 def menu_func_import_toon(self, context):
     self.layout.operator(ImportToon.bl_idname, text="SW:TOR (.json)")
 
@@ -204,6 +211,7 @@ classes = (
     ImportCLO,
     ImportToon
 )
+
 
 def register():
     for cls in classes:
