@@ -9,13 +9,15 @@ Run this script from "File->Import" menu and then load the desired CLO animation
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/CLO-File-Structure
 """
 
-import os
-import math
-
 import bpy
+
 from bpy_extras.wm_utils.progress_report import ProgressReport
 
-from .parse import *
+from .utils import (
+    rint32,
+    ruint32,
+    rfloat32
+)
 
 
 class CLOBone():
@@ -70,31 +72,31 @@ class CLOLoader():
         assert(unk1 == 1)
         self.off_data = ruint32(file)
         assert(self.off_data == 0x10)
-        data_size = ruint32(file)
+        ruint32(file)  # data_size = ruint32(file)
 
     def _read_data_header(self, file):
         unk1 = ruint32(file)
         assert(unk1 == 0)
-        unk2 = round(rfloat32(file))
+        rfloat32(file)  # unk2 = round(rfloat32(file))
         unk3 = [round(rfloat32(file)) for i in range(3)]
         assert(unk3.count(0.0) == 3)
-        unk4 = round(rfloat32(file))
+        rfloat32(file)  # unk4 = round(rfloat32(file))
         unk5 = [round(rfloat32(file), 6) for i in range(4)]
         assert(unk5.count(-1.0) == 4)
         num_bones_total = ruint32(file)
-        off_bone_names = ruint32(file)
+        ruint32(file)  # off_bone_names = ruint32(file)
         self.num_cloth_bones = ruint32(file)
         self.off_bone_data1 = ruint32(file)
         num_cloth_bones2 = ruint32(file)
         assert(num_cloth_bones2 == self.num_cloth_bones)
-        off_bone_data2 = ruint32(file)
-        unk6 = [ruint32(file) for i in range(3)]
-        num_bone_data3 = ruint32(file)
-        off_bone_data3 = ruint32(file)
-        unk7 = [ruint32(file) for i in range(4)]
-        num_bone_data4 = ruint32(file)
-        off_bone_data4 = ruint32(file)
-        unk8 = ruint32(file)
+        ruint32(file)  # off_bone_data2 = ruint32(file)
+        [ruint32(file) for i in range(3)]  # unk6 = [ruint32(file) for i in range(3)]
+        ruint32(file)  # num_bone_data3 = ruint32(file)
+        ruint32(file)  # off_bone_data3 = ruint32(file)
+        [ruint32(file) for i in range(4)]  # unk7 = [ruint32(file) for i in range(4)]
+        ruint32(file)  # num_bone_data4 = ruint32(file)
+        ruint32(file)  # off_bone_data4 = ruint32(file)
+        ruint32(file)  # unk8 = ruint32(file)
 
         self.cloth = CLOCloth(num_bones_total)
 
@@ -147,7 +149,7 @@ class CLOLoader():
         # Select vertex groups by cloth bone names
         bpy.ops.mesh.select_all(action='DESELECT')
         for bone in self.cloth.bones:
-            if (not bone.is_cloth) or (not bone.name in obj.vertex_groups):
+            if (not bone.is_cloth) or (bone.name not in obj.vertex_groups):
                 continue
             bpy.ops.object.vertex_group_set_active(group=bone.name)
             bpy.ops.object.vertex_group_select()

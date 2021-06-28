@@ -5,7 +5,7 @@
 from struct import unpack
 
 
-def ignore(file, size):
+def rbytes(file, size):
     file.seek(size, 1)
 
 

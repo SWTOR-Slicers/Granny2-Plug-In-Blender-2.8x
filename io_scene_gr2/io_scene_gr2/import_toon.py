@@ -7,9 +7,10 @@ Usage:
 Run this script from "File->Import" menu and then load the desired GR2 model file.
 """
 
-import json
-
 import bpy
+import json
+import os
+
 from bpy_extras.wm_utils.progress_report import ProgressReport
 
 from .import_gr2 import load as loadGR2
@@ -22,33 +23,42 @@ class slot_obj():
         self.slot_name = dict_from_json['slotName']
         models = dict_from_json['models']
         self.models = []
+
         for m in models:
-            self.models.append(json_path[:json_path.rfind("\\")] + "/models/" + self.slot_name + m[m.rfind("/"):])
+            # self.models.append(json_path[:json_path.rfind("\\")] + "/models/" + self.slot_name + m[m.rfind("/"):])
+
+            if os.name == 'nt':
+                path = json_path[:json_path.rfind("\\")]
+            else:
+                path = json_path[:json_path.rfind("/")]
+
+            self.models.append(path + "/models/" + self.slot_name + m[m.rfind("/"):])
+
         self.mat_info = dict_from_json['materialInfo']
         dds_dict = dict_from_json['materialInfo']['ddsPaths']
         textures = [
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):] if 'paletteMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind(
-                "/"):] if 'paletteMaskMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):] if 'diffuseMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):] if 'glossMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):] if 'rotationMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):] if 'ageMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):] if 'complexionMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):] if 'facepaintMap' in dds_dict else None
+            path + "/materials/" + self.slot_name + dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
+            if 'paletteMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
+            if 'paletteMaskMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
+            if 'diffuseMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
+            if 'glossMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
+            if 'rotationMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
+            if 'ageMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
+            if 'complexionMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
+            if 'facepaintMap' in dds_dict else None
         ]
-        i = 0
-        for key in self.mat_info['ddsPaths']:
+
+        # i = 0
+        for i, key in enumerate(self.mat_info['ddsPaths']):
             self.mat_info['ddsPaths'][key] = textures[i]
-            i += 1
+            # i += 1
 
     def __repr__(self):
         return (
@@ -70,29 +80,36 @@ class slot_obj_mat_only():
         self.slot_name = "eye"
         self.mat_info = dict_from_json
         dds_dict = dict_from_json['ddsPaths']
+
+        if os.name == 'nt':
+            path = json_path[:json_path.rfind("\\")]
+        else:
+            path = json_path[:json_path.rfind("/")]
+
         textures = [
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):] if 'paletteMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind(
-                "/"):] if 'paletteMaskMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):] if 'diffuseMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):] if 'glossMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):] if 'rotationMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):] if 'ageMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):] if 'complexionMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):] if 'facepaintMap' in dds_dict else None
+            path + "/materials/" + self.slot_name +
+            dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
+            if 'paletteMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
+            if 'paletteMaskMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
+            if 'diffuseMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
+            if 'glossMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
+            if 'rotationMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
+            if 'ageMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
+            if 'complexionMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
+            if 'facepaintMap' in dds_dict else None
         ]
-        i = 0
-        for key in self.mat_info['ddsPaths']:
+
+        # i = 0
+        for i, key in enumerate(self.mat_info['ddsPaths']):
             self.mat_info['ddsPaths'][key] = textures[i]
-            i += 1
+            # i += 1
 
     def __repr__(self):
         return "{\n" + "matInfo: " + json.dumps(self.mat_info, indent=4) + "\n" + "}"
@@ -105,29 +122,35 @@ class skin_mats_obj():
         self.mat_info["ddsPaths"] = dict_from_json['ddsPaths']
         self.mat_info["otherValues"] = dict_from_json['otherValues']
         dds_dict = dict_from_json['ddsPaths']
+
+        if os.name == 'nt':
+            path = json_path[:json_path.rfind("\\")]
+        else:
+            path = json_path[:json_path.rfind("/")]
+
         textures = [
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):] if 'paletteMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind(
-                "/"):] if 'paletteMaskMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):] if 'diffuseMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):] if 'glossMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):] if 'rotationMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):] if 'ageMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):] if 'complexionMap' in dds_dict else None,
-            json_path[:json_path.rfind("\\")] + "/materials/" + self.slot_name +
-            dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):] if 'facepaintMap' in dds_dict else None
+            path + "/materials/" + self.slot_name + dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
+            if 'paletteMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
+            if 'paletteMaskMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
+            if 'diffuseMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
+            if 'glossMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
+            if 'rotationMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
+            if 'ageMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
+            if 'complexionMap' in dds_dict else None,
+            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
+            if 'facepaintMap' in dds_dict else None
         ]
-        i = 0
-        for key in self.mat_info['ddsPaths']:
+
+        # i = 0
+        for i, key in enumerate(self.mat_info['ddsPaths']):
             self.mat_info['ddsPaths'][key] = textures[i]
-            i += 1
+            # i += 1
 
     def __repr__(self):
         return "{\n" + "slotName: " + self.slot_name + "\n" + "}"
@@ -182,14 +205,14 @@ class ToonLoader():
     def build(self, operator, context):
         for slot in self.slots:
             for model in slot.models:
-                # import gr2
+                # Import gr2
                 loadGR2(operator, context, model)
                 name = model[model.rfind("/") + 1: -4]
 
-                # set material for model
+                # Set material for model
                 blender_obj = bpy.data.objects[name]
-                i = 0
-                for mat_slot in blender_obj.material_slots:
+                # i = 0
+                for i, mat_slot in enumerate(blender_obj.material_slots):
                     derived = slot.mat_info["otherValues"]["derived"]
                     if slot.slot_name == "head" and i == 1:
                         derived = "Eye"
@@ -229,10 +252,18 @@ class ToonLoader():
                             new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
                                 "Palette1.W").default_value = float(vals["palette1"][3])
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Specular").default_value = (
-                                float(vals["palette1Specular"][0]), float(vals["palette1Specular"][1]), float(vals["palette1Specular"][2]), 1)
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Metallic Specular").default_value = (float(
-                                vals["palette1MetallicSpecular"][0]), float(vals["palette1MetallicSpecular"][1]), float(vals["palette1MetallicSpecular"][2]), 1)
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Specular") \
+                                .default_value = (
+                                    float(vals["palette1Specular"][0]),
+                                    float(vals["palette1Specular"][1]),
+                                    float(vals["palette1Specular"][2]),
+                                    1)
+                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Metallic Specular") \
+                                .default_value = (
+                                    float(vals["palette1MetallicSpecular"][0]),
+                                    float(vals["palette1MetallicSpecular"][1]),
+                                    float(vals["palette1MetallicSpecular"][2]),
+                                    1)
 
                             new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
                                 "FlushTone.X").default_value = float(vals["flush"][0])
@@ -511,7 +542,7 @@ class ToonLoader():
 
                     mat_slot.material = new_mat
 
-                    i += 1
+                    # i += 1
 
 
 def load(operator, context, filepath=""):
