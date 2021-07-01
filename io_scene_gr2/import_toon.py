@@ -196,8 +196,8 @@ class ToonLoader():
 
                     parsed_objs.append(s)
 
-                except:
-                    print(".")
+                except KeyError:
+                    print("AN ERROR HAS OCCURED!")
 
         self.slots = parsed_objs
         self.skin_mats = skin_mats
@@ -216,20 +216,22 @@ class ToonLoader():
                     derived = slot.mat_info["otherValues"]["derived"]
                     if slot.slot_name == "head" and i == 1:
                         derived = "Eye"
+                    # HACK: Zabrak Horns
+                    elif slot.slot_name == "hair" and derived == "SkinB":
+                        derived = "HairC"
 
                     new_mat = None
                     try:
                         new_mat = bpy.data.materials[slot.slot_name + derived]
-                    except:
+                    except KeyError:
                         mat = bpy.data.materials["Template: " + derived + " Shader"]
+
                         uses_skin = False
                         try:
-                            uses_skin = slot.mat_info["otherValues"]["materialSkinIndex"] == i
-                        except:
-                            uses_skin = False
-
-                        if uses_skin:
-                            mat = bpy.data.materials["Template: SkinB Shader"]
+                            if slot.mat_info["otherValues"]["materialSkinIndex"] == i:
+                                mat = bpy.data.materials["Template: SkinB Shader"]
+                        except KeyError:
+                            pass
 
                         new_mat = mat.copy()
                         new_mat.name = "Eye Shader" if slot.slot_name == "head" and i == 1 else slot.slot_name + derived
@@ -319,7 +321,7 @@ class ToonLoader():
                                     new_mat.node_tree.nodes.get("ComplexionMap").image = i6
                                     new_mat.node_tree.nodes.get("ComplexionMap").image.colorspace_settings.name = 'Raw'
 
-                                except:
+                                except KeyError:
                                     l1 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
                                         "ComplexionMap Color").links[0]
                                     new_mat.node_tree.links.remove(l1)
@@ -331,7 +333,7 @@ class ToonLoader():
                                     new_mat.node_tree.nodes.get("FacepaintMap").image = i7
                                     new_mat.node_tree.nodes.get("FacepaintMap").image.colorspace_settings.name = 'Raw'
 
-                                except:
+                                except KeyError:
                                     l2 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
                                         "FacepaintMap Color").links[0]
                                     new_mat.node_tree.links.remove(l2)
