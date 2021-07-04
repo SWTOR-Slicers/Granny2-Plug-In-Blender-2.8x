@@ -25,7 +25,6 @@ class slot_obj():
         self.models = []
 
         for m in models:
-            # self.models.append(json_path[:json_path.rfind("\\")] + "/models/" + self.slot_name + m[m.rfind("/"):])
 
             if os.name == 'nt':
                 path = json_path[:json_path.rfind("\\")]
@@ -211,13 +210,13 @@ class ToonLoader():
 
                 # Set material for model
                 blender_obj = bpy.data.objects[name]
-                # i = 0
+
                 for i, mat_slot in enumerate(blender_obj.material_slots):
                     derived = slot.mat_info["otherValues"]["derived"]
                     if slot.slot_name == "head" and i == 1:
                         derived = "Eye"
                     # HACK: Zabrak Horns
-                    elif slot.slot_name == "hair" and derived == "SkinB":
+                    elif slot.slot_name == "hair" and "zabrak" in slot.mat_info['matPath'] and derived == "SkinB":
                         derived = "HairC"
 
                     new_mat = None
@@ -543,8 +542,6 @@ class ToonLoader():
                             new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
 
                     mat_slot.material = new_mat
-
-                    # i += 1
 
 
 def load(operator, context, filepath=""):
