@@ -27,44 +27,26 @@ class slot_obj():
         for m in models:
 
             if os.name == 'nt':
-                path = json_path[:json_path.rfind("\\")]
+                path = json_path[:json_path.rfind('\\')]
             else:
-                path = json_path[:json_path.rfind("/")]
+                path = json_path[:json_path.rfind('/')]
 
-            self.models.append(path + "/models/" + self.slot_name + m[m.rfind("/"):])
+            self.models.append(path + '/models/' + self.slot_name + m[m.rfind('/'):])
 
         self.mat_info = dict_from_json['materialInfo']
         dds_dict = dict_from_json['materialInfo']['ddsPaths']
-        textures = [
-            path + "/materials/" + self.slot_name + dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
-            if 'paletteMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
-            if 'paletteMaskMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
-            if 'diffuseMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
-            if 'glossMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
-            if 'rotationMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
-            if 'ageMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
-            if 'complexionMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
-            if 'facepaintMap' in dds_dict else None
-        ]
 
-        # i = 0
-        for i, key in enumerate(self.mat_info['ddsPaths']):
-            self.mat_info['ddsPaths'][key] = textures[i]
-            # i += 1
+        for key in self.mat_info['ddsPaths']:
+            value = path + '/materials/' + self.slot_name + dds_dict[key][dds_dict[key].rfind('/'):]
+            self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
         return (
             "{\n"
             + "slotName: "
             + self.slot_name
-            + "\n" + "models: "
+            + "\n"
+            + "models: "
             + ", ".join(self.models)
             + "\n"
             + "matInfo: "
@@ -76,39 +58,18 @@ class slot_obj():
 
 class slot_obj_mat_only():
     def __init__(self, dict_from_json, json_path):
-        self.slot_name = "eye"
+        self.slot_name = 'eye'
         self.mat_info = dict_from_json
         dds_dict = dict_from_json['ddsPaths']
 
         if os.name == 'nt':
-            path = json_path[:json_path.rfind("\\")]
+            path = json_path[:json_path.rfind('\\')]
         else:
-            path = json_path[:json_path.rfind("/")]
+            path = json_path[:json_path.rfind('/')]
 
-        textures = [
-            path + "/materials/" + self.slot_name +
-            dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
-            if 'paletteMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
-            if 'paletteMaskMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
-            if 'diffuseMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
-            if 'glossMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
-            if 'rotationMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
-            if 'ageMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
-            if 'complexionMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
-            if 'facepaintMap' in dds_dict else None
-        ]
-
-        # i = 0
-        for i, key in enumerate(self.mat_info['ddsPaths']):
-            self.mat_info['ddsPaths'][key] = textures[i]
-            # i += 1
+        for key in self.mat_info['ddsPaths']:
+            value = path + '/materials/' + self.slot_name + dds_dict[key][dds_dict[key].rfind('/'):]
+            self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
         return "{\n" + "matInfo: " + json.dumps(self.mat_info, indent=4) + "\n" + "}"
@@ -118,38 +79,18 @@ class skin_mats_obj():
     def __init__(self, dict_from_json, json_path):
         self.slot_name = dict_from_json['slotName']
         self.mat_info = dict_from_json['materialInfo']
-        self.mat_info["ddsPaths"] = dict_from_json['ddsPaths']
-        self.mat_info["otherValues"] = dict_from_json['otherValues']
+        self.mat_info['ddsPaths'] = dict_from_json['ddsPaths']
+        self.mat_info['otherValues'] = dict_from_json['otherValues']
         dds_dict = dict_from_json['ddsPaths']
 
         if os.name == 'nt':
-            path = json_path[:json_path.rfind("\\")]
+            path = json_path[:json_path.rfind('\\')]
         else:
-            path = json_path[:json_path.rfind("/")]
+            path = json_path[:json_path.rfind('/')]
 
-        textures = [
-            path + "/materials/" + self.slot_name + dds_dict['paletteMap'][dds_dict['paletteMap'].rfind("/"):]
-            if 'paletteMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['paletteMaskMap'][dds_dict['paletteMaskMap'].rfind("/"):]
-            if 'paletteMaskMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['diffuseMap'][dds_dict['diffuseMap'].rfind("/"):]
-            if 'diffuseMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['glossMap'][dds_dict['glossMap'].rfind("/"):]
-            if 'glossMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['rotationMap'][dds_dict['rotationMap'].rfind("/"):]
-            if 'rotationMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['ageMap'][dds_dict['ageMap'].rfind("/"):]
-            if 'ageMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['complexionMap'][dds_dict['complexionMap'].rfind("/"):]
-            if 'complexionMap' in dds_dict else None,
-            path + "/materials/" + self.slot_name + dds_dict['facepaintMap'][dds_dict['facepaintMap'].rfind("/"):]
-            if 'facepaintMap' in dds_dict else None
-        ]
-
-        # i = 0
-        for i, key in enumerate(self.mat_info['ddsPaths']):
-            self.mat_info['ddsPaths'][key] = textures[i]
-            # i += 1
+        for key in self.mat_info['ddsPaths']:
+            value = path + '/materials/skinMats/' + self.slot_name + dds_dict[key][dds_dict[key].rfind('/'):]
+            self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
         return "{\n" + "slotName: " + self.slot_name + "\n" + "}"
@@ -157,7 +98,7 @@ class skin_mats_obj():
 
 class skin_mats_list_obj():
     def __init__(self):
-        self.slot_name = "skinMats"
+        self.slot_name = 'skinMats'
         self.mats = []
 
     def __repr__(self):
@@ -180,7 +121,7 @@ class ToonLoader():
         skin_mats = None
         global eyeMatInfo
         for entry in data:
-            if entry['slotName'] == "skinMats":
+            if entry['slotName'] == 'skinMats':
                 to_push = skin_mats_list_obj()
                 for mat in entry['materialInfo']['mats']:
                     to_push.mats.append(skin_mats_obj(mat, self.filepath))
@@ -190,12 +131,12 @@ class ToonLoader():
             else:
                 try:
                     s = slot_obj(entry, self.filepath)
-                    if s.slot_name == "head":
-                        eyeMatInfo = slot_obj_mat_only(entry["materialInfo"]["eyeMatInfo"], self.filepath)
+                    if s.slot_name == 'head':
+                        eyeMatInfo = slot_obj_mat_only(entry['materialInfo']['eyeMatInfo'], self.filepath)
 
                     parsed_objs.append(s)
 
-                except KeyError:
+                except Exception:
                     print("AN ERROR HAS OCCURED!")
 
         self.slots = parsed_objs
@@ -212,334 +153,402 @@ class ToonLoader():
                 blender_obj = bpy.data.objects[name]
 
                 for i, mat_slot in enumerate(blender_obj.material_slots):
-                    derived = slot.mat_info["otherValues"]["derived"]
-                    if slot.slot_name == "head" and i == 1:
-                        derived = "Eye"
-                    # HACK: Zabrak Horns
-                    elif slot.slot_name == "hair" and "zabrak" in slot.mat_info['matPath'] and derived == "SkinB":
-                        derived = "HairC"
-
+                    derived = slot.mat_info['otherValues']['derived']
                     new_mat = None
-                    try:
-                        new_mat = bpy.data.materials[slot.slot_name + derived]
-                    except KeyError:
-                        mat = bpy.data.materials["Template: " + derived + " Shader"]
+                    mat_idx = '{:0>2}'.format(i + 1) if i + 1 < 10 else str(i + 1)
 
-                        uses_skin = False
+                    if slot.slot_name == 'head' and i == 1:
+                        derived = 'Eye'
+
+                    try:
+                        new_mat = bpy.data.materials[mat_idx + ' ' + slot.slot_name + derived]
+                    except KeyError:
+                        mat = bpy.data.materials['Template: ' + derived + ' Shader']
+
                         try:
-                            if slot.mat_info["otherValues"]["materialSkinIndex"] == i:
-                                mat = bpy.data.materials["Template: SkinB Shader"]
+                            if slot.mat_info['otherValues']['materialSkinIndex'] == i:
+                                mat = bpy.data.materials['Template: SkinB Shader']
                         except KeyError:
                             pass
 
                         new_mat = mat.copy()
-                        new_mat.name = "Eye Shader" if slot.slot_name == "head" and i == 1 else slot.slot_name + derived
+                        new_mat.name = mat_idx + ' ' + slot.slot_name + derived
 
-                        if derived == "SkinB":
-                            if slot.slot_name != "head":
-                                uses_skin = True
-
+                        if derived == 'SkinB':
                             skin_mat = next(
                                 (mat for mat in self.skin_mats.mats if mat.slot_name == slot.slot_name), None)
-                            vals_info = skin_mat.mat_info if uses_skin and slot.slot_name != "head" else slot.mat_info
-                            vals = vals_info["otherValues"]
+                            vals_info = skin_mat.mat_info if skin_mat is not None else slot.mat_info
+                            vals = vals_info['otherValues']
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "Palette1.X").default_value = float(vals["palette1"][0])
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "Palette1.Y").default_value = float(vals["palette1"][1])
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "Palette1.Z").default_value = float(vals["palette1"][2])
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "Palette1.W").default_value = float(vals["palette1"][3])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                'Palette1.X').default_value = float(vals['palette1'][0])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                'Palette1.Y').default_value = float(vals['palette1'][1])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                'Palette1.Z').default_value = float(vals['palette1'][2])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                'Palette1.W').default_value = float(vals['palette1'][3])
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Specular") \
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('Palette1 Specular') \
                                 .default_value = (
-                                    float(vals["palette1Specular"][0]),
-                                    float(vals["palette1Specular"][1]),
-                                    float(vals["palette1Specular"][2]),
+                                    float(vals['palette1Specular'][0]),
+                                    float(vals['palette1Specular'][1]),
+                                    float(vals['palette1Specular'][2]),
                                     1)
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get("Palette1 Metallic Specular") \
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('Palette1 Metallic Specular') \
                                 .default_value = (
-                                    float(vals["palette1MetallicSpecular"][0]),
-                                    float(vals["palette1MetallicSpecular"][1]),
-                                    float(vals["palette1MetallicSpecular"][2]),
+                                    float(vals['palette1MetallicSpecular'][0]),
+                                    float(vals['palette1MetallicSpecular'][1]),
+                                    float(vals['palette1MetallicSpecular'][2]),
                                     1)
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "FlushTone.X").default_value = float(vals["flush"][0])
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "FlushTone.Y").default_value = float(vals["flush"][1])
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "FlushTone.Z").default_value = float(vals["flush"][2])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('FlushTone.X') \
+                                .default_value = float(vals['flush'][0])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('FlushTone.Y') \
+                                .default_value = float(vals['flush'][1])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('FlushTone.Z') \
+                                .default_value = float(vals['flush'][2])
 
-                            new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                "FleshBrightness").default_value = float(vals["fleshBrightness"])
+                            new_mat.node_tree.nodes.get('SkinB Shader').inputs.get('FleshBrightness') \
+                                .default_value = float(vals['fleshBrightness'])
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
-                            i4 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMap"])
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image = i4
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
+                            except KeyError:
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
 
-                            i5 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMaskMap"])
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image = i5
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                            except KeyError:
+                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
 
-                            if uses_skin:
-                                l1 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "ComplexionMap Color").links[0]
+                            try:
+                                try:
+                                    i6 = bpy.data.images[vals_info['ddsPaths']['complexionMap'].split('/')[-1]]
+                                except KeyError:
+                                    i6 = bpy.data.images.load(vals_info['ddsPaths']['complexionMap'])
+                                new_mat.node_tree.nodes.get('ComplexionMap').image = i6
+                                new_mat.node_tree.nodes.get('ComplexionMap').image.colorspace_settings.name = 'Raw'
+                            except KeyError:
+                                l1 = new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'ComplexionMap Color').links[0]
                                 new_mat.node_tree.links.remove(l1)
-                                new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "ComplexionMap Color").default_value = (1, 1, 1, 1)
+                                new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'ComplexionMap Color').default_value = (1, 1, 1, 1)
 
-                                l2 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "FacepaintMap Color").links[0]
+                            try:
+                                try:
+                                    i7 = bpy.data.images[vals_info['ddsPaths']['facepaintMap'].split('/')[-1]]
+                                except KeyError:
+                                    i7 = bpy.data.images.load(vals_info['ddsPaths']['facepaintMap'])
+                                new_mat.node_tree.nodes.get('FacepaintMap').image = i7
+                                new_mat.node_tree.nodes.get('FacepaintMap').image.colorspace_settings.name = 'Raw'
+                            except KeyError:
+                                l2 = new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'FacepaintMap Color').links[0]
                                 new_mat.node_tree.links.remove(l2)
-                                new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "FacepaintMap Color").default_value = (1, 1, 1, 1)
+                                new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'FacepaintMap Color').default_value = (1, 1, 1, 1)
 
-                                l3 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "FacepaintMap Alpha").links[0]
+                                l3 = new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'FacepaintMap Alpha').links[0]
                                 new_mat.node_tree.links.remove(l3)
-                                new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                    "FacepaintMap Alpha").default_value = 0.0
-                            else:
-                                try:
-                                    i6 = bpy.data.images.load(vals_info["ddsPaths"]["complexionMap"])
-                                    new_mat.node_tree.nodes.get("ComplexionMap").image = i6
-                                    new_mat.node_tree.nodes.get("ComplexionMap").image.colorspace_settings.name = 'Raw'
+                                new_mat.node_tree.nodes.get('SkinB Shader').inputs.get(
+                                    'FacepaintMap Alpha').default_value = 0.0
 
-                                except KeyError:
-                                    l1 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "ComplexionMap Color").links[0]
-                                    new_mat.node_tree.links.remove(l1)
-                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "ComplexionMap Color").default_value = (1, 1, 1, 1)
-
-                                try:
-                                    i7 = bpy.data.images.load(vals_info["ddsPaths"]["facepaintMap"])
-                                    new_mat.node_tree.nodes.get("FacepaintMap").image = i7
-                                    new_mat.node_tree.nodes.get("FacepaintMap").image.colorspace_settings.name = 'Raw'
-
-                                except KeyError:
-                                    l2 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "FacepaintMap Color").links[0]
-                                    new_mat.node_tree.links.remove(l2)
-                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "FacepaintMap Color").default_value = (1, 1, 1, 1)
-
-                                    l3 = new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "FacepaintMap Alpha").links[0]
-                                    new_mat.node_tree.links.remove(l3)
-                                    new_mat.node_tree.nodes.get("SkinB Shader").inputs.get(
-                                        "FacepaintMap Alpha").default_value = 0.0
-
-                        elif derived == "HairC":
+                        elif derived == 'HairC':
                             vals_info = slot.mat_info
-                            vals = vals_info["otherValues"]
+                            vals = vals_info['otherValues']
 
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get(
-                                "Palette1.X").default_value = float(vals["palette1"][0])
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get(
-                                "Palette1.Y").default_value = float(vals["palette1"][1])
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get(
-                                "Palette1.Z").default_value = float(vals["palette1"][2])
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get(
-                                "Palette1.W").default_value = float(vals["palette1"][3])
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get(
+                                'Palette1.X').default_value = float(vals['palette1'][0])
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get(
+                                'Palette1.Y').default_value = float(vals['palette1'][1])
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get(
+                                'Palette1.Z').default_value = float(vals['palette1'][2])
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get(
+                                'Palette1.W').default_value = float(vals['palette1'][3])
 
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Specular") \
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get('Palette1 Specular') \
                                 .default_value = (
-                                    float(vals["palette1Specular"][0]),
-                                    float(vals["palette1Specular"][1]),
-                                    float(vals["palette1Specular"][2]),
+                                    float(vals['palette1Specular'][0]),
+                                    float(vals['palette1Specular'][1]),
+                                    float(vals['palette1Specular'][2]),
                                     1)
-                            new_mat.node_tree.nodes.get("HairC Shader").inputs.get("Palette1 Metallic Specular") \
+                            new_mat.node_tree.nodes.get('HairC Shader').inputs.get('Palette1 Metallic Specular') \
                                 .default_value = (
-                                    float(vals["palette1MetallicSpecular"][0]),
-                                    float(vals["palette1MetallicSpecular"][1]),
-                                    float(vals["palette1MetallicSpecular"][2]),
+                                    float(vals['palette1MetallicSpecular'][0]),
+                                    float(vals['palette1MetallicSpecular'][1]),
+                                    float(vals['palette1MetallicSpecular'][2]),
                                     1)
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
-                            i4 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMap"])
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image = i4
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
+                            except KeyError:
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
 
-                            i5 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMaskMap"])
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image = i5
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                            except KeyError:
+                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
 
-                        elif derived == "Eye":
+                        elif derived == 'Eye':
                             vals_info = eyeMatInfo.mat_info
-                            vals = vals_info["otherValues"]
+                            vals = vals_info['otherValues']
 
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get(
-                                "Palette1.X").default_value = float(vals["palette1"][0])
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get(
-                                "Palette1.Y").default_value = float(vals["palette1"][1])
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get(
-                                "Palette1.Z").default_value = float(vals["palette1"][2])
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get(
-                                "Palette1.W").default_value = float(vals["palette1"][3])
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get(
+                                'Palette1.X').default_value = float(vals['palette1'][0])
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get(
+                                'Palette1.Y').default_value = float(vals['palette1'][1])
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get(
+                                'Palette1.Z').default_value = float(vals['palette1'][2])
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get(
+                                'Palette1.W').default_value = float(vals['palette1'][3])
 
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Specular") \
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get('Palette1 Specular') \
                                 .default_value = (
-                                    float(vals["palette1Specular"][0]),
-                                    float(vals["palette1Specular"][1]),
-                                    float(vals["palette1Specular"][2]),
+                                    float(vals['palette1Specular'][0]),
+                                    float(vals['palette1Specular'][1]),
+                                    float(vals['palette1Specular'][2]),
                                     1)
-                            new_mat.node_tree.nodes.get("Eye Shader").inputs.get("Palette1 Metallic Specular") \
+                            new_mat.node_tree.nodes.get('Eye Shader').inputs.get('Palette1 Metallic Specular') \
                                 .default_value = (
-                                    float(vals["palette1MetallicSpecular"][0]),
-                                    float(vals["palette1MetallicSpecular"][1]),
-                                    float(vals["palette1MetallicSpecular"][2]),
+                                    float(vals['palette1MetallicSpecular'][0]),
+                                    float(vals['palette1MetallicSpecular'][1]),
+                                    float(vals['palette1MetallicSpecular'][2]),
                                     1)
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
-                            i4 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMap"])
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image = i4
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
+                            except KeyError:
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
 
-                            i5 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMaskMap"])
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image = i5
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                            except KeyError:
+                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
 
-                        elif derived == "Garment":
+                        elif derived == 'Garment':
                             vals_info = slot.mat_info
-                            vals = vals_info["otherValues"]
+                            vals = vals_info['otherValues']
 
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette1.X").default_value = float(vals["palette1"][0])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette1.Y").default_value = float(vals["palette1"][1])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette1.Z").default_value = float(vals["palette1"][2])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette1.W").default_value = float(vals["palette1"][3])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette1.X').default_value = float(vals['palette1'][0])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette1.Y').default_value = float(vals['palette1'][1])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette1.Z').default_value = float(vals['palette1'][2])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette1.W').default_value = float(vals['palette1'][3])
 
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Specular") \
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get('Palette1 Specular') \
                                 .default_value = (
-                                    float(vals["palette1Specular"][0]),
-                                    float(vals["palette1Specular"][1]),
-                                    float(vals["palette1Specular"][2]),
+                                    float(vals['palette1Specular'][0]),
+                                    float(vals['palette1Specular'][1]),
+                                    float(vals['palette1Specular'][2]),
                                     1)
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette1 Metallic Specular") \
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get('Palette1 Metallic Specular') \
                                 .default_value = (
-                                    float(vals["palette1MetallicSpecular"][0]),
-                                    float(vals["palette1MetallicSpecular"][1]),
-                                    float(vals["palette1MetallicSpecular"][2]),
-                                    1)
-
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette2.X").default_value = float(vals["palette2"][0])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette2.Y").default_value = float(vals["palette2"][1])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette2.Z").default_value = float(vals["palette2"][2])
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get(
-                                "Palette2.W").default_value = float(vals["palette2"][3])
-
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Specular") \
-                                .default_value = (
-                                    float(vals["palette2Specular"][0]),
-                                    float(vals["palette2Specular"][1]),
-                                    float(vals["palette2Specular"][2]),
-                                    1)
-                            new_mat.node_tree.nodes.get("Garment Shader").inputs.get("Palette2 Metallic Specular") \
-                                .default_value = (
-                                    float(vals["palette2MetallicSpecular"][0]),
-                                    float(vals["palette2MetallicSpecular"][1]),
-                                    float(vals["palette2MetallicSpecular"][2]),
+                                    float(vals['palette1MetallicSpecular'][0]),
+                                    float(vals['palette1MetallicSpecular'][1]),
+                                    float(vals['palette1MetallicSpecular'][2]),
                                     1)
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette2.X').default_value = float(vals['palette2'][0])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette2.Y').default_value = float(vals['palette2'][1])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette2.Z').default_value = float(vals['palette2'][2])
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get(
+                                'Palette2.W').default_value = float(vals['palette2'][3])
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get('Palette2 Specular') \
+                                .default_value = (
+                                    float(vals['palette2Specular'][0]),
+                                    float(vals['palette2Specular'][1]),
+                                    float(vals['palette2Specular'][2]),
+                                    1)
+                            new_mat.node_tree.nodes.get('Garment Shader').inputs.get('Palette2 Metallic Specular') \
+                                .default_value = (
+                                    float(vals['palette2MetallicSpecular'][0]),
+                                    float(vals['palette2MetallicSpecular'][1]),
+                                    float(vals['palette2MetallicSpecular'][2]),
+                                    1)
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i4 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMap"])
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image = i4
-                            new_mat.node_tree.nodes.get("_h PaletteMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i5 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMaskMap"])
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image = i5
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
-                        elif derived == "Creature" or derived == "HighQualityCharacter":
+                            try:
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
+                            except KeyError:
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
+
+                            try:
+                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                            except KeyError:
+                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
+
+                        elif derived == 'Creature' or derived == 'HighQualityCharacter':
                             vals_info = slot.mat_info
-                            vals = vals_info["otherValues"]
+                            vals = vals_info['otherValues']
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
-                            i4 = bpy.data.images.load(vals_info["ddsPaths"]["paletteMaskMap"])
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image = i4
-                            new_mat.node_tree.nodes.get("_m PaletteMaskMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
+                            except KeyError:
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
+                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
 
-                        elif derived == "Uber":
+                            try:
+                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                            except KeyError:
+                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
+
+                        elif derived == 'Uber':
                             vals_info = slot.mat_info
-                            vals = vals_info["otherValues"]
+                            vals = vals_info['otherValues']
 
-                            i1 = bpy.data.images.load(vals_info["ddsPaths"]["diffuseMap"])
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image = i1
-                            new_mat.node_tree.nodes.get("_d DiffuseMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i1 = bpy.data.images[vals_info['ddsPaths']['diffuseMap'].split('/')[-1]]
+                            except KeyError:
+                                i1 = bpy.data.images.load(vals_info['ddsPaths']['diffuseMap'])
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image = i1
+                            new_mat.node_tree.nodes.get('_d DiffuseMap').image.colorspace_settings.name = 'Raw'
 
-                            i2 = bpy.data.images.load(vals_info["ddsPaths"]["rotationMap"])
-                            new_mat.node_tree.nodes.get("_n RotationMap").image = i2
-                            new_mat.node_tree.nodes.get("_n RotationMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i2 = bpy.data.images[vals_info['ddsPaths']['rotationMap'].split('/')[-1]]
+                            except KeyError:
+                                i2 = bpy.data.images.load(vals_info['ddsPaths']['rotationMap'])
+                            new_mat.node_tree.nodes.get('_n RotationMap').image = i2
+                            new_mat.node_tree.nodes.get('_n RotationMap').image.colorspace_settings.name = 'Raw'
 
-                            i3 = bpy.data.images.load(vals_info["ddsPaths"]["glossMap"])
-                            new_mat.node_tree.nodes.get("_s GlossMap").image = i3
-                            new_mat.node_tree.nodes.get("_s GlossMap").image.colorspace_settings.name = 'Raw'
+                            try:
+                                i3 = bpy.data.images[vals_info['ddsPaths']['glossMap'].split('/')[-1]]
+                            except KeyError:
+                                i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
+                            new_mat.node_tree.nodes.get('_s GlossMap').image = i3
+                            new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
                     mat_slot.material = new_mat
 
