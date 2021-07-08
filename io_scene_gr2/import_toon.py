@@ -123,15 +123,16 @@ class ToonLoader():
         for entry in data:
             if entry['slotName'] == 'skinMats':
                 to_push = skin_mats_list_obj()
+
                 for mat in entry['materialInfo']['mats']:
                     to_push.mats.append(skin_mats_obj(mat, self.filepath))
 
                 skin_mats = to_push
-
             else:
                 try:
                     s = slot_obj(entry, self.filepath)
-                    if s.slot_name == 'head':
+
+                    if any(x in s.slot_name for x in ['head', 'creature']):
                         eyeMatInfo = slot_obj_mat_only(entry['materialInfo']['eyeMatInfo'], self.filepath)
 
                     parsed_objs.append(s)
@@ -154,7 +155,7 @@ class ToonLoader():
 
                 for i, mat_slot in enumerate(blender_obj.material_slots):
                     derived = slot.mat_info['otherValues']['derived']
-                    derived = 'Eye' if slot.slot_name == 'head' and i == 1 else derived
+                    derived = 'Eye' if any(x in slot.slot_name for x in ['head', 'creature']) and i == 1 else derived
                     derived = 'Creature' if derived == 'HighQualityCharacter' else derived
                     new_mat = None
                     mat_idx = '{:0>2}'.format(i + 1) if i + 1 < 10 else str(i + 1)
@@ -511,10 +512,10 @@ class ToonLoader():
                             new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
 
                             try:
-                                i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
+                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
                             except KeyError:
-                                i5 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
-                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
+                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMaskMap'])
+                            new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i4
                             new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
 
                         elif derived == 'Uber':
