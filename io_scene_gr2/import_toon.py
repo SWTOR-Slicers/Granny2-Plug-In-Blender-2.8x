@@ -154,11 +154,10 @@ class ToonLoader():
 
                 for i, mat_slot in enumerate(blender_obj.material_slots):
                     derived = slot.mat_info['otherValues']['derived']
+                    derived = 'Eye' if slot.slot_name == 'head' and i == 1 else derived
+                    derived = 'Creature' if derived == 'HighQualityCharacter' else derived
                     new_mat = None
                     mat_idx = '{:0>2}'.format(i + 1) if i + 1 < 10 else str(i + 1)
-
-                    if slot.slot_name == 'head' and i == 1:
-                        derived = 'Eye'
 
                     try:
                         new_mat = bpy.data.materials[mat_idx + ' ' + slot.slot_name + derived]
@@ -486,7 +485,7 @@ class ToonLoader():
                             new_mat.node_tree.nodes.get('_m PaletteMaskMap').image = i5
                             new_mat.node_tree.nodes.get('_m PaletteMaskMap').image.colorspace_settings.name = 'Raw'
 
-                        elif derived == 'Creature' or derived == 'HighQualityCharacter':
+                        elif derived == 'Creature':
                             vals_info = slot.mat_info
                             vals = vals_info['otherValues']
 
@@ -510,13 +509,6 @@ class ToonLoader():
                                 i3 = bpy.data.images.load(vals_info['ddsPaths']['glossMap'])
                             new_mat.node_tree.nodes.get('_s GlossMap').image = i3
                             new_mat.node_tree.nodes.get('_s GlossMap').image.colorspace_settings.name = 'Raw'
-
-                            try:
-                                i4 = bpy.data.images[vals_info['ddsPaths']['paletteMap'].split('/')[-1]]
-                            except KeyError:
-                                i4 = bpy.data.images.load(vals_info['ddsPaths']['paletteMap'])
-                            new_mat.node_tree.nodes.get('_h PaletteMap').image = i4
-                            new_mat.node_tree.nodes.get('_h PaletteMap').image.colorspace_settings.name = 'Raw'
 
                             try:
                                 i5 = bpy.data.images[vals_info['ddsPaths']['paletteMaskMap'].split('/')[-1]]
