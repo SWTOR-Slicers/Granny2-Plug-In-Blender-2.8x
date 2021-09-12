@@ -6,7 +6,7 @@
 
 This add-on provides Blender with several import/export features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets:
 
-* Imports and exports SWTOR's specific flavor of the .gr2 3D model format, including rigging data (vertex groups, weights) and armatures ("skeletons"). Can import multiple files at once. Creates template SWTOR materials on import.
+* Imports and exports SWTOR's specific flavor of the .gr2 3D model format, including rigging data (vertex groups, weights) and armatures ("skeletons"). **It can import multiple files at once**. Creates template SWTOR materials on import.
 * Imports and applies .jba animation files. Works often enough to be worthy.
 * Imports .clo files for physics-based bones (clothes, hair, Twi'lek lekku, etc.). **Experimental**.
 * Imports .json files describing all the assets and data necessary to auto-assemble and auto-texture a Player Character or a NPC (please check our guides in this Github's [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/other-repositories/gr2-plugin/gr2_addon_010.png)).
