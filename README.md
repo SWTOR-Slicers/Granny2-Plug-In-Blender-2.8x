@@ -1,6 +1,14 @@
 # SWTOR Granny2 (.gr2) Import/Export add-on for both Blender 2.8x and 2.9x
 
-## Now compatible with Blender 2.93
+## WARNING: there is an incompatibility with Blender's recent 3.0 release. Old projects work OK but new object imports produce incorrectly built Materials.
+
+Blender has changed the Principled BSDF shader's Subsurface Scattering algorithm defaults from "Christensen-Burley" to "Random Walk" (see the second menu in such shader node). That introduces a few new parameters in the shader that change their previous order and break the way the nodegroup's internal wiring worked. We need to solve that for it to work again, while making sure that it keeps on being compatible with 2.8.
+
+Again, there is no problem with importing meshes or assembling characters in Blender 2.8 and opening the resulting project in Blender 2.9: Blender keeps the old SSS setting so everything works OK.
+
+As soon as we update the add-on we'll announce it in these pages and in the Slicers GUI Discord server.
+
+---
 
 ![](https://github.com/SWTOR-Slicers/WikiPedia/blob/main/images/other-repositories/gr2-plugin/gr2_addon_010.png)
 
