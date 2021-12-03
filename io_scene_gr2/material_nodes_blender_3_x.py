@@ -735,46 +735,53 @@ class CommonGroups():
 
         # Add node group's Input node
         GroupInput = NodeGroup.nodes.new(type='NodeGroupInput')
-        GroupInput.location = (-329, -159)
+        GroupInput.location = (-400, -120)
         NodeGroup.inputs.new(type='NodeSocketColor', name='RotationMap Color')
         NodeGroup.inputs.new(type='NodeSocketFloat', name='RotationMap Alpha')
 
         # Add a Separate XYZ node
         SepXYZ = NodeGroup.nodes.new(type='ShaderNodeSeparateXYZ')
         SepXYZ.name = "Separate XYZ"
-        SepXYZ.location = (-149, -76)
+        SepXYZ.location = (-220, 0)
 
         # Add a Subtract math node
         Sub = NodeGroup.nodes.new(type='ShaderNodeMath')
         Sub.name = "Subtract"
-        Sub.location = (63, 65)
+        Sub.location = (100, 140)
         Sub.operation = 'SUBTRACT'
         Sub.inputs[0].default_value = 1.0
+
+        # Add a Subtract math node
+        Sub2 = NodeGroup.nodes.new(type='ShaderNodeMath')
+        Sub2.name = "Subtract"
+        Sub2.location = (0, -100)
+        Sub2.operation = 'SUBTRACT'
+        Sub2.inputs[0].default_value = 1.0
 
         # Add a Combine XYZ node
         ComXYZ = NodeGroup.nodes.new(type='ShaderNodeCombineXYZ')
         ComXYZ.name = "Combine XYZ"
-        ComXYZ.location = (63, -103)
+        ComXYZ.location = (200, -120)
         ComXYZ.inputs[2].default_value = 1.0
 
         # Add a Minimum math node
         Min = NodeGroup.nodes.new(type='ShaderNodeMath')
         Min.name = "Minimum"
-        Min.location = (251, 99)
+        Min.location = (300, 140)
         Min.operation = 'MINIMUM'
         Min.inputs[0].default_value = 1.0
 
         # Add a Normal Map node
         Norm = NodeGroup.nodes.new(type='ShaderNodeNormalMap')
         Norm.name = "Normal Map"
-        Norm.location = (251, -65)
+        Norm.location = (400, -100)
         Norm.space = 'TANGENT'
         Norm.inputs[0].default_value = 1.0
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
-        GroupOutput.location = (508, 95)
-        NodeGroup.outputs.new(type='NodeSocketColor', name='Emission')
+        GroupOutput.location = (600, 0)
+        NodeGroup.outputs.new(type='NodeSocketColor', name='Emission Strength')
         NodeGroup.outputs.new(type='NodeSocketFloat', name='Alpha')
         NodeGroup.outputs.new(type='NodeSocketVector', name='Normal')
 
@@ -782,7 +789,8 @@ class CommonGroups():
         NodeGroup.links.new(GroupInput.outputs[0], SepXYZ.inputs[0])
         NodeGroup.links.new(GroupInput.outputs[1], ComXYZ.inputs[0])
         NodeGroup.links.new(SepXYZ.outputs[0], Sub.inputs[1])
-        NodeGroup.links.new(SepXYZ.outputs[1], ComXYZ.inputs[1])
+        NodeGroup.links.new(SepXYZ.outputs[1], Sub2.inputs[1])
+        NodeGroup.links.new(Sub2.outputs[0], ComXYZ.inputs[1])
         NodeGroup.links.new(SepXYZ.outputs[2], GroupOutput.inputs[0])
         NodeGroup.links.new(Sub.outputs[0], Min.inputs[1])
         NodeGroup.links.new(ComXYZ.outputs[0], Norm.inputs[1])
@@ -878,11 +886,11 @@ class CommonGroups():
 
         # Add AdjustLightness node group
         if 'AdjustSkinLightness' not in bpy.data.node_groups:
-            CommonGroups.AdjustLightness()
+            CommonGroups.AdjustSkinLightness()
         Lit = NodeGroup.nodes.new(type='ShaderNodeGroup')
-        Lit.name = "Adjust Lightness"
+        Lit.name = "Adjust Skin Lightness"
         Lit.location = (-113, -134)
-        Lit.node_tree = bpy.data.node_groups['AdjustLightness']
+        Lit.node_tree = bpy.data.node_groups['AdjustSkinLightness']
 
         # Add HSLtoRGB node group
         if 'HSLtoRGB' not in bpy.data.node_groups:
@@ -1079,8 +1087,10 @@ class CreatureShader():
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
         self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.alpha_threshold = 0.5
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -1180,7 +1190,7 @@ class CreatureShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (361, 264)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -1200,13 +1210,14 @@ class CreatureShader():
         NodeGroup.links.new(MulAdd.outputs[0], Power.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul1.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul2.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
         NodeGroup.links.new(Gamma.outputs[0], Principled.inputs[0])
-        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[4])
-        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[6])
-        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(Gamma.outputs[0], Principled.inputs[19])
+        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[8])
+        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material
@@ -1242,8 +1253,10 @@ class EyeShader():
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
         self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.alpha_threshold = 0.5
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -1381,7 +1394,7 @@ class EyeShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (482, 181)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -1410,18 +1423,19 @@ class EyeShader():
         NodeGroup.links.new(ExpHSL.outputs[3], Palette.inputs[3])
         NodeGroup.links.new(Palette.outputs[0], Lerp.inputs[2])
         NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[0])
+        NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[19])
         NodeGroup.links.new(Spec.outputs[0], Mul1.inputs[0])
         NodeGroup.links.new(Spec.outputs[1], Mul2.inputs[0])
         NodeGroup.links.new(NdotL.outputs[0], Power.inputs[0])
         NodeGroup.links.new(MulAdd.outputs[0], Power.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul1.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul2.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
-        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[4])
-        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[6])
-        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
+        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[8])
+        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material
@@ -1459,8 +1473,10 @@ class GarmentShader():
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
         self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.alpha_threshold = 0.5
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -1630,7 +1646,7 @@ class GarmentShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (592, 289)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -1672,6 +1688,7 @@ class GarmentShader():
         NodeGroup.links.new(P1.outputs[0], Lerp.inputs[3])
         NodeGroup.links.new(P2.outputs[0], Lerp.inputs[2])
         NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[0])
+        NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[19])
         NodeGroup.links.new(Logic1.outputs[0], Spec.inputs[3])
         NodeGroup.links.new(Logic2.outputs[0], Spec.inputs[2])
         NodeGroup.links.new(Spec.outputs[0], Mul1.inputs[0])
@@ -1680,12 +1697,12 @@ class GarmentShader():
         NodeGroup.links.new(MulAdd.outputs[0], Power.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul1.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul2.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
-        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[4])
-        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[6])
-        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
+        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[8])
+        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material
@@ -1723,8 +1740,10 @@ class HairCShader():
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
         self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.alpha_threshold = 0.5
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -1862,7 +1881,7 @@ class HairCShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (482, 181)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -1891,18 +1910,19 @@ class HairCShader():
         NodeGroup.links.new(ExpHSL.outputs[3], Palette.inputs[3])
         NodeGroup.links.new(Palette.outputs[0], Lerp.inputs[2])
         NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[0])
+        NodeGroup.links.new(Lerp.outputs[0], Principled.inputs[19])
         NodeGroup.links.new(Spec.outputs[0], Mul1.inputs[0])
         NodeGroup.links.new(Spec.outputs[1], Mul2.inputs[0])
         NodeGroup.links.new(NdotL.outputs[0], Power.inputs[0])
         NodeGroup.links.new(MulAdd.outputs[0], Power.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul1.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul2.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
-        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[4])
-        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[6])
-        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
+        NodeGroup.links.new(Mul1.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Mul2.outputs[0], Principled.inputs[8])
+        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material
@@ -1940,8 +1960,10 @@ class SkinBShader():
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
         self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.alpha_threshold = 0.5
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -2141,7 +2163,7 @@ class SkinBShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (881, 139)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -2184,18 +2206,19 @@ class SkinBShader():
         NodeGroup.links.new(Mul3.outputs[0], Mul4.inputs[0])
         NodeGroup.links.new(Mul4.outputs[0], Add.inputs[1])
         NodeGroup.links.new(Add.outputs[0], Principled.inputs[0])
+        NodeGroup.links.new(Add.outputs[0], Principled.inputs[19])
         NodeGroup.links.new(Spec.outputs[0], Mul5.inputs[0])
         NodeGroup.links.new(Spec.outputs[1], Mul6.inputs[0])
         NodeGroup.links.new(NdotL.outputs[0], Power.inputs[0])
         NodeGroup.links.new(MulAdd.outputs[0], Power.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul5.inputs[1])
         NodeGroup.links.new(Power.outputs[0], Mul6.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
-        NodeGroup.links.new(Mul5.outputs[0], Principled.inputs[4])
-        NodeGroup.links.new(Mul6.outputs[0], Principled.inputs[6])
-        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
+        NodeGroup.links.new(Mul5.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Mul6.outputs[0], Principled.inputs[8])
+        NodeGroup.links.new(RotMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material
@@ -2235,7 +2258,10 @@ class UberShader():
 
     def __init__(self, material):
         self.material = bpy.data.materials.new(name=material)
+        self.material.blend_method = 'CLIP'
+        self.material.shadow_method = 'CLIP'
         self.material.use_nodes = True
+        self.material.use_fake_user = True
         self.material.node_tree.nodes.remove(self.material.node_tree.nodes['Principled BSDF'])
 
     def TextureNodes(self):
@@ -2318,7 +2344,7 @@ class UberShader():
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
         Principled.name = "Principled BSDF"
         Principled.location = (278, 334)
-        Principled.inputs[7].default_value = 0.673
+        Principled.inputs[9].default_value = 0.673
 
         # Add node group's Output node
         GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
@@ -2328,19 +2354,20 @@ class UberShader():
         # Link nodes together
         NodeGroup.links.new(GroupInput.outputs[0], Gamma.inputs[0])
         NodeGroup.links.new(Gamma.outputs[0], Principled.inputs[0])
+        NodeGroup.links.new(Gamma.outputs[0], Principled.inputs[19])
         NodeGroup.links.new(GroupInput.outputs[1], RotationMap.inputs[0])
         NodeGroup.links.new(GroupInput.outputs[2], RotationMap.inputs[1])
-        NodeGroup.links.new(RotationMap.outputs[0], Principled.inputs[17])
-        NodeGroup.links.new(RotationMap.outputs[1], Principled.inputs[18])
-        NodeGroup.links.new(RotationMap.outputs[2], Principled.inputs[19])
+        NodeGroup.links.new(RotationMap.outputs[0], Principled.inputs[20])
+        NodeGroup.links.new(RotationMap.outputs[1], Principled.inputs[21])
+        NodeGroup.links.new(RotationMap.outputs[2], Principled.inputs[22])
         NodeGroup.links.new(GroupInput.outputs[3], RGBtoBW.inputs[0])
         NodeGroup.links.new(GroupInput.outputs[4], MultiplyAdd.inputs[0])
         NodeGroup.links.new(NdotL.outputs[0], Power.inputs[0])
         NodeGroup.links.new(MultiplyAdd.outputs[0], Power.inputs[1])
-        NodeGroup.links.new(Power.outputs[0], Principled.inputs[5])
+        NodeGroup.links.new(Power.outputs[0], Principled.inputs[7])
         NodeGroup.links.new(Power.outputs[0], Multiply.inputs[1])
         NodeGroup.links.new(RGBtoBW.outputs[0], Multiply.inputs[0])
-        NodeGroup.links.new(Multiply.outputs[0], Principled.inputs[6])
+        NodeGroup.links.new(Multiply.outputs[0], Principled.inputs[8])
         NodeGroup.links.new(Principled.outputs[0], GroupOutput.inputs[0])
 
         # Link the node group to the material

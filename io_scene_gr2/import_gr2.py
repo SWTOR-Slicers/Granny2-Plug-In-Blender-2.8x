@@ -26,6 +26,7 @@ from .utils import (
     unpack
 )
 
+# Blender 2.8x
 if bpy.app.version < (2, 90, 0):
     from .material_nodes_blender_2_8x import (
         CreatureShader,
@@ -35,8 +36,19 @@ if bpy.app.version < (2, 90, 0):
         SkinBShader,
         UberShader
     )
-else:
+# Blender 2.9x
+elif bpy.app.version < (3, 0, 0):
     from .material_nodes_blender_2_9x import (
+        CreatureShader,
+        EyeShader,
+        GarmentShader,
+        HairCShader,
+        SkinBShader,
+        UberShader
+    )
+# Blender 3.x
+else:
+    from .material_nodes_blender_3_x import (
         CreatureShader,
         EyeShader,
         GarmentShader,
