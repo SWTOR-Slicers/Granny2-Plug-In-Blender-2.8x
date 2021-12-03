@@ -15,7 +15,7 @@ This add-on provides Blender with several import/export features for **Star Wars
 
 The add-on is aware of the version of Blender it is running on, and will create the template materials accordingly.
 
-* Blender 3.0 has introduced changes that required catering to those in the add-on, hence this last release.
+* Blender 3.0 has introduced changes that required catering to those in the add-on, hence this latest release.
 
 * There is no problem opening Blender 2.9x projects in Blender 3.0: everything works OK.
 
