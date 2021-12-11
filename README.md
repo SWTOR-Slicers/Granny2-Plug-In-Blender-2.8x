@@ -2,7 +2,7 @@
 
 ### NOW COMPATIBLE WITH BLENDER 3.0. Please download and install this new version of the Add-on.
 
-![](https://github.com/SWTOR-Slicers/WikiPedia/blob/main/images/gr2_addon_010.png)
+![](https://github.com/SWTOR-Slicers/WikiPedia/blob/main/images/readme_gr2_addon_010.png)
 
 This add-on provides Blender with several import/export features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets:
 
