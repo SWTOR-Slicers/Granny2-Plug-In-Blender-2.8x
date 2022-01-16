@@ -751,13 +751,6 @@ class CommonGroups():
         Sub.operation = 'SUBTRACT'
         Sub.inputs[0].default_value = 1.0
 
-        # Add a Subtract math node
-        Sub2 = NodeGroup.nodes.new(type='ShaderNodeMath')
-        Sub2.name = "Subtract"
-        Sub2.location = (0, -100)
-        Sub2.operation = 'SUBTRACT'
-        Sub2.inputs[0].default_value = 1.0
-
         # Add a Combine XYZ node
         ComXYZ = NodeGroup.nodes.new(type='ShaderNodeCombineXYZ')
         ComXYZ.name = "Combine XYZ"
@@ -789,11 +782,95 @@ class CommonGroups():
         NodeGroup.links.new(GroupInput.outputs[0], SepXYZ.inputs[0])
         NodeGroup.links.new(GroupInput.outputs[1], ComXYZ.inputs[0])
         NodeGroup.links.new(SepXYZ.outputs[0], Sub.inputs[1])
-        NodeGroup.links.new(SepXYZ.outputs[1], Sub2.inputs[1])
-        NodeGroup.links.new(Sub2.outputs[0], ComXYZ.inputs[1])
+        NodeGroup.links.new(SepXYZ.outputs[1], ComXYZ.inputs[1])
         NodeGroup.links.new(SepXYZ.outputs[2], GroupOutput.inputs[0])
         NodeGroup.links.new(Sub.outputs[0], Min.inputs[1])
         NodeGroup.links.new(ComXYZ.outputs[0], Norm.inputs[1])
+        NodeGroup.links.new(Min.outputs[0], GroupOutput.inputs[1])
+        NodeGroup.links.new(Norm.outputs[0], GroupOutput.inputs[2])
+
+    def SkinRotationMap():
+        # Create the node group
+        NodeGroup = bpy.data.node_groups.new(name='SkinRotationMap', type='ShaderNodeTree')
+
+        # Add node group's Input node
+        GroupInput = NodeGroup.nodes.new(type='NodeGroupInput')
+        GroupInput.location = (-660, 80)  # TODO:
+        NodeGroup.inputs.new(type='NodeSocketColor', name='RotationMap Color')
+        NodeGroup.inputs.new(type='NodeSocketFloat', name='RotationMap Alpha')
+        NodeGroup.inputs.new(type='NodeSocketColor', name='AgeMap Color')
+        NodeGroup.inputs.new(type='NodeSocketFloat', name='AgeMap Alpha')
+
+        # Add a Separate XYZ node
+        RotSepXYZ = NodeGroup.nodes.new(type='ShaderNodeSeparateXYZ')
+        RotSepXYZ.name = "Separate Rotation XYZ"
+        RotSepXYZ.location = (-440, 180)  # TODO:
+
+        # Add a Separate XYZ node
+        AgeSepXYZ = NodeGroup.nodes.new(type='ShaderNodeSeparateXYZ')
+        AgeSepXYZ.name = "Separate Age XYZ"
+        AgeSepXYZ.location = (-440, 0)  # TODO:
+
+        # Add a Combine XYZ node
+        RotComXYZ = NodeGroup.nodes.new(type='ShaderNodeCombineXYZ')
+        RotComXYZ.name = "Combine Rotation XYZ"
+        RotComXYZ.location = (-220, 180)  # TODO:
+        RotComXYZ.inputs[2].default_value = 1.0
+
+        # Add a Combine XYZ node
+        AgeComXYZ = NodeGroup.nodes.new(type='ShaderNodeCombineXYZ')
+        AgeComXYZ.name = "Combine Age XYZ"
+        AgeComXYZ.location = (-220, 0)  # TODO:
+        AgeComXYZ.inputs[2].default_value = 1.0
+
+        # Add a Subtract math node
+        Sub = NodeGroup.nodes.new(type='ShaderNodeMath')
+        Sub.name = "Subtract"
+        Sub.location = (0, 180)  # TODO:
+        Sub.operation = 'SUBTRACT'
+        Sub.inputs[0].default_value = 1.0
+
+        # Add a Mix RGB node
+        Mix = NodeGroup.nodes.new(type='ShaderNodeMixRGB')
+        Mix.name = "Mix RGB"
+        Mix.location = (0, 0)  # TODO:
+        Mix.blend_type = 'MIX'
+
+        # Add a Minimum math node
+        Min = NodeGroup.nodes.new(type='ShaderNodeMath')
+        Min.name = "Minimum"
+        Min.location = (220, 180)  # TODO:
+        Min.operation = 'MINIMUM'
+        Min.inputs[0].default_value = 1.0
+
+        # Add a Normal Map node
+        Norm = NodeGroup.nodes.new(type='ShaderNodeNormalMap')
+        Norm.name = "Normal Map"
+        Norm.location = (220, 0)  # TODO:
+        Norm.space = 'TANGENT'
+        Norm.inputs[0].default_value = 1.0
+
+        # Add node group's Output node
+        GroupOutput = NodeGroup.nodes.new(type='NodeGroupOutput')
+        GroupOutput.location = (440, 80)  # TODO:
+        NodeGroup.outputs.new(type='NodeSocketColor', name='Emission Strength')
+        NodeGroup.outputs.new(type='NodeSocketFloat', name='Alpha')
+        NodeGroup.outputs.new(type='NodeSocketVector', name='Normal')
+
+        # Link nodes together
+        NodeGroup.links.new(GroupInput.outputs[0], RotSepXYZ.inputs[0])
+        NodeGroup.links.new(GroupInput.outputs[1], RotComXYZ.inputs[0])
+        NodeGroup.links.new(GroupInput.outputs[2], AgeSepXYZ.inputs[0])
+        NodeGroup.links.new(GroupInput.outputs[3], AgeComXYZ.inputs[0])
+        NodeGroup.links.new(RotSepXYZ.outputs[0], Sub.inputs[1])
+        NodeGroup.links.new(RotSepXYZ.outputs[1], RotComXYZ.inputs[1])
+        NodeGroup.links.new(RotSepXYZ.outputs[2], GroupOutput.inputs[0])
+        NodeGroup.links.new(AgeSepXYZ.outputs[1], AgeComXYZ.inputs[1])
+        NodeGroup.links.new(AgeSepXYZ.outputs[2], Mix.inputs[0])
+        NodeGroup.links.new(RotComXYZ.outputs[0], Mix.inputs[1])
+        NodeGroup.links.new(AgeComXYZ.outputs[0], Mix.inputs[2])
+        NodeGroup.links.new(Sub.outputs[0], Min.inputs[1])
+        NodeGroup.links.new(Mix.outputs[0], Norm.inputs[1])
         NodeGroup.links.new(Min.outputs[0], GroupOutput.inputs[1])
         NodeGroup.links.new(Norm.outputs[0], GroupOutput.inputs[2])
 
@@ -2031,6 +2108,11 @@ class SkinBShader():
         _f.name = _f.label = "FacepaintMap"
         _f.location = (-858, -144)
 
+        # Age/Scar
+        _a = self.material.node_tree.nodes.new(type='ShaderNodeTexImage')
+        _a.name = _a.label = "AgeMap/ScarMap"
+        _a.location = (-858, -409)
+
     def SkinB(self):
         # Create the node group
         NodeGroup = bpy.data.node_groups.new(name='SkinB Shader', type='ShaderNodeTree')
@@ -2075,6 +2157,10 @@ class SkinBShader():
         NodeGroup.inputs[19].default_value = 0.0
         NodeGroup.inputs.new(type='NodeSocketFloat', name='FlushTone.Z')
         NodeGroup.inputs[20].default_value = 0.0
+        NodeGroup.inputs.new(type='NodeSocketColor', name='AgeMap/ScarMap Color')
+        NodeGroup.inputs[21].default_value = (0.0, 0.0, 0.0, 1.0)
+        NodeGroup.inputs.new(type='NodeSocketFloat', name='AgeMap/ScarMap Alpha')
+        NodeGroup.inputs[22].default_value = 0.0
 
         # Add a Separate XYZ node
         SepXYZ = NodeGroup.nodes.new(type='ShaderNodeSeparateXYZ')
@@ -2187,12 +2273,12 @@ class SkinBShader():
         Mul7.operation = 'MULTIPLY'
 
         # Add RotationMap node group
-        if 'RotationMap' not in bpy.data.node_groups:
-            CommonGroups.RotationMap()
+        if 'SkinRotationMap' not in bpy.data.node_groups:
+            CommonGroups.SkinRotationMap()
         RotMap = NodeGroup.nodes.new(type='ShaderNodeGroup')
-        RotMap.name = "RotationMap"
+        RotMap.name = "SkinRotationMap"
         RotMap.location = (590, -377)
-        RotMap.node_tree = bpy.data.node_groups['RotationMap']
+        RotMap.node_tree = bpy.data.node_groups['SkinRotationMap']
 
         # Add Principled BSDF shader node
         Principled = NodeGroup.nodes.new(type='ShaderNodeBsdfPrincipled')
@@ -2228,6 +2314,8 @@ class SkinBShader():
         NodeGroup.links.new(GroupInput.outputs[18], ComXYZ.inputs[0])
         NodeGroup.links.new(GroupInput.outputs[19], ComXYZ.inputs[1])
         NodeGroup.links.new(GroupInput.outputs[20], ComXYZ.inputs[2])
+        NodeGroup.links.new(GroupInput.outputs[21], RotMap.inputs[2])
+        NodeGroup.links.new(GroupInput.outputs[22], RotMap.inputs[3])
         NodeGroup.links.new(SepXYZ.outputs[0], Mul1.inputs[1])
         NodeGroup.links.new(SepXYZ.outputs[1], Palette.inputs[0])
         NodeGroup.links.new(SepXYZ.outputs[2], Palette.inputs[1])
@@ -2280,6 +2368,8 @@ class SkinBShader():
         links.new(nodes['ComplexionMap'].outputs[0], nodes['SkinB Shader'].inputs[14])
         links.new(nodes['FacepaintMap'].outputs[0], nodes['SkinB Shader'].inputs[15])
         links.new(nodes['FacepaintMap'].outputs[1], nodes['SkinB Shader'].inputs[16])
+        links.new(nodes['AgeMap/ScarMap'].outputs[0], nodes['SkinB Shader'].inputs[21])
+        links.new(nodes['AgeMap/ScarMap'].outputs[1], nodes['SkinB Shader'].inputs[22])
 
         # Link the SkinB Shader node group to the Material Output node
         links.new(nodes['SkinB Shader'].outputs[0], nodes['Material Output'].inputs[0])
