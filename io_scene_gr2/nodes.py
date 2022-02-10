@@ -9,7 +9,7 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     PointerProperty)
-from bpy.types import Image, Operator, ShaderNodeCustomGroup
+from bpy.types import Image, Operator, ShaderNodeCustomGroup, UILayout
 from nodeitems_utils import NodeCategory, NodeItem
 
 
@@ -244,7 +244,8 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
             ('GARMENT', "Garment", ""),
             ('HAIRC', "HairC", ""),
             ('SKINB', "SkinB", ""),
-            ('UBER', "Uber", "")],
+            ('UBER', "Uber", "")
+        ],
         name="Derived",
         options={'HIDDEN'},
         update=update_derived)
@@ -254,7 +255,8 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
         items=[
             ('BLEND', "Blend", ""),
             ('CLIP', "Test", ""),
-            ('OPAQUE', "None", "")],
+            ('OPAQUE', "None", "")
+        ],
         name="Alpha Mode",
         options={'HIDDEN'},
         update=update_alpha_mode)
@@ -484,7 +486,7 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
         self.width = 240.0
 
     # Additional buttons displayed on the node.
-    def draw_buttons(self, context, layout):
+    def draw_buttons(self, context, layout: UILayout):
         # PARAMETERS
         row = layout.row()
         col = row.column()
@@ -594,8 +596,8 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
 
     # Detail buttons in the sidebar.
     # If this function is not defined, the draw_buttons function is used instead
-    def draw_buttons_ext(self, context, layout):
-        layout.template_ID(data=self, property="node_tree")
+    # def draw_buttons_ext(self, context, layout):
+    #     layout.template_ID(data=self, property="node_tree")
 
     # Explicit user label overrides this, but here we can define a label dynamically
     def draw_label(self):
