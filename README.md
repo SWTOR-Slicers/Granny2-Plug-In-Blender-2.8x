@@ -1,6 +1,6 @@
 # SWTOR Granny2 (.gr2) Import/Export add-on for Blender 2.8x and higher
 
-### NEW COMPACT, SMART VERSION, MORE FAITHFULL TO THE GAME'S LOOKS, WITH SCARS!!!
+### NEW COMPACT, SMART VERSION, MORE FAITHFUL TO THE GAME'S LOOKS, WITH SCARS!!!
 
 **If you were a user of the previous version of the addon**, don't delete and replace it just yet. There are a few fundamental differences between this version and previous ones that you might have to weight in:
 
