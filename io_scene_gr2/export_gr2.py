@@ -81,7 +81,8 @@ def write_file(operator, filepath, objects, depsgraph, scene,
         if len(objects) != 1:
             operator.report({'ERROR'},
                             ("Unable to complete export, %i objects selected. \n"
-                             "This addon only supports exporting one object at a time.") % len(objects))
+                             "This addon only supports exporting one object at a time.")
+                            % len(objects))
             return {'CANCELLED'}
 
         # Set-up dictionaries and lists to store or work with the mesh data
@@ -444,11 +445,16 @@ def write_file(operator, filepath, objects, depsgraph, scene,
                 # Write the offset of the mesh piece headers
                 fw(uint32(160))
                 # Write the offset of the mesh faces section
-                fw(uint32(160 + (num_mats * 48) + calc_padding(num_mats *
-                                                               4) + (num_v * (32 if boneNames else 24))))
+                fw(uint32(160
+                          + (num_mats * 48)
+                          + calc_padding(num_mats * 4)
+                          + (num_v * (32 if boneNames else 24))))
                 # Write the offset of the mesh bone section
-                fw(uint32(160 + (num_mats * 48) + calc_padding(num_mats * 4) + (num_v * (32 if boneNames else 24)) +
-                          calc_padding(num_f * 6)))
+                fw(uint32(160
+                          + (num_mats * 48)
+                          + calc_padding(num_mats * 4)
+                          + (num_v * (32 if boneNames else 24))
+                          + calc_padding(num_f * 6)))
                 # Write 00 byte until pos / 16 = int
                 fw(zero_padding(f.tell()))
 
@@ -555,11 +561,16 @@ def write_file(operator, filepath, objects, depsgraph, scene,
                     bn = 0
                     for bo in range(num_b):
                         if bo == 0:
-                            fw(uint32(calc_padding(off_bones + (num_b * 28)) + int(len(obnamestring) + 1) +
-                                      len(''.join(mat_names)) + (1 * num_mats)))
+                            fw(uint32(calc_padding(off_bones + (num_b * 28))
+                                      + int(len(obnamestring) + 1)
+                                      + len(''.join(mat_names))
+                                      + (1 * num_mats)))
                         else:
-                            fw(uint32(calc_padding(off_bones + (num_b * 28)) + int(len(obnamestring) + 1) +
-                                      len(''.join(mat_names)) + (1 * num_mats) + bn))
+                            fw(uint32(calc_padding(off_bones + (num_b * 28))
+                                      + int(len(obnamestring) + 1)
+                                      + len(''.join(mat_names))
+                                      + (1 * num_mats)
+                                      + bn))
                         bn += int(len(bon_names[bo]) + 1)
                         fw(float32(min(bx(bo, "X"))))  # Min X Coord
                         fw(float32(min(bx(bo, "Y"))))  # Min Y Coord

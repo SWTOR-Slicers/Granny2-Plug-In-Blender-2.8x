@@ -1,21 +1,23 @@
 # <pep8 compliant>
 
 import bpy
+import importlib
 import os
+import sys
 
+from . import nodes
+
+from bpy.app.handlers import depsgraph_update_post
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     FloatProperty,
-    StringProperty
-)
+    StringProperty)
 from bpy_extras.io_utils import (
     axis_conversion,
     ImportHelper,
     ExportHelper,
-    orientation_helper
-)
-
+    orientation_helper)
 
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
@@ -27,6 +29,22 @@ bl_info = {
     "support": 'COMMUNITY',
     "category": "Import-Export"
 }
+
+# Python doesn't reload package sub-modules at the same time as __init__.py!
+for filename in [
+        f for f in os.listdir(os.path.dirname(os.path.realpath(__file__))) if f.endswith('.py')]:
+    if filename == os.path.basename(__file__):
+        continue
+
+    module = sys.modules.get("{}.{}".format(__name__, filename[:-3]))
+
+    if module:
+        importlib.reload(module)
+
+# clear out any scene update funcs hanging around, e.g. after a script reload
+for func in depsgraph_update_post:
+    if func.__module__.startswith(__name__):
+        depsgraph_update_post.remove(func)
 
 
 class ImportGR2(bpy.types.Operator, ImportHelper):
@@ -42,7 +60,7 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    if bpy.app.version < (2, 93, 0):
+    if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
@@ -57,7 +75,7 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ImportToon(bpy.types.Operator, ImportHelper):
+class ImportCHA(bpy.types.Operator, ImportHelper):
     """Import from JSON file format (.json)"""
     bl_idname = "import_scene.json"
     bl_label = "Import SWTOR (.json)"
@@ -70,17 +88,17 @@ class ImportToon(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    if bpy.app.version < (2, 93, 0):
+    if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
-        from . import import_toon
+        from . import import_cha
 
         for file in self.files:
             path = os.path.join(self.directory, file.name)
-            import_toon.load(self, context, path)
+            import_cha.load(self, context, path)
 
         return {"FINISHED"}
 
@@ -94,20 +112,20 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
     filename_ext = ".jba"
     filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
 
-    scale_factor: FloatProperty(name="Scale Factor",
-                                description="Scale factor of the animation (try 1.05 for character animations)",
-                                default=1.0,
-                                soft_min=0.1,
-                                soft_max=2.0
-                                )
-    ignore_facial_bones: BoolProperty(name="Ignore Facial Bones",
-                                      description="Ignore translation keyframes for facial bones",
-                                      default=True
-                                      )
+    scale_factor: FloatProperty(
+        name="Scale Factor",
+        description="Scale factor of the animation (try 1.05 for character animations)",
+        default=1.0,
+        soft_min=0.1,
+        soft_max=2.0)
+    ignore_facial_bones: BoolProperty(
+        name="Ignore Facial Bones",
+        description="Ignore translation keyframes for facial bones",
+        default=True)
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    if bpy.app.version < (2, 93, 0):
+    if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
@@ -133,7 +151,7 @@ class ImportCLO(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
-    if bpy.app.version < (2, 93, 0):
+    if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
@@ -158,10 +176,10 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
     filename_ext = ".gr2"
     filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
 
-    has_clo: BoolProperty(name="Has .clo file?",
-                          description="Enable if there is a corresponding .clo file to go with this model.",
-                          default=False
-                          )
+    has_clo: BoolProperty(
+        name="Has .clo file?",
+        description="Enable if there is a corresponding .clo file to go with this model",
+        default=False)
 
     check_extension = True
 
@@ -169,71 +187,103 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
         from . import export_gr2
 
         # from mathutils import Matrix
-        keywords = self.as_keywords(ignore=("axis_forward",
-                                            "axis_up",
-                                            "global_scale",
-                                            "check_existing",
-                                            "filter_glob",
-                                            ))
+        keywords = self.as_keywords(
+            ignore=("axis_forward",
+                    "axis_up",
+                    "global_scale",
+                    "check_existing",
+                    "filter_glob"))
 
-        global_matrix = axis_conversion(to_forward=self.axis_forward,
-                                        to_up=self.axis_up,
-                                        ).to_4x4()
+        global_matrix = axis_conversion(
+            to_forward=self.axis_forward,
+            to_up=self.axis_up).to_4x4()
 
         keywords["global_matrix"] = global_matrix
         return export_gr2.save(self, context, **keywords)
-
-
-def menu_func_import_gr2(self, context):
-    self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
 def menu_func_export_gr2(self, context):
     self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-def menu_func_import_jba(self, context):
-    self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
+def menu_func_import_cha(self, context):
+    self.layout.operator(ImportCHA.bl_idname, text="SW:TOR (.json)")
 
 
 def menu_func_import_clo(self, context):
     self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
 
 
-def menu_func_import_toon(self, context):
-    self.layout.operator(ImportToon.bl_idname, text="SW:TOR (.json)")
+def menu_func_import_gr2(self, context):
+    self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-classes = (
-    ImportGR2,
+def menu_func_import_jba(self, context):
+    self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
+
+
+classes = [
     ExportGR2,
-    ImportJBA,
+    ImportCHA,
     ImportCLO,
-    ImportToon
-)
+    ImportGR2,
+    ImportJBA,
+    nodes.HeroNodeGroup,
+    nodes.NODE_OT_ngroup_edit
+]
+
+keymaps = []
 
 
 def register():
+    from bpy.utils import register_class
     for cls in classes:
-        bpy.utils.register_class(cls)
+        register_class(cls)
 
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_gr2)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export_gr2)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_jba)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_clo)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import_toon)
+    from nodeitems_utils import register_node_categories
+    register_node_categories('SWTOR', nodes.node_categories)
+
+    from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
+    TOPBAR_MT_file_export.append(menu_func_export_gr2)
+    TOPBAR_MT_file_import.append(menu_func_import_clo)
+    TOPBAR_MT_file_import.append(menu_func_import_gr2)
+    TOPBAR_MT_file_import.append(menu_func_import_jba)
+    TOPBAR_MT_file_import.append(menu_func_import_cha)
+
+    wm = bpy.context.window_manager
+    km = wm.keyconfigs.addon.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
+    kmi = km.keymap_items.new(nodes.NODE_OT_ngroup_edit.bl_idname, 'TAB', 'PRESS')
+    kmi.properties.exit = False
+    kmi = km.keymap_items.new(nodes.NODE_OT_ngroup_edit.bl_idname, 'TAB', 'PRESS', ctrl=True)
+    kmi.properties.exit = True
+    keymaps.append(km)
 
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_gr2)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export_gr2)
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_jba)
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_clo)
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import_toon)
+    for km in keymaps:
+        for kmi in km.keymap_items:
+            km.restore_item_to_default(kmi)
+    keymaps.clear()
 
+    from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
+    TOPBAR_MT_file_import.remove(menu_func_import_gr2)
+    TOPBAR_MT_file_export.remove(menu_func_export_gr2)
+    TOPBAR_MT_file_import.remove(menu_func_import_jba)
+    TOPBAR_MT_file_import.remove(menu_func_import_clo)
+    TOPBAR_MT_file_import.remove(menu_func_import_cha)
+
+    from nodeitems_utils import unregister_node_categories
+    unregister_node_categories('SWTOR')
+
+    from bpy.utils import unregister_class
     for cls in classes:
-        bpy.utils.unregister_class(cls)
+        unregister_class(cls)
 
 
 if __name__ == "__main__":
+    try:
+        unregister()
+    except (KeyError, RuntimeError):
+        pass
+
     register()

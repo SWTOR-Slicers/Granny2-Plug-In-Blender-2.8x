@@ -8,13 +8,19 @@ Run this script from "File->Import" menu and then load the desired GR2 model fil
 """
 
 import array
+import bpy
 import math
 import os
 
-import bpy
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Matrix
-
+# from .shaders import (
+#     CreatureShader,
+#     EyeShader,
+#     GarmentShader,
+#     HairCShader,
+#     SkinBShader,
+#     UberShader)
 from .utils import (
     ruint8,
     ruint16,
@@ -23,39 +29,7 @@ from .utils import (
     rfloat16,
     rfloat32,
     rstring,
-    unpack
-)
-
-# Blender 2.8x
-if bpy.app.version < (2, 90, 0):
-    from .material_nodes_blender_2_8x import (
-        CreatureShader,
-        EyeShader,
-        GarmentShader,
-        HairCShader,
-        SkinBShader,
-        UberShader
-    )
-# Blender 2.9x
-elif bpy.app.version < (3, 0, 0):
-    from .material_nodes_blender_2_9x import (
-        CreatureShader,
-        EyeShader,
-        GarmentShader,
-        HairCShader,
-        SkinBShader,
-        UberShader
-    )
-# Blender 3.x
-else:
-    from .material_nodes_blender_3_x import (
-        CreatureShader,
-        EyeShader,
-        GarmentShader,
-        HairCShader,
-        SkinBShader,
-        UberShader
-    )
+    unpack)
 
 
 class GR2MeshPiece():
@@ -293,32 +267,6 @@ class GR2Loader():
             newMaterial = bpy.data.materials.new(name=material)
             newMaterial.use_nodes = True
 
-        if self.fileType in [0, 1]:
-            # Create Template Materials
-            if "Template: Creature Shader" not in bpy.data.materials:
-                template = CreatureShader("Template: Creature Shader")
-                template.build()
-
-            if "Template: Eye Shader" not in bpy.data.materials:
-                template = EyeShader("Template: Eye Shader")
-                template.build()
-
-            if "Template: Garment Shader" not in bpy.data.materials:
-                template = GarmentShader("Template: Garment Shader")
-                template.build()
-
-            if "Template: HairC Shader" not in bpy.data.materials:
-                template = HairCShader("Template: HairC Shader")
-                template.build()
-
-            if "Template: SkinB Shader" not in bpy.data.materials:
-                template = SkinBShader("Template: SkinB Shader")
-                template.build()
-
-            if "Template: Uber Shader" not in bpy.data.materials:
-                template = UberShader("Template: Uber Shader")
-                template.build()
-
         # Create Meshes
         for mesh in self.meshes:
             if "collision" in mesh.name and not import_collision:
@@ -354,22 +302,18 @@ class GR2Loader():
 
 def load(operator, context, filepath=""):
     with ProgressReport(context.window_manager) as progress:
-
         progress.enter_substeps(3, "Importing \'%s\' ..." % filepath)
 
         mainLoader = GR2Loader(filepath)
 
         progress.step("Parsing file ...", 1)
-
         mainLoader.parse(operator)
-
         progress.step("Done, building ...", 2)
 
         if bpy.ops.object.mode_set.poll():
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
         mainLoader.build(operator.import_collision)
-
         progress.leave_substeps("Done, finished importing: \'%s\'" % filepath)
 
     return {'FINISHED'}
