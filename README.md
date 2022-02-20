@@ -2,7 +2,7 @@
 
 ### NEW COMPACT, SMART VERSION, MORE FAITHFUL TO THE GAME'S LOOKS, WITH SCARS!!!
 
-**If you were a user of the previous version of the addon**, don't delete and replace it just yet. There are a few fundamental differences between this version and previous ones that you might have to weight in:
+**If you were a user of [the previous version of the addon](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0)**, don't delete and replace it just yet. There are a few fundamental differences between this version and previous ones that you might have to weight in:
 
 * Instead of materials holding a tree of texturemap image nodes linked to a SWTOR Shader nodegroup, the texturemap images' controls are now in the Shader itself, making everything simpler and more self-contained. Also, the Shader takes care of alpha and colorspace issues for us.
 
