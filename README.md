@@ -1,7 +1,7 @@
 ## Bug notice:
 This latest version of the addon has a bug that makes it fail to build and assign the second material for objects with two material slots, such as armor gear parts that let skin show, or combinations of Zabrak hair and horns. Such materials can be recreated manually (the assets and data are being properly collected by the Slicers GUI app), but, for those that don't know how, it may be simpler to use the [**Legacy version of the addon**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0) for the time being.
 
-Due to unforeseen issues, it'll take a while for the bug to be addressed. We'll post a notice when the matter is solved.
+Due to unforeseen circumstances, it'll take a while for the bug to be addressed. We'll post a notice when the matter is solved.
 
 # SWTOR Granny2 (.gr2) Import/Export addon for Blender 2.8x and higher
 
