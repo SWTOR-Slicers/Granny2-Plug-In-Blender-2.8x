@@ -24,13 +24,12 @@ class slot_obj():
         models = dict_from_json['models']
         self.models = []
 
+        if os.name == 'nt':
+            path = json_path[:json_path.rfind('\\')]
+        else:
+            path = json_path[:json_path.rfind('/')]
+
         for m in models:
-
-            if os.name == 'nt':
-                path = json_path[:json_path.rfind('\\')]
-            else:
-                path = json_path[:json_path.rfind('/')]
-
             self.models.append(f"{path}/models/{self.slot_name}{m[m.rfind('/'):]}")
 
         self.mat_info = dict_from_json['materialInfo']
@@ -113,7 +112,9 @@ class ToonLoader():
         data = self.read_paths(self.filepath)
         parsed_objs = []
         skin_mats = None
+
         global eyeMatInfo
+
         for entry in data:
             if entry['slotName'] == 'skinMats':
                 to_push = skin_mats_list_obj()
@@ -157,6 +158,10 @@ class ToonLoader():
                     try:
                         new_mat = bpy.data.materials[f'{mat_idx} {slot.slot_name}{derived}']
                     except KeyError:
+                        if 'materialSkinIndex' in slot.mat_info['otherValues']:
+                            if slot.mat_info['otherValues']['materialSkinIndex'] == str(i):
+                                derived = 'SkinB'
+
                         new_mat = bpy.data.materials.new(f'{mat_idx} {slot.slot_name}{derived}')
                         new_mat.use_nodes = True
                         new_mat.node_tree.nodes.remove(new_mat.node_tree.nodes['Principled BSDF'])
@@ -172,8 +177,9 @@ class ToonLoader():
                         if derived == 'SkinB':
                             node.derived = 'SKINB'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             skin_mat = next(
                                 (mat for mat in self.skin_mats.mats if mat.slot_name == slot.slot_name),
@@ -245,11 +251,13 @@ class ToonLoader():
                                 float(vals['flush'][1]),
                                 float(vals['flush'][2]),
                                 1.0]
+
                         elif derived == 'HairC':
                             node.derived = 'HAIRC'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             vals_info = slot.mat_info
                             vals = vals_info['otherValues']
@@ -298,11 +306,13 @@ class ToonLoader():
                                 float(vals['palette1MetallicSpecular'][1]),
                                 float(vals['palette1MetallicSpecular'][2]),
                                 1.0]
+
                         elif derived == 'Eye':
                             node.derived = 'EYE'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             vals_info = eyeMatInfo.mat_info
                             vals = vals_info['otherValues']
@@ -346,11 +356,13 @@ class ToonLoader():
                                 float(vals['palette1MetallicSpecular'][1]),
                                 float(vals['palette1MetallicSpecular'][2]),
                                 1.0]
+
                         elif derived == 'Garment':
                             node.derived = 'GARMENT'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             vals_info = slot.mat_info
                             vals = vals_info['otherValues']
@@ -409,11 +421,13 @@ class ToonLoader():
                                 float(vals['palette2MetallicSpecular'][1]),
                                 float(vals['palette2MetallicSpecular'][2]),
                                 1.0]
+
                         elif derived == 'Creature':
                             node.derived = 'CREATURE'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             vals_info = slot.mat_info
                             vals = vals_info['otherValues']
@@ -449,11 +463,13 @@ class ToonLoader():
                                 float(vals['flush'][1]),
                                 float(vals['flush'][2]),
                                 1.0]
+
                         elif derived == 'Uber':
                             node.derived = 'UBER'
                             # TODO: Read Alpha parameters from paths.json
-                            node.alpha_mode = 'CLIP'
-                            node.alpha_test_value = 0.5
+                            new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                            new_mat.blend_method = node.alpha_mode = 'CLIP'
+                            new_mat.show_transparent_back = False
 
                             vals_info = slot.mat_info
                             vals = vals_info['otherValues']

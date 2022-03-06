@@ -129,6 +129,7 @@ def update_directionMap(self, context):
         self.node_tree.nodes['directionMap'].image = self.directionMap
     else:
         self.node_tree.nodes['directionMap'].image = None
+        self.node_tree.nodes['directionMap'].mute = True
 
 
 def update_facepaintMap(self, context):
