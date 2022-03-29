@@ -10,7 +10,7 @@
 
   Because of this, there are no SWTOR materials templates any longer, so prone to accidental overwriting: now, in order to create a SWTOR material, we only need to add the appropriate SWTOR shader node, via the Add Node menu (shift-a), to any new or existing material, and link it to the Output Node.
   
-  On the other hand, this compactness makes extending and customizing such materials (by interposing other nodes or exposing internal parameters) harder. We'll explore how to go at it through new guides. Given this, if we happen to depend on doing such modifications, we might want to hold on to the previous version for a little while longer, or maybe keep around a Blender project holding the old template materials so that we can append them to new projects.
+  On the other hand, this compactness makes extending and customizing such materials (by interposing other nodes or exposing internal parameters) a little less obvious. We'll explore how to go at it through new guides. Given this, if we happen to depend on doing such modifications, we might want to hold on to the previous version for a little longer while seeing how to adapt them to the new one.
   
   The previous version of the addon can be downloaded from [**this link**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0).
   
