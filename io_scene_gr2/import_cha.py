@@ -7,9 +7,13 @@ Usage:
 Run this script from "File->Import" menu and then load the desired GR2 model file.
 """
 
-import bpy
 import json
 import os
+
+from typing import Any, Dict
+
+import bpy
+from bpy.types import Context, Operator
 
 from bpy_extras.wm_utils.progress_report import ProgressReport
 
@@ -20,6 +24,7 @@ eyeMatInfo = None
 
 class slot_obj():
     def __init__(self, dict_from_json, json_path):
+        # type: (Dict[str, Any], str) -> None
         self.slot_name = dict_from_json['slotName']
         models = dict_from_json['models']
         self.models = []
@@ -40,6 +45,7 @@ class slot_obj():
             self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
+        # type: () -> str
         return (
             "{\n"
             + f"slotName: {self.slot_name}\n"
@@ -51,6 +57,7 @@ class slot_obj():
 
 class slot_obj_mat_only():
     def __init__(self, dict_from_json, json_path):
+        # type: (Dict[str, Any], str) -> None
         self.slot_name = 'eye'
         self.mat_info = dict_from_json
         dds_dict = dict_from_json['ddsPaths']
@@ -65,11 +72,13 @@ class slot_obj_mat_only():
             self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
+        # type: () -> str
         return "{\n" + f"matInfo: {json.dumps(self.mat_info, indent=4)}\n" + "}"
 
 
 class skin_mats_obj():
     def __init__(self, dict_from_json, json_path):
+        # type: (Dict[str, Any], str) -> None
         self.slot_name = dict_from_json['slotName']
         self.mat_info = dict_from_json['materialInfo']
         self.mat_info['ddsPaths'] = dict_from_json['ddsPaths']
@@ -86,20 +95,24 @@ class skin_mats_obj():
             self.mat_info['ddsPaths'][key] = value
 
     def __repr__(self):
+        # type: () -> str
         return "{\n" + f"slotName: {self.slot_name}\n" + "}"
 
 
 class skin_mats_list_obj():
     def __init__(self):
+        # type: () -> None
         self.slot_name = 'skinMats'
         self.mats = []
 
     def __repr__(self):
+        # type: () -> str
         return "{\n" + f"slotName: {self.slot_name}\n" + f"mats: {', '.join(self.mats)}\n" + "}"
 
 
 class ToonLoader():
     def __init__(self, filepath):
+        # type: (str) -> None
         self.filepath = filepath
 
     def read_paths(self, paths_json_path):
@@ -108,7 +121,8 @@ class ToonLoader():
 
         return data
 
-    def parse(self, operator):
+    def parse(self, _operator):
+        # type: (Operator) -> None
         data = self.read_paths(self.filepath)
         parsed_objs = []
         skin_mats = None
@@ -139,6 +153,8 @@ class ToonLoader():
         self.skin_mats = skin_mats
 
     def build(self, operator, context):
+        # type: (Operator, Context) -> None
+
         for slot in self.slots:
             for model in slot.models:
                 # Import gr2
@@ -165,14 +181,15 @@ class ToonLoader():
                         new_mat = bpy.data.materials.new(f'{mat_idx} {slot.slot_name}{derived}')
                         new_mat.use_nodes = True
                         new_mat.node_tree.nodes.remove(new_mat.node_tree.nodes['Principled BSDF'])
-                        new_mat.node_tree.nodes.new(type='ShaderNodeHeroEngine')
-                        new_mat.node_tree.nodes['SWTOR'].location = (0.0, 300.0)
+
+                        node = new_mat.node_tree.nodes.new(type='ShaderNodeHeroEngine')
+                        node.location = (0.0, 300.0)
+
                         new_mat.node_tree.links.new(
-                            new_mat.node_tree.nodes['SWTOR'].outputs['Shader'],
+                            node.outputs['Shader'],
                             new_mat.node_tree.nodes['Material Output'].inputs['Surface'])
 
                         imgs = bpy.data.images
-                        node = new_mat.node_tree.nodes['SWTOR']
 
                         if derived == 'SkinB':
                             node.derived = 'SKINB'
@@ -493,6 +510,7 @@ class ToonLoader():
 
 
 def load(operator, context, filepath=""):
+    # type: (Operator, Context, str) -> set[str]
     with ProgressReport(context.window_manager) as progress:
 
         progress.enter_substeps(3, "Importing \'%s\' ..." % filepath)

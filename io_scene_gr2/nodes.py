@@ -1,19 +1,21 @@
 # <pep8 compliant>
 
 import bpy
-
-from . import shaders
 from bpy.props import (
     BoolProperty,
     EnumProperty,
     FloatProperty,
     FloatVectorProperty,
     PointerProperty)
-from bpy.types import Image, Operator, ShaderNodeCustomGroup, UILayout
+from bpy.types import Context, Image, Operator, ShaderNodeCustomGroup, UILayout
+
 from nodeitems_utils import NodeCategory, NodeItem
 
+from . import shaders
 
-def update_ageMap(self, context):
+
+def update_ageMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.ageMap:
         self.ageMap.alpha_mode = 'CHANNEL_PACKED'
         self.ageMap.colorspace_settings.name = 'Raw'
@@ -25,17 +27,22 @@ def update_ageMap(self, context):
 
 
 def update_alpha_mode(self, context):
-    mat = context.space_data.id
-    mat.blend_method = self.alpha_mode
-    mat.show_transparent_back = False
-    update_alpha_test_value(self, context)
+    # type: (HeroNodeGroup, Context) -> None
+    if context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
+        mat = context.material
+        mat.blend_method = self.alpha_mode
+        mat.show_transparent_back = False
+        update_alpha_test_value(self, context)
 
 
 def update_alpha_test_value(self, context):
-    context.space_data.id.alpha_threshold = self.alpha_test_value
+    # type: (HeroNodeGroup, Context) -> None
+    if context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
+        context.material.alpha_threshold = self.alpha_test_value
 
 
-def update_complexionMap(self, context):
+def update_complexionMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.complexionMap:
         self.complexionMap.alpha_mode = 'CHANNEL_PACKED'
         self.complexionMap.colorspace_settings.name = 'Raw'
@@ -51,6 +58,7 @@ def update_complexionMap(self, context):
 
 
 def update_derived(self, context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.derived == 'CREATURE':
         self.node_tree.nodes.clear()
         shaders.Creature(self.node_tree)
@@ -113,7 +121,8 @@ def update_derived(self, context):
         raise ValueError
 
 
-def update_diffuseMap(self, context):
+def update_diffuseMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.diffuseMap:
         self.diffuseMap.alpha_mode = 'CHANNEL_PACKED'
         self.diffuseMap.colorspace_settings.name = 'Raw'
@@ -122,7 +131,8 @@ def update_diffuseMap(self, context):
         self.node_tree.nodes['_d'].image = None
 
 
-def update_directionMap(self, context):
+def update_directionMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.directionMap:
         self.directionMap.alpha_mode = 'CHANNEL_PACKED'
         self.directionMap.colorspace_settings.name = 'Raw'
@@ -132,7 +142,8 @@ def update_directionMap(self, context):
         self.node_tree.nodes['directionMap'].mute = True
 
 
-def update_facepaintMap(self, context):
+def update_facepaintMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.facepaintMap:
         self.facepaintMap.alpha_mode = 'CHANNEL_PACKED'
         self.facepaintMap.colorspace_settings.name = 'Raw'
@@ -143,12 +154,14 @@ def update_facepaintMap(self, context):
         self.node_tree.nodes['facepaintMap'].mute = True
 
 
-def update_flesh_brightness(self, context):
+def update_flesh_brightness(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if 'GetFlushColor' in self.node_tree.nodes:
         self.node_tree.nodes['GetFlushColor'].inputs['Flesh Brightness'].default_value = self.flesh_brightness
 
 
-def update_flush_tone(self, context):
+def update_flush_tone(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if 'ageDarkening' in self.node_tree.nodes:
         self.node_tree.nodes['ageDarkening'].inputs['Color1'].default_value = self.flush_tone
 
@@ -156,7 +169,8 @@ def update_flush_tone(self, context):
         self.node_tree.nodes['GetFlushColor'].inputs['Flush Tone'].default_value = self.flush_tone
 
 
-def update_glossMap(self, context):
+def update_glossMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.glossMap:
         self.glossMap.alpha_mode = 'CHANNEL_PACKED'
         self.glossMap.colorspace_settings.name = 'Raw'
@@ -165,7 +179,8 @@ def update_glossMap(self, context):
         self.node_tree.nodes['_s'].image = None
 
 
-def update_palette(self, context):
+def update_palette(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if 'ChosenPalette' in self.node_tree.nodes:
         inputs = self.node_tree.nodes['ChosenPalette'].inputs
         inputs['Palette1 Hue'].default_value = self.palette1_hue
@@ -198,7 +213,8 @@ def update_palette(self, context):
         inputs['Metallic Specular'].default_value = self.palette1_metallic_specular
 
 
-def update_paletteMap(self, context):
+def update_paletteMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.paletteMap:
         self.paletteMap.alpha_mode = 'CHANNEL_PACKED'
         self.paletteMap.colorspace_settings.name = 'Raw'
@@ -209,7 +225,8 @@ def update_paletteMap(self, context):
         self.node_tree.nodes['_h'].mute = True
 
 
-def update_paletteMaskMap(self, context):
+def update_paletteMaskMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.paletteMaskMap:
         self.paletteMaskMap.alpha_mode = 'CHANNEL_PACKED'
         self.paletteMaskMap.colorspace_settings.name = 'Raw'
@@ -220,7 +237,8 @@ def update_paletteMaskMap(self, context):
         self.node_tree.nodes['_m'].mute = True
 
 
-def update_rotationMap(self, context):
+def update_rotationMap(self, _context):
+    # type: (HeroNodeGroup, Context) -> None
     if self.rotationMap:
         self.rotationMap.alpha_mode = 'CHANNEL_PACKED'
         self.rotationMap.colorspace_settings.name = 'Raw'
@@ -482,12 +500,15 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
 
     # Initialization function, called when a new node is created.
     def init(self, context):
+        # type: (Context) -> None
         self.node_tree = bpy.data.node_groups.new(name=self.name, type='ShaderNodeTree')
         update_derived(self, context)
         self.width = 240.0
 
     # Additional buttons displayed on the node.
-    def draw_buttons(self, context, layout: UILayout):
+    def draw_buttons(self, _context, layout):
+        # type: (Context, UILayout) -> None
+
         # PARAMETERS
         row = layout.row()
         col = row.column()
@@ -602,6 +623,7 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
 
     # Explicit user label overrides this, but here we can define a label dynamically
     def draw_label(self):
+        # type: () -> None
         if self.derived == 'CREATURE':
             return "SWTOR: Creature Shader"
         elif self.derived == 'EYE':
@@ -619,6 +641,7 @@ class HeroNodeGroup(ShaderNodeCustomGroup):
 class HeroNodeCategory(NodeCategory):
     @classmethod
     def poll(cls, context):
+        # type: (Context) -> bool
         return (context.space_data.type == 'NODE_EDITOR' and
                 context.space_data.tree_type == 'ShaderNodeTree')
 
@@ -657,6 +680,7 @@ class NODE_OT_ngroup_edit(Operator):
 
     @classmethod
     def poll(cls, context):
+        # type: (Context) -> bool
         space = context.space_data
         if space.type != 'NODE_EDITOR':
             return False
@@ -665,6 +689,7 @@ class NODE_OT_ngroup_edit(Operator):
         return True
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         space = context.space_data
 
         if hasattr(context, "node"):

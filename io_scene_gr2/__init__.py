@@ -1,23 +1,35 @@
 # <pep8 compliant>
 
-import bpy
 import importlib
 import os
 import sys
 
-from . import nodes
+from typing import List
 
+import bpy
 from bpy.app.handlers import depsgraph_update_post
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     FloatProperty,
-    StringProperty)
+    StringProperty
+)
+from bpy.types import (
+    Context,
+    KeyMap,
+    Menu,
+    Operator,
+    PropertyGroup,
+)
+
 from bpy_extras.io_utils import (
     axis_conversion,
     ImportHelper,
     ExportHelper,
-    orientation_helper)
+    orientation_helper
+)
+
+from . import nodes
 
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
@@ -47,7 +59,7 @@ for func in depsgraph_update_post:
         depsgraph_update_post.remove(func)
 
 
-class ImportGR2(bpy.types.Operator, ImportHelper):
+class ImportGR2(Operator, ImportHelper):
     """Import from SWTOR GR2 file format (.gr2)"""
     bl_idname = "import_scene.gr2"
     bl_label = "Import SWTOR (.gr2)"
@@ -58,7 +70,7 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
 
     import_collision: BoolProperty(name="Import Collision Mesh", default=False)
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files: CollectionProperty(type=PropertyGroup)
 
     if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
@@ -66,6 +78,7 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         from . import import_gr2
 
         for file in self.files:
@@ -75,7 +88,7 @@ class ImportGR2(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ImportCHA(bpy.types.Operator, ImportHelper):
+class ImportCHA(Operator, ImportHelper):
     """Import from JSON file format (.json)"""
     bl_idname = "import_scene.json"
     bl_label = "Import SWTOR (.json)"
@@ -86,7 +99,7 @@ class ImportCHA(bpy.types.Operator, ImportHelper):
 
     import_collision: BoolProperty(name="Import Collision Mesh", default=False)
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files: CollectionProperty(type=PropertyGroup)
 
     if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
@@ -94,6 +107,7 @@ class ImportCHA(bpy.types.Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         from . import import_cha
 
         for file in self.files:
@@ -103,7 +117,7 @@ class ImportCHA(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ImportJBA(bpy.types.Operator, ImportHelper):
+class ImportJBA(Operator, ImportHelper):
     """Import from SWTOR JBA file format (.jba)"""
     bl_idname = "import_scene.jba"
     bl_label = "Import SWTOR (.jba)"
@@ -123,7 +137,7 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
         description="Ignore translation keyframes for facial bones",
         default=True)
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files: CollectionProperty(type=PropertyGroup)
 
     if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
@@ -131,6 +145,7 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         from . import import_jba
 
         for file in self.files:
@@ -140,7 +155,7 @@ class ImportJBA(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ImportCLO(bpy.types.Operator, ImportHelper):
+class ImportCLO(Operator, ImportHelper):
     """Import from SWTOR CLO file format (.clo)"""
     bl_idname = "import_scene.clo"
     bl_label = "Import SWTOR (.clo)"
@@ -149,7 +164,7 @@ class ImportCLO(bpy.types.Operator, ImportHelper):
     filename_ext = ".clo"
     filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
 
-    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    files: CollectionProperty(type=PropertyGroup)
 
     if bpy.app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
@@ -157,6 +172,7 @@ class ImportCLO(bpy.types.Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         from . import import_clo
 
         for file in self.files:
@@ -167,7 +183,7 @@ class ImportCLO(bpy.types.Operator, ImportHelper):
 
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
-class ExportGR2(bpy.types.Operator, ExportHelper):
+class ExportGR2(Operator, ExportHelper):
     """Export to SWTOR GR2 file format (.gr2)"""
     bl_idname = "export_scene.gr2"
     bl_label = "Export SWTOR (.gr2)"
@@ -184,6 +200,7 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
     check_extension = True
 
     def execute(self, context):
+        # type: (Context) -> set[str]
         from . import export_gr2
 
         # from mathutils import Matrix
@@ -202,40 +219,46 @@ class ExportGR2(bpy.types.Operator, ExportHelper):
         return export_gr2.save(self, context, **keywords)
 
 
-def menu_func_export_gr2(self, context):
+def menu_func_export_gr2(self, _context):
+    # type: (Menu, Context) -> None
     self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-def menu_func_import_cha(self, context):
+def menu_func_import_cha(self, _context):
+    # type: (Menu, Context) -> None
     self.layout.operator(ImportCHA.bl_idname, text="SW:TOR (.json)")
 
 
-def menu_func_import_clo(self, context):
+def menu_func_import_clo(self, _context):
+    # type: (Menu, Context) -> None
     self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
 
 
-def menu_func_import_gr2(self, context):
+def menu_func_import_gr2(self, _context):
+    # type: (Menu, Context) -> None
     self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
-def menu_func_import_jba(self, context):
+def menu_func_import_jba(self, _context):
+    # type: (Menu, Context) -> None
     self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
 
 
-classes = [
+classes = (
     ExportGR2,
     ImportCHA,
     ImportCLO,
     ImportGR2,
     ImportJBA,
     nodes.HeroNodeGroup,
-    nodes.NODE_OT_ngroup_edit
-]
+    nodes.NODE_OT_ngroup_edit,
+)
 
-keymaps = []
+keymaps: List[KeyMap] = []
 
 
 def register():
+    # type: () -> None
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
@@ -260,6 +283,7 @@ def register():
 
 
 def unregister():
+    # type: () -> None
     for km in keymaps:
         for kmi in km.keymap_items:
             km.restore_item_to_default(kmi)
