@@ -8,7 +8,7 @@ Run this script from "File->Import" menu and then load the desired GR2 model fil
 
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 """
-
+from os import path
 from typing import Union
 
 import bpy
@@ -16,199 +16,203 @@ from bpy.types import Context, Operator
 from mathutils import Color, Vector
 
 from ..types.gr2 import Granny2
-from ..utils.binary import DataView
+from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import readString
 from ..utils.number import decodeHalfFloat
 
 
 def read(operator, filepath):
     # type: (Operator, str) -> Union[Granny2, None]
+
     with open(filepath, 'rb') as file:
-        dv = DataView(file)
-        pos = 0
+        buffer = ArrayBuffer()
+        buffer.fromfile(file, path.getsize(filepath))
 
-        # Cancel import if this is not a BioWare Austin / SWTOR GR2 file.
-        if dv.getUint32(pos, 1) != 0x42574147:
-            operator.report({'ERROR'}, f"{filepath} is not a valid SWTOR gr2 file.")
-            return None
-        else:
-            gr2 = Granny2()
+    dv = DataView(buffer)
+    pos = 0
 
-            pos = 20  # 0x14
+    # Cancel import if this is not a BioWare Austin / SWTOR GR2 file.
+    if dv.getUint32(pos, 1) != 0x42574147:
+        operator.report({'ERROR'}, f"{filepath} is not a valid SWTOR gr2 file.")
+        return None
 
-            # GR2 file type, 0 = geometry, 1 = geometry with .clo file, 2 = skeleton
-            gr2.type_flag = dv.getUint32(pos, 1)
+    gr2 = Granny2()
+
+    pos = 20  # 0x14
+
+    # GR2 file type, 0 = geometry, 1 = geometry with .clo file, 2 = skeleton
+    gr2.type_flag = dv.getUint32(pos, 1)
+    pos += 4
+    num_meshes = dv.getUint16(pos, 1)                    # Number of meshes in this file
+    pos += 2
+    num_materials = dv.getUint16(pos, 1)                 # Number of materials in this file
+    pos += 2
+    num_bones = dv.getUint16(pos, 1)                     # Number of bones in this file
+    pos += 2
+
+    pos += 18
+
+    # gr2.bounds = Granny2.BoundingBox([dv.getFloat32(pos + (i * 4), 1) for i in range(8)])
+    pos += 32
+
+    pos += 4  # 0x54
+
+    offset_mesh_header = dv.getUint32(pos, 1)            # Mesh header offset address
+    pos += 4
+    offset_material_name_offsets = dv.getUint32(pos, 1)  # Material header offset address
+    pos += 4
+    offset_bone_struct = dv.getUint32(pos, 1)            # Bone structure offset address
+    pos += 4
+
+    # Meshes
+    gr2.mesh_buffer = {}
+    for i in range(num_meshes):
+        pos = offset_mesh_header + (i * 40)
+        mesh = Granny2.Mesh()
+        # Mesh name
+        mesh.name = readString(dv, pos)
+        pos += 4
+        # BitFlag1
+        pos += 4
+        # Number of sub meshes that make up this mesh
+        num_pieces = dv.getUint16(pos, 1)
+        pos += 2
+        # Number of bones used by this mesh
+        num_used_bones = dv.getUint16(pos, 1)
+        pos += 2
+        # BitFlag2
+        bit_flag2 = dv.getUint16(pos, 1)
+        pos += 2
+        # 12 = collision, 24 = static, 32+ = dynamic
+        vertex_size = dv.getUint16(pos, 1)
+        pos += 2
+        # Total number of vertices used by this mesh
+        num_vertices = dv.getUint32(pos, 1)
+        pos += 4
+        # Total number of polygons used by this mesh
+        num_polygons = dv.getUint32(pos, 1)
+        pos += 4
+        # Offset of the vertices buffer for this mesh
+        mesh.offset_vertex_buffer = dv.getUint32(pos, 1)
+        pos += 4
+        # Offset of the sub mesh header(s)
+        mesh.offset_piece_headers = dv.getUint32(pos, 1)
+        pos += 4
+        # Offset of the indices buffer for this mesh
+        mesh.offset_indices_buffer = dv.getUint32(pos, 1)
+        pos += 4
+        # Offset of the bone buffer for this mesh
+        mesh.offset_bones_buffer = dv.getUint32(pos, 1)
+        pos += 4
+
+        # Sub mesh header(s)
+        mesh.piece_header_buffer = {}
+        for j in range(num_pieces):
+            pos = mesh.offset_piece_headers + (j * 48)
+
+            piece = Granny2.Piece()
+
+            piece.offset_indices = dv.getUint32(pos, 1)     # Relative offset for this piece's faces
             pos += 4
-            num_meshes = dv.getUint16(pos, 1)                    # Number of meshes in this file
-            pos += 2
-            num_materials = dv.getUint16(pos, 1)                 # Number of materials in this file
-            pos += 2
-            num_bones = dv.getUint16(pos, 1)                     # Number of bones in this file
-            pos += 2
-
-            pos += 18
-
-            gr2.bounds = Granny2.BoundingBox([dv.getFloat32(pos + (i * 4), 1) for i in range(8)])
+            piece.num_polygons = dv.getUint32(pos, 1)       # Number of faces used by this piece
+            pos += 4
+            piece.material_index = dv.getUint32(pos, 1)     # Mesh piece material id
+            pos += 4
+            piece.index = dv.getUint32(pos, 1)              # Mesh piece enumerator (1 x uint32)
+            pos += 4
+            # piece.bounds = Granny2.BoundingBox(           # Bounding box (8 x 4 bytes)
+            #     [dv.getFloat32(pos + (k * 4), 1) for k in range(8)])
             pos += 32
 
-            pos += 4  # 0x54
+            mesh.piece_header_buffer[j] = piece
 
-            offset_mesh_header = dv.getUint32(pos, 1)            # Mesh header offset address
+        # Vertex buffer
+        mesh.vertex_buffer = {}
+        for j in range(num_vertices):
+            pos = mesh.offset_vertex_buffer + (j * vertex_size)
+
+            vertex = Granny2.Vertex([dv.getFloat32(pos + (k * 4), 1) for k in range(3)])
+            pos += 12
+
+            if bit_flag2 & 256:  # 0x100
+                vertex.bone_weights = Vector([dv.getUint8(pos + k) for k in range(4)])
+                pos += 4
+                vertex.bone_indices = Vector([dv.getUint8(pos + k) for k in range(4)])
+                pos += 4
+
+            if bit_flag2 & 2:  # 0x02
+                vertex.normals = Vector(
+                    [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
+                pos += 4
+                vertex.tangents = Vector(
+                    [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
+                pos += 4
+
+            if bit_flag2 & 16:  # 0x10
+                vertex.color = Color([dv.getUint8(pos + k) for k in range(3)])
+                pos += 4
+
+            if bit_flag2 & 32:  # 0x20
+                vertex.uv_layer0 = Vector(
+                    [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
+                pos += 4
+
+            if bit_flag2 & 64:  # 0x40
+                vertex.uv_layer1 = Vector(
+                    [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
+                pos += 4
+
+            if bit_flag2 & 128:  # 0x80
+                vertex.uv_layer2 = Vector(
+                    [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
+
+            mesh.vertex_buffer[j] = vertex
+
+        # Indices buffer
+        mesh.indices_buffer = {}
+        for j in range(int(num_polygons / 3)):
+            pos = mesh.offset_indices_buffer + (j * 6)
+            mesh.indices_buffer[j] = Vector(
+                [dv.getUint16(pos + (k * 2), 1) for k in range(3)])
+
+        # Bone(s) buffer
+        mesh.bone_names = {j: readString(dv, mesh.offset_bones_buffer + (j * 28))
+                           for j in range(num_used_bones)}
+
+        gr2.mesh_buffer[i] = mesh
+
+    # Materials
+    # NOTE: I wish there was a more efficient way to do this!
+    gr2.material_names = {}
+    if num_materials:
+        pos = offset_material_name_offsets
+        for i in range(num_materials):                         # Use string name for name
+            gr2.material_names[i] = readString(dv, pos)
             pos += 4
-            offset_material_name_offsets = dv.getUint32(pos, 1)  # Material header offset address
-            pos += 4
-            offset_bone_struct = dv.getUint32(pos, 1)            # Bone structure offset address
-            pos += 4
+    else:
+        count = 0
+        for _, mesh in gr2.mesh_buffer.items():
+            if mesh.bit_flag2 & 32:
+                for j, _ in mesh.piece_header_buffer.items():  # Use "mesh name".00x for name
+                    gr2.material_names[count] = f"{mesh.name}.{j:03d}"
+                    count += 1
 
-            # Meshes
-            gr2.mesh_buffer = {}
-            for i in range(num_meshes):
-                pos = offset_mesh_header + (i * 40)
-                mesh = Granny2.Mesh()
-                # Mesh name
-                mesh.name = readString(dv, pos)
-                pos += 4
-                # BitFlag1
-                pos += 4
-                # Number of sub meshes that make up this mesh
-                num_pieces = dv.getUint16(pos, 1)
-                pos += 2
-                # Number of bones used by this mesh
-                num_used_bones = dv.getUint16(pos, 1)
-                pos += 2
-                # BitFlag2
-                bit_flag2 = dv.getUint16(pos, 1)
-                pos += 2
-                # 12 = collision, 24 = static, 32+ = dynamic
-                vertex_size = dv.getUint16(pos, 1)
-                pos += 2
-                # Total number of vertices used by this mesh
-                num_vertices = dv.getUint32(pos, 1)
-                pos += 4
-                # Total number of polygons used by this mesh
-                num_polygons = dv.getUint32(pos, 1)
-                pos += 4
-                # Offset of the vertices buffer for this mesh
-                mesh.offset_vertex_buffer = dv.getUint32(pos, 1)
-                pos += 4
-                # Offset of the sub mesh header(s)
-                mesh.offset_piece_headers = dv.getUint32(pos, 1)
-                pos += 4
-                # Offset of the indices buffer for this mesh
-                mesh.offset_indices_buffer = dv.getUint32(pos, 1)
-                pos += 4
-                # Offset of the bone buffer for this mesh
-                mesh.offset_bones_buffer = dv.getUint32(pos, 1)
-                pos += 4
+    # Skeleton Bones
+    gr2.bone_buffer = {}
+    for i in range(num_bones):
+        pos = offset_bone_struct + (i * 136)
+        bone = Granny2.Bone()
+        bone.name = readString(dv, pos)
+        pos += 4
+        bone.parent_index = dv.getInt32(pos, 1)
+        pos += 4
+        # bone.bone_to_parent = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
+        pos += 64
+        bone.root_to_bone = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
+        pos += 64
+        gr2.bone_buffer[i] = bone
 
-                # Sub mesh header(s)
-                mesh.piece_header_buffer = {}
-                for j in range(num_pieces):
-                    pos = mesh.offset_piece_headers + (j * 48)
-
-                    piece = Granny2.Piece()
-
-                    piece.offset_indices = dv.getUint32(pos, 1)     # Relative offset for this piece's faces
-                    pos += 4
-                    piece.num_polygons = dv.getUint32(pos, 1)       # Number of faces used by this piece
-                    pos += 4
-                    piece.material_index = dv.getUint32(pos, 1)     # Mesh piece material id
-                    pos += 4
-                    piece.index = dv.getUint32(pos, 1)              # Mesh piece enumerator (1 x uint32)
-                    pos += 4
-                    piece.bounds = Granny2.BoundingBox(             # Bounding box (8 x 4 bytes)
-                        [dv.getFloat32(pos + (k * 4), 1) for k in range(8)])
-                    pos += 32
-
-                    mesh.piece_header_buffer[j] = piece
-
-                # Vertex buffer
-                mesh.vertex_buffer = {}
-                for j in range(num_vertices):
-                    pos = mesh.offset_vertex_buffer + (j * vertex_size)
-
-                    vertex = Granny2.Vertex([dv.getFloat32(pos + (k * 4), 1) for k in range(3)])
-                    pos += 12
-
-                    if bit_flag2 & 256:  # 0x100
-                        vertex.bone_weights = Vector([dv.getUint8(pos + k) for k in range(4)])
-                        pos += 4
-                        vertex.bone_indices = Vector([dv.getUint8(pos + k) for k in range(4)])
-                        pos += 4
-
-                    if bit_flag2 & 2:  # 0x02
-                        vertex.normals = Vector(
-                            [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
-                        pos += 4
-                        vertex.tangents = Vector(
-                            [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
-                        pos += 4
-
-                    if bit_flag2 & 16:  # 0x10
-                        vertex.color = Color([dv.getUint8(pos + k) for k in range(3)])
-                        pos += 4
-
-                    if bit_flag2 & 32:  # 0x20
-                        vertex.uv_layer0 = Vector(
-                            [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
-                        pos += 4
-
-                    if bit_flag2 & 64:  # 0x40
-                        vertex.uv_layer1 = Vector(
-                            [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
-                        pos += 4
-
-                    if bit_flag2 & 128:  # 0x80
-                        vertex.uv_layer2 = Vector(
-                            [decodeHalfFloat(dv.getUint16(pos + (k * 2), 1)) for k in range(2)])
-
-                    mesh.vertex_buffer[j] = vertex
-
-                # Indices buffer
-                mesh.indices_buffer = {}
-                for j in range(int(num_polygons / 3)):
-                    pos = mesh.offset_indices_buffer + (j * 6)
-                    mesh.indices_buffer[j] = Vector(
-                        [dv.getUint16(pos + (k * 2), 1) for k in range(3)])
-
-                # Bone(s) buffer
-                mesh.bone_names = {j: readString(dv, mesh.offset_bones_buffer + (j * 28))
-                                   for j in range(num_used_bones)}
-
-                gr2.mesh_buffer[i] = mesh
-
-            # Materials
-            # NOTE: I wish there was a more efficient way to do this!
-            gr2.material_names = {}
-            if num_materials:
-                pos = offset_material_name_offsets
-                for i in range(num_materials):                         # Use string name for name
-                    gr2.material_names[i] = readString(dv, pos)
-                    pos += 4
-            else:
-                count = 0
-                for _, mesh in gr2.mesh_buffer.items():
-                    if mesh.bit_flag2 & 32:
-                        for j, _ in mesh.piece_header_buffer.items():  # Use "mesh name".00x for name
-                            gr2.material_names[count] = f"{mesh.name}.{j:03d}"
-                            count += 1
-
-            # Skeleton Bones
-            gr2.bone_buffer = {}
-            for i in range(num_bones):
-                pos = offset_bone_struct + (i * 136)
-                bone = Granny2.Bone()
-                bone.name = readString(dv, pos)
-                pos += 4
-                bone.parent_index = dv.getInt32(pos, 1)
-                pos += 4
-                # bone.bone_to_parent = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
-                pos += 64
-                bone.root_to_bone = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
-                pos += 64
-                gr2.bone_buffer[i] = bone
-
-            return gr2
+    return gr2
 
 
 def build(gr2, filepath="", import_collision=False):

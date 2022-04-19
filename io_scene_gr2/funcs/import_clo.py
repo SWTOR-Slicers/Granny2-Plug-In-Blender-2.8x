@@ -9,138 +9,142 @@ Run this script from "File->Import" menu and then load the desired CLO animation
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/CLO-File-Structure
 """
 
+from os import path
 from typing import Union
 
 from bpy.types import Context, Object, Operator
 
 from ..types.clo import Cloth
-from ..utils.binary import DataView
+from ..utils.binary import ArrayBuffer, DataView
 
 
 def read(operator, filepath):
     # type: (Operator, str) -> Union[Cloth, None]
     with open(filepath, 'rb') as file:
-        dv = DataView(file)
-        pos = 0
+        buffer = ArrayBuffer()
+        buffer.fromfile(file, path.getsize(filepath))
 
-        if dv.getUint32(pos, True) != 0x42434C4F:  # b'OLCB'
-            operator.report({'ERROR'}, f"\'{filepath}\' is not a valid SWTOR clo file.")
-            return None
+    dv = DataView(buffer)
+    pos = 0
 
-        pos += 4
+    if dv.getUint32(pos, True) != 0x42434C4F:  # b'OLCB'
+        operator.report({'ERROR'}, f"\'{filepath}\' is not a valid SWTOR clo file.")
+        return None
 
-        # NOTE: Read file header.
-        unk1 = dv.getUint32(pos, True)
-        pos += 4
+    pos += 4
 
-        assert(unk1 == 1)
+    # NOTE: Read file header.
+    unk1 = dv.getUint32(pos, True)
+    pos += 4
 
-        offset_data = dv.getUint32(pos, True)
-        pos += 4
+    assert(unk1 == 1)
 
-        assert(offset_data == 16)  # 0x10
+    offset_data = dv.getUint32(pos, True)
+    pos += 4
 
-        # data_size = dv.getUint32(pos, True)
-        pos += 4
+    assert(offset_data == 16)  # 0x10
 
-        # NOTE: Read data header.
-        unk1 = dv.getUint32(pos, True)
-        pos += 4
+    # data_size = dv.getUint32(pos, True)
+    pos += 4
 
-        assert(unk1 == 0)
+    # NOTE: Read data header.
+    unk1 = dv.getUint32(pos, True)
+    pos += 4
 
-        # unk2 = round(dv.getFloat32(pos, True))
-        pos += 4
-        unk3 = [round(dv.getFloat32(pos + (i * 4), True)) for i in range(3)]
-        pos += 12
+    assert(unk1 == 0)
 
-        assert(unk3.count(0) == 3)
+    # unk2 = round(dv.getFloat32(pos, True))
+    pos += 4
+    unk3 = [round(dv.getFloat32(pos + (i * 4), True)) for i in range(3)]
+    pos += 12
 
-        # unk4 = round(dv.getFloat32(pos, True))
-        pos += 4
-        unk5 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
+    assert(unk3.count(0) == 3)
+
+    # unk4 = round(dv.getFloat32(pos, True))
+    pos += 4
+    unk5 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
+    pos += 16
+
+    assert (unk5.count(-1) == 4)
+
+    num_bones_total = dv.getUint32(pos, True)
+    pos += 4
+    # offset_bone_names = dv.getUint32(pos, True)
+    pos += 4
+    num_cloth_bones1 = dv.getUint32(pos, True)
+    pos += 4
+    offset_bone_data1 = dv.getUint32(pos, True)
+    pos += 4
+    num_cloth_bones2 = dv.getUint32(pos, True)
+    pos += 4
+
+    assert(num_cloth_bones2 == num_cloth_bones1)
+
+    # offset_bone_data2 = dv.getUint32(pos, True);
+    pos += 4
+    # unk6 = [dv.getUint32(pos + (i * 4), True) for i in range(3)]
+    pos += 12
+    # num_bone_data3 = dv.getUint32(pos, True)
+    pos += 4
+    # off_bone_data3 = dv.getUint32(pos, True)
+    pos += 4
+    # unk7 = [dv.getUint32(pos + (i * 4), True) for i in range(4)]
+    pos += 16
+    # num_bone_data4 = dv.getUint32(pos, True)
+    pos += 4
+    # off_bone_data4 = dv.getUint32(pos, True)
+    pos += 4
+    # unk8 = dv.getUint32(pos, True)
+    pos += 4
+
+    cloth = Cloth(num_bones_total)
+
+    # NOTE: Read bone names.
+    pos = (pos + 127) & -128
+    names = []
+
+    for _ in range(num_bones_total):
+        name = ""
+
+        for _ in range(32):
+            name += chr(dv.getUint8(pos))
+            pos += 1
+
+        names.append(name.split('\0')[0])
+
+    for bone, name in zip(cloth.bones, names):
+        bone.name = name
+
+    # NOTE: Read bone data (1)
+    pos = offset_data + offset_bone_data1
+
+    for _ in range(num_cloth_bones1):
+        constraints1 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
         pos += 16
-
-        assert (unk5.count(-1) == 4)
-
-        num_bones_total = dv.getUint32(pos, True)
-        pos += 4
-        # offset_bone_names = dv.getUint32(pos, True)
-        pos += 4
-        num_cloth_bones1 = dv.getUint32(pos, True)
-        pos += 4
-        offset_bone_data1 = dv.getUint32(pos, True)
-        pos += 4
-        num_cloth_bones2 = dv.getUint32(pos, True)
-        pos += 4
-
-        assert(num_cloth_bones2 == num_cloth_bones1)
-
-        # offset_bone_data2 = dv.getUint32(pos, True);
-        pos += 4
-        # unk6 = [dv.getUint32(pos + (i * 4), True) for i in range(3)]
-        pos += 12
-        # num_bone_data3 = dv.getUint32(pos, True)
-        pos += 4
-        # off_bone_data3 = dv.getUint32(pos, True)
-        pos += 4
-        # unk7 = [dv.getUint32(pos + (i * 4), True) for i in range(4)]
+        constraints2 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(6)]
+        pos += 24
+        constraints3 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(6)]
+        pos += 24
+        unk1 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
         pos += 16
-        # num_bone_data4 = dv.getUint32(pos, True)
+        unk2 = [dv.getInt32(pos + (i * 4), True) for i in range(2)]
+        pos += 8
+        bone_index = dv.getUint32(pos, True)
         pos += 4
-        # off_bone_data4 = dv.getUint32(pos, True)
-        pos += 4
-        # unk8 = dv.getUint32(pos, True)
+        parent_index = dv.getUint32(pos, True)
         pos += 4
 
-        cloth = Cloth(num_bones_total)
+        bone = cloth.bones[bone_index]
+        bone.index = bone_index
+        bone.parent_index = parent_index
+        bone.constraints1 = constraints1
+        bone.constraints2 = constraints2
+        bone.constraints3 = constraints3
+        bone.unk1 = unk1
+        bone.unk2 = unk2
+        bone.is_cloth = True
 
-        # NOTE: Read bone names.
-        pos = (pos + 127) & -128
-        names = []
-
-        for _ in range(num_bones_total):
-            name = ""
-
-            for _ in range(32):
-                name += chr(dv.getUint8(pos))
-                pos += 1
-
-            names.append(name.split('\0')[0])
-
-        for bone, name in zip(cloth.bones, names):
-            bone.name = name
-
-        # NOTE: Read bone data (1)
-        pos = offset_data + offset_bone_data1
-
-        for _ in range(num_cloth_bones1):
-            constraints1 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
-            pos += 16
-            constraints2 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(6)]
-            pos += 24
-            constraints3 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(6)]
-            pos += 24
-            unk1 = [round(dv.getFloat32(pos + (i * 4), True), 6) for i in range(4)]
-            pos += 16
-            unk2 = [dv.getInt32(pos + (i * 4), True) for i in range(2)]
-            pos += 8
-            bone_index = dv.getUint32(pos, True)
-            pos += 4
-            parent_index = dv.getUint32(pos, True)
-            pos += 4
-
-            bone = cloth.bones[bone_index]
-            bone.index = bone_index
-            bone.parent_index = parent_index
-            bone.constraints1 = constraints1
-            bone.constraints2 = constraints2
-            bone.constraints3 = constraints3
-            bone.unk1 = unk1
-            bone.unk2 = unk2
-            bone.is_cloth = True
-
-        return cloth
+    return cloth
 
 
 def build(operator, context, cloth):

@@ -6,14 +6,28 @@ from mathutils import Color, Vector
 
 
 class Granny2:
+    """
+    """
+
+    __slots__ = ("offset_BNRY", "type_flag", "bounds", "offset_cached_offsets",
+                 "offset_mesh_headers", "offset_material_name_offsets", "mesh_buffer",
+                 "bone_buffer", "material_names", "num_bytes")
 
     class Bone:
+        """
+        """
+
+        __slots__ = ("name", "parent_index", "root_to_bone")
 
         name: str
         parent_index: int
         root_to_bone: int
 
     class BoundingBox:
+        """
+        """
+
+        __slots__ = ("min_x", "min_y", "min_z", "min_w", "max_x", "max_y", "max_z", "max_w")
 
         min_x: float
         min_y: float
@@ -51,6 +65,10 @@ class Granny2:
             )
 
     class Piece:
+        """
+        """
+
+        __slots__ = ("offset_indices", "num_polygons", "material_index", "index", "bounds")
 
         offset_indices: int
         num_polygons: int
@@ -60,6 +78,12 @@ class Granny2:
         bounds: "Granny2.BoundingBox"
 
     class Mesh:
+        """
+        """
+
+        __slots__ = ("_mesh_name", "offset_mesh_name", "offset_vertex_buffer",
+                     "offset_piece_headers", "offset_indices_buffer", "offset_bones_buffer",
+                     "piece_header_buffer", "vertex_buffer", "indices_buffer", "bone_names")
 
         offset_mesh_name: int          # 0x70 Uint32
 
@@ -170,6 +194,11 @@ class Granny2:
         bone_names: Dict[int, str]
 
     class Vertex:
+        """
+        """
+
+        __slots__ = ("position", "bone_weights", "bone_indices", "color", "normals", "tangents",
+                     "uv_layer0", "uv_layer1", "uv_layer2")
 
         position: Vector      # vec3
         bone_weights: Vector  # vec4
@@ -263,6 +292,8 @@ class Granny2:
     bone_buffer: Dict[int, "Granny2.Bone"]
     material_names: Dict[int, str]
 
+    num_bytes: int
+
     def calculate_offsets(self):
         # type: () -> None
         count = 0
@@ -340,3 +371,4 @@ class Granny2:
         count += 28
         # EGCD
         count += 12
+        self.num_bytes = count

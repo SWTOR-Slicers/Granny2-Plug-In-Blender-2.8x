@@ -16,7 +16,7 @@ from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Vector, Matrix
 
 from ..types.gr2 import Granny2
-from ..utils.binary import DataView
+from ..utils.binary import ArrayBuffer, DataView
 from ..utils.number import encodeHalfFloat
 
 
@@ -41,7 +41,7 @@ def parse(ob, mesh, has_clo=False):
         piece = Granny2.Piece()
         piece.material_index = piece.index = i
         piece.num_polygons = len(polygons)
-        piece.offset_indices = gmesh.piece_header_buffer[i - 1].numPolygon if i != 0 else 0
+        piece.offset_indices = gmesh.piece_header_buffer[i - 1].num_polygons if i != 0 else 0
 
         piece.bounds = Granny2.BoundingBox(
             (
@@ -128,391 +128,388 @@ def parse(ob, mesh, has_clo=False):
 
 def write(gr2, path):
     # type: (Granny2, str) -> None
-    import os
+    buffer = ArrayBuffer(gr2.num_bytes)
+    dv = DataView(buffer)
+    pos = 0
 
-    fullpath = os.path.join(path, f"{gr2.mesh_buffer[0].name}.gr2")
+    # MAGIC bytes
+    dv.setUint32(pos, gr2.magic_bytes, 1)
+    pos = 4
+    # Version major
+    dv.setUint32(pos, gr2.version_major, 1)
+    pos += 4
+    # Version minor
+    dv.setUint32(pos, gr2.version_minor, 1)
+    pos += 4
+    # Offset BNRY/LTLE
+    dv.setUint32(pos, gr2.offset_BNRY, 1)
+    pos += 4
 
-    open(fullpath, 'wb')  # Create an empty file to write into
+    # Number of cached offsets
+    dv.setUint32(pos, gr2.num_cached_offsets, 1)
+    pos += 4
+    # Type flag
+    dv.setUint32(pos, gr2.type_flag, 1)
+    pos += 4
+    # Number of meshes
+    dv.setUint16(pos, gr2.num_meshes, 1)
+    pos += 2
+    # Number of materials
+    dv.setUint16(pos, gr2.num_materials, 1)
+    pos += 2
+    # Number of skeleton bones (only applies to skeleton/armature gr2s)
+    dv.setUint16(pos, gr2.num_skeleton_bones, 1)
+    pos += 2
+    # Number of attachments
+    # TODO: Figure out how to hanle attachments, 0 for now.
+    dv.setUint16(pos, gr2.num_attachments, 1)
+    pos += 2
 
-    with open(fullpath, 'rb+') as file:
-        dv = DataView(file)
-        pos = 0
+    # 16 zero bytes
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
 
-        # MAGIC bytes
-        dv.setUint32(pos, gr2.magic_bytes, 1)
-        pos = 4
-        # Version major
-        dv.setUint32(pos, gr2.version_major, 1)
-        pos += 4
-        # Version minor
-        dv.setUint32(pos, gr2.version_minor, 1)
-        pos += 4
-        # Offset BNRY/LTLE
-        dv.setUint32(pos, gr2.offset_BNRY, 1)
+    # Global bounding box
+    for co in gr2.bounds:
+        dv.setFloat32(pos, co, 1)
         pos += 4
 
-        # Number of cached offsets
-        dv.setUint32(pos, gr2.num_cached_offsets, 1)
+    # Offset of the cached offsets
+    dv.setUint32(pos, gr2.offset_cached_offsets, 1)
+    pos += 4
+    # Offset of mesh header
+    dv.setUint32(pos, gr2.offset_mesh_headers, 1)
+    pos += 4
+    # Offset of the material name offsets
+    dv.setUint32(pos, gr2.offset_material_name_offsets, 1)
+    pos += 4
+    # 4 zero bytes
+    dv.setUint32(pos, 0, 1)
+    pos += 4
+
+    # Offset of attachments
+    # TODO: Figure out how to handle attachments, 0 for now.
+    dv.setUint32(pos, 0, 1)
+    pos += 4
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
+
+    for i, mesh in gr2.mesh_buffer.items():
+        # Offset mesh name
+        dv.setUint32(pos, mesh.offset_mesh_name, 1)
         pos += 4
-        # Type flag
-        dv.setUint32(pos, gr2.type_flag, 1)
+        # BitFlag1
+        dv.setUint32(pos, mesh.bit_flag1, 1)
         pos += 4
-        # Number of meshes
-        dv.setUint16(pos, gr2.num_meshes, 1)
+        # Number of sub meshes
+        dv.setUint16(pos, mesh.num_pieces, 1)
         pos += 2
-        # Number of materials
-        dv.setUint16(pos, gr2.num_materials, 1)
+        # Number of bones
+        dv.setUint16(pos, mesh.num_used_bones, 1)
         pos += 2
-        # Number of skeleton bones (only applies to skeleton/armature gr2s)
-        dv.setUint16(pos, gr2.num_skeleton_bones, 1)
+        # BitFlag2
+        dv.setUint16(pos, mesh.bit_flag2, 1)
         pos += 2
-        # Number of attachments
-        # TODO: Figure out how to hanle attachments, 0 for now.
-        dv.setUint16(pos, gr2.num_attachments, 1)
+        # Vertex size
+        dv.setUint16(pos, mesh.vertex_size, 1)
         pos += 2
 
-        # 16 zero bytes
-        dv.setBigUint64(pos, 0, 1)
-        pos += 8
-        dv.setBigUint64(pos, 0, 1)
-        pos += 8
+        # Number of vertices
+        dv.setUint32(pos, mesh.num_vertices, 1)
+        pos += 4
+        # Number of indices
+        dv.setUint32(pos, int(mesh.num_polygons * 3), 1)
+        pos += 4
+        # Offset vertices buffer
+        dv.setUint32(pos, mesh.offset_vertex_buffer, 1)
+        pos += 4
+        # Offset sub meshes headers
+        dv.setUint32(pos, mesh.offset_piece_headers, 1)
+        pos += 4
 
-        # Global bounding box
-        for co in gr2.bounds:
-            dv.setFloat32(pos, co, 1)
+        # Offset indices buffer
+        dv.setUint32(pos, mesh.offset_indices_buffer, 1)
+        pos += 4
+        # Offset bones buffer
+        dv.setUint32(pos, mesh.offset_bones_buffer, 1)
+        pos += 4
+
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
+
+    # Sub mesh headers
+    for _, mesh in gr2.mesh_buffer.items():
+        for _, piece in mesh.piece_header_buffer.items():
+            # Offset of sub polygons within indices buffer
+            dv.setUint32(pos, piece.offset_indices, 1)
+            pos += 4
+            # Number of polygons used by sub
+            dv.setUint32(pos, piece.num_polygons, 1)
+            pos += 4
+            # Material id
+            dv.setUint32(pos, piece.material_index, 1)
+            pos += 4
+            # Sub mesh id
+            dv.setUint32(pos, piece.index, 1)
             pos += 4
 
-        # Offset of the cached offsets
-        dv.setUint32(pos, gr2.offset_cached_offsets, 1)
-        pos += 4
-        # Offset of mesh header
-        dv.setUint32(pos, gr2.offset_mesh_headers, 1)
-        pos += 4
-        # Offset of the material name offsets
-        dv.setUint32(pos, gr2.offset_material_name_offsets, 1)
-        pos += 4
-        # 4 zero bytes
-        dv.setUint32(pos, 0, 1)
+            # Bounding Box
+            for co in piece.bounds:
+                dv.setFloat32(pos, co, 1)
+                pos += 4
+
+    # Material name offsets
+    offset = 0
+    for i, mesh in gr2.mesh_buffer.items():
+        offset = mesh.offset_mesh_name if i == 0 else offset
+        offset += len(mesh.name) + 1
+    for _, material_name in gr2.material_names.items():
+        dv.setUint32(pos, offset, 1)
+        offset += len(material_name) + 1
         pos += 4
 
-        # Offset of attachments
-        # TODO: Figure out how to handle attachments, 0 for now.
-        dv.setUint32(pos, 0, 1)
-        pos += 4
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
 
-        for i, mesh in gr2.mesh_buffer.items():
-            # Offset mesh name
+    # Attachments
+    # TODO: Figure out how to handle attachments, skip for now.
+
+    # Vertices buffer
+    for _, mesh in gr2.mesh_buffer.items():
+        for _, vertex in mesh.vertex_buffer.items():
+            dv.setFloat32(pos, vertex.position.x, 1)
+            pos += 4
+            dv.setFloat32(pos, vertex.position.y, 1)
+            pos += 4
+            dv.setFloat32(pos, vertex.position.z, 1)
+            pos += 4
+
+            if vertex.bone_indices and vertex.bone_weights:
+                for co in vertex.bone_weights:
+                    dv.setUint8(pos, int(co * 255))
+                    pos += 1
+
+                for co in vertex.bone_indices:
+                    dv.setUint8(pos, int(co))
+                    pos += 1
+
+            for co in vertex.normals:
+                dv.setUint8(pos, int((co * 127.5) + 128))
+                pos += 1
+
+            for co in vertex.tangents:
+                dv.setUint8(pos, int((co * 127.5) + 128))
+                pos += 1
+
+            dv.setUint16(pos, encodeHalfFloat(vertex.uv_layer0.x), 1)
+            pos += 2
+            dv.setUint16(pos, encodeHalfFloat(1 - vertex.uv_layer0.y), 1)
+            pos += 2
+
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint32(pos, 0)
+        pos += 1
+
+    # Indices buffer
+    for _, mesh in gr2.mesh_buffer.items():
+        for _, polygon in mesh.indices_buffer.items():
+            for vertex_index in polygon:
+                dv.setUint16(pos, int(vertex_index), 1)
+                pos += 2
+
+    # Zero pading
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
+
+    # Bones buffer
+    for _, mesh in gr2.mesh_buffer.items():
+        def bone_bounds(bone, axis):
+            # type: (int, int) -> List[float]
+            result = [v.position[axis] for _, v in mesh.vertex_buffer.items() if bone in v.bone_indices]
+            return result if result else [0]
+
+        if mesh.bone_names:
+            for i, bone_name in mesh.bone_names.items():
+                dv.setUint32(pos, offset, 1)
+                offset += len(bone_name) + 1
+                pos += 4
+                dv.setFloat32(pos, min(bone_bounds(i, 0)), 1)
+                pos += 4
+                dv.setFloat32(pos, min(bone_bounds(i, 1)), 1)
+                pos += 4
+                dv.setFloat32(pos, min(bone_bounds(i, 2)), 1)
+                pos += 4
+                dv.setFloat32(pos, max(bone_bounds(i, 0)), 1)
+                pos += 4
+                dv.setFloat32(pos, max(bone_bounds(i, 1)), 1)
+                pos += 4
+                dv.setFloat32(pos, max(bone_bounds(i, 2)), 1)
+                pos += 4
+        else:
             dv.setUint32(pos, mesh.offset_mesh_name, 1)
             pos += 4
-            # BitFlag1
-            dv.setUint32(pos, mesh.bit_flag1, 1)
+            dv.setFloat32(pos, gr2.bounds.minimum.x, 1)
             pos += 4
-            # Number of sub meshes
-            dv.setUint16(pos, mesh.num_pieces, 1)
-            pos += 2
-            # Number of bones
-            dv.setUint16(pos, mesh.num_used_bones, 1)
-            pos += 2
-            # BitFlag2
-            dv.setUint16(pos, mesh.bit_flag2, 1)
-            pos += 2
-            # Vertex size
-            dv.setUint16(pos, mesh.vertex_size, 1)
-            pos += 2
-
-            # Number of vertices
-            dv.setUint32(pos, mesh.num_vertices, 1)
+            dv.setFloat32(pos, gr2.bounds.minimum.y, 1)
             pos += 4
-            # Number of indices
-            dv.setUint32(pos, int(mesh.num_polygons * 3), 1)
+            dv.setFLoat32(pos, gr2.bounds.minimum.z, 1)
             pos += 4
-            # Offset vertices buffer
-            dv.setUint32(pos, mesh.offset_vertex_buffer, 1)
+            dv.setFloat32(pos, gr2.bounds.maximum.x, 1)
             pos += 4
-            # Offset sub meshes headers
-            dv.setUint32(pos, mesh.offset_piece_headers, 1)
+            dv.setFloat32(pos, gr2.bounds.maximum.y, 1)
+            pos += 4
+            dv.setFloat32(pos, gr2.bounds.maximum.z, 1)
             pos += 4
 
-            # Offset indices buffer
-            dv.setUint32(pos, mesh.offset_indices_buffer, 1)
-            pos += 4
-            # Offset bones buffer
-            dv.setUint32(pos, mesh.offset_bones_buffer, 1)
-            pos += 4
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
 
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
+    # Strings
+    for _, mesh in gr2.mesh_buffer.items():
+        for ch in mesh.name:
+            dv.setUint8(pos, ord(ch))
             pos += 1
+        dv.setUint8(pos, 0)
+        pos += 1
 
-        # Sub mesh headers
-        for _, mesh in gr2.mesh_buffer.items():
-            for _, piece in mesh.piece_header_buffer.items():
-                # Offset of sub polygons within indices buffer
-                dv.setUint32(pos, piece.offset_indices, 1)
-                pos += 4
-                # Number of polygons used by sub
-                dv.setUint32(pos, piece.num_polygons, 1)
-                pos += 4
-                # Material id
-                dv.setUint32(pos, piece.material_index, 1)
-                pos += 4
-                # Sub mesh id
-                dv.setUint32(pos, piece.index, 1)
-                pos += 4
+    offset_material_names = pos
+    for _, material_name in gr2.material_names.items():
+        for ch in material_name:
+            dv.setUint8(pos, ord(ch))
+            pos += 1
+        dv.setUint8(pos, 0)
+        pos += 1
 
-                # Bounding Box
-                for co in piece.bounds:
-                    dv.setFloat32(pos, co, 1)
-                    pos += 4
+    offset_bone_names = pos
+    for _, mesh in gr2.mesh_buffer.items():
+        if mesh.bone_names:
+            for _, bone_name in mesh.bone_names.items():
+                for ch in bone_name:
+                    dv.setUint8(pos, ord(ch))
+                    pos += 1
+                dv.setUint8(pos, 0)
+                pos += 1
 
-        # Material name offsets
-        offset = 0
-        for i, mesh in gr2.mesh_buffer.items():
-            offset = mesh.offset_mesh_name if i == 0 else offset
-            offset += len(mesh.name) + 1
-        for _, material_name in gr2.material_names.items():
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
+
+    # Cached offsets
+    dv.setUint32(pos, 80, 1)      # 0x50
+    pos += 4
+    dv.setUint32(pos, pos - 4, 1)
+    pos += 4
+    dv.setUint32(pos, 84, 1)      # 0x54
+    pos += 4
+    dv.setUint32(pos, 112, 1)     # 0x70
+    pos += 4
+    dv.setUint32(pos, 88, 1)      # 0x58
+    pos += 4
+    dv.setUint32(pos, offset_material_names, 1)
+    pos += 4
+
+    for i, mesh in gr2.mesh_buffer.items():
+        dv.setUint32(pos, 112 + (i * 40), 1)     # 0x70
+        pos += 4
+        dv.setUint32(pos, mesh.offset_mesh_name, 1)
+        pos += 4
+        dv.setUint32(pos, 136 + (i * 40), 1)     # 0x88
+        pos += 4
+        dv.setUint32(pos, mesh.offset_vertex_buffer, 1)
+        pos += 4
+        dv.setUint32(pos, 140 + (i * 40), 1)     # 0x8C
+        pos += 4
+        dv.setUint32(pos, mesh.offset_piece_headers, 1)
+        pos += 4
+        dv.setUint32(pos, 144 + (i * 40), 1)     # 0x90
+        pos += 4
+        dv.setUint32(pos, mesh.offset_indices_buffer, 1)
+        pos += 4
+        dv.setUint32(pos, 148 + (i * 40), 1)     # 0x94
+        pos += 4
+        dv.setUint32(pos, mesh.offset_bones_buffer, 1)
+        pos += 4
+
+    offset = offset_material_names
+    for i, material_name in gr2.material_names.items():
+        # Offset material name offset
+        dv.setUint32(pos, gr2.offset_material_name_offsets + (4 * i), 1)
+        pos += 4
+
+        # Offset material name
+        if i == 0:
+            dv.setUint32(pos, offset_material_names, 1)
+            pos += 4
+        else:
             dv.setUint32(pos, offset, 1)
             offset += len(material_name) + 1
             pos += 4
 
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        # Attachments
-        # TODO: Figure out how to handle attachments, skip for now.
-
-        # Vertices buffer
-        for _, mesh in gr2.mesh_buffer.items():
-            for _, vertex in mesh.vertex_buffer.items():
-                dv.setFloat32(pos, vertex.position.x, 1)
-                pos += 4
-                dv.setFloat32(pos, vertex.position.y, 1)
-                pos += 4
-                dv.setFloat32(pos, vertex.position.z, 1)
-                pos += 4
-
-                if vertex.bone_indices and vertex.bone_weights:
-                    for co in vertex.bone_weights:
-                        dv.setUint8(pos, int(co * 255))
-                        pos += 1
-
-                    for co in vertex.bone_indices:
-                        dv.setUint8(pos, int(co))
-                        pos += 1
-
-                for co in vertex.normals:
-                    dv.setUint8(pos, int((co * 127.5) + 128))
-                    pos += 1
-
-                for co in vertex.tangents:
-                    dv.setUint8(pos, int((co * 127.5) + 128))
-                    pos += 1
-
-                dv.setUint16(pos, encodeHalfFloat(vertex.uv_layer0.x), 1)
-                pos += 2
-                dv.setUint16(pos, encodeHalfFloat(1 - vertex.uv_layer0.y), 1)
-                pos += 2
-
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint32(pos, 0)
-            pos += 1
-
-        # Indices buffer
-        for _, mesh in gr2.mesh_buffer.items():
-            for _, polygon in mesh.indices_buffer.items():
-                for vertex_index in polygon:
-                    dv.setUint16(pos, int(vertex_index), 1)
-                    pos += 2
-
-        # Zero pading
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        # Bones buffer
-        for _, mesh in gr2.mesh_buffer.items():
-            def bone_bounds(bone, axis):
-                # type: (int, int) -> List[float]
-                result = [v.position[axis] for _, v in mesh.vertex_buffer.items() if bone in v.bone_indices]
-                return result if result else [0]
-
-            if mesh.bone_names:
-                for i, bone_name in mesh.bone_names.items():
-                    dv.setUint32(pos, offset, 1)
-                    offset += len(bone_name) + 1
-                    pos += 4
-                    dv.setFloat32(pos, min(bone_bounds(i, 0)), 1)
-                    pos += 4
-                    dv.setFloat32(pos, min(bone_bounds(i, 1)), 1)
-                    pos += 4
-                    dv.setFloat32(pos, min(bone_bounds(i, 2)), 1)
-                    pos += 4
-                    dv.setFloat32(pos, max(bone_bounds(i, 0)), 1)
-                    pos += 4
-                    dv.setFloat32(pos, max(bone_bounds(i, 1)), 1)
-                    pos += 4
-                    dv.setFloat32(pos, max(bone_bounds(i, 2)), 1)
-                    pos += 4
-            else:
-                dv.setUint32(pos, mesh.offset_mesh_name, 1)
-                pos += 4
-                dv.setFloat32(pos, gr2.bounds.minimum.x, 1)
-                pos += 4
-                dv.setFloat32(pos, gr2.bounds.minimum.y, 1)
-                pos += 4
-                dv.setFLoat32(pos, gr2.bounds.minimum.z, 1)
-                pos += 4
-                dv.setFloat32(pos, gr2.bounds.maximum.x, 1)
-                pos += 4
-                dv.setFloat32(pos, gr2.bounds.maximum.y, 1)
-                pos += 4
-                dv.setFloat32(pos, gr2.bounds.maximum.z, 1)
-                pos += 4
-
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        # Strings
-        for _, mesh in gr2.mesh_buffer.items():
-            for ch in mesh.name:
-                dv.setUint8(pos, ord(ch))
-                pos += 1
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        offset_material_names = pos
-        for _, material_name in gr2.material_names.items():
-            for ch in material_name:
-                dv.setUint8(pos, ord(ch))
-                pos += 1
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        offset_bone_names = pos
-        for _, mesh in gr2.mesh_buffer.items():
-            if mesh.bone_names:
-                for _, bone_name in mesh.bone_names.items():
-                    for ch in bone_name:
-                        dv.setUint8(pos, ord(ch))
-                        pos += 1
-                    dv.setUint8(pos, 0)
-                    pos += 1
-
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
-
-        # Cached offsets
-        dv.setUint32(pos, 80, 1)      # 0x50
-        pos += 4
-        dv.setUint32(pos, pos - 4, 1)
-        pos += 4
-        dv.setUint32(pos, 84, 1)      # 0x54
-        pos += 4
-        dv.setUint32(pos, 112, 1)     # 0x70
-        pos += 4
-        dv.setUint32(pos, 88, 1)      # 0x58
-        pos += 4
-        dv.setUint32(pos, offset_material_names, 1)
-        pos += 4
-
-        for i, mesh in gr2.mesh_buffer.items():
-            dv.setUint32(pos, 112 + (i * 40), 1)     # 0x70
-            pos += 4
-            dv.setUint32(pos, mesh.offset_mesh_name, 1)
-            pos += 4
-            dv.setUint32(pos, 136 + (i * 40), 1)     # 0x88
-            pos += 4
-            dv.setUint32(pos, mesh.offset_vertex_buffer, 1)
-            pos += 4
-            dv.setUint32(pos, 140 + (i * 40), 1)     # 0x8C
-            pos += 4
-            dv.setUint32(pos, mesh.offset_piece_headers, 1)
-            pos += 4
-            dv.setUint32(pos, 144 + (i * 40), 1)     # 0x90
-            pos += 4
-            dv.setUint32(pos, mesh.offset_indices_buffer, 1)
-            pos += 4
-            dv.setUint32(pos, 148 + (i * 40), 1)     # 0x94
-            pos += 4
-            dv.setUint32(pos, mesh.offset_bones_buffer, 1)
+    for _, mesh in gr2.mesh_buffer.items():
+        for i, bone_name in mesh.bone_names.items():
+            # Offset bone name offset
+            dv.setUint32(pos, mesh.offset_bones_buffer + (28 * i), 1)
             pos += 4
 
-        offset = offset_material_names
-        for i, material_name in gr2.material_names.items():
-            # Offset material name offset
-            dv.setUint32(pos, gr2.offset_material_name_offsets + (4 * i), 1)
-            pos += 4
-
-            # Offset material name
+            # Offset bone name
             if i == 0:
-                dv.setUint32(pos, offset_material_names, 1)
+                dv.setUint32(pos, offset_bone_names, 1)
                 pos += 4
             else:
                 dv.setUint32(pos, offset, 1)
-                offset += len(material_name) + 1
+                offset += len(bone_name) + 1
                 pos += 4
 
-        for _, mesh in gr2.mesh_buffer.items():
-            for i, bone_name in mesh.bone_names.items():
-                # Offset bone name offset
-                dv.setUint32(pos, mesh.offset_bones_buffer + (28 * i), 1)
-                pos += 4
+    # Zero padding
+    while (pos % 16) != 0:
+        dv.setUint8(pos, 0)
+        pos += 1
 
-                # Offset bone name
-                if i == 0:
-                    dv.setUint32(pos, offset_bone_names, 1)
-                    pos += 4
-                else:
-                    dv.setUint32(pos, offset, 1)
-                    offset += len(bone_name) + 1
-                    pos += 4
+    # BNRY/LTLE
+    # TODO:
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
 
-        # Zero padding
-        while (pos % 16) != 0:
-            dv.setUint8(pos, 0)
-            pos += 1
+    # Bounding box
+    dv.setFloat32(pos, gr2.bounds.min_x, 1)
+    pos += 4
+    dv.setFloat32(pos, gr2.bounds.min_y, 1)
+    pos += 4
+    dv.setFloat32(pos, gr2.bounds.min_z, 1)
+    pos += 4
+    dv.setFloat32(pos, gr2.bounds.max_x, 1)
+    pos += 4
+    dv.setFloat32(pos, gr2.bounds.max_y, 1)
+    pos += 4
+    dv.setFloat32(pos, gr2.bounds.max_z, 1)
+    pos += 4
+    dv.setUint32(pos, 0, 1)
+    pos += 4
+    for ch in "EGCD":
+        dv.setUint8(pos, ord(ch))
+        pos += 1
+    dv.setUint32(pos, 5, 1)
+    pos += 4
+    dv.setUint32(pos, gr2.offset_BNRY, 1)
+    pos += 4
 
-        # BNRY/LTLE
-        # TODO:
-        dv.setBigUint64(pos, 0, 1)
-        pos += 8
-        dv.setBigUint64(pos, 0, 1)
-        pos += 8
-
-        # Bounding box
-        dv.setFloat32(pos, gr2.bounds.min_x, 1)
-        pos += 4
-        dv.setFloat32(pos, gr2.bounds.min_y, 1)
-        pos += 4
-        dv.setFloat32(pos, gr2.bounds.min_z, 1)
-        pos += 4
-        dv.setFloat32(pos, gr2.bounds.max_x, 1)
-        pos += 4
-        dv.setFloat32(pos, gr2.bounds.max_y, 1)
-        pos += 4
-        dv.setFloat32(pos, gr2.bounds.max_z, 1)
-        pos += 4
-        dv.setUint32(pos, 0, 1)
-        pos += 4
-        for ch in "EGCD":
-            dv.setUint8(pos, ord(ch))
-            pos += 1
-        dv.setUint32(pos, 5, 1)
-        pos += 4
-        dv.setUint32(pos, gr2.offset_BNRY, 1)
-        pos += 4
+    with open(f"{path}{gr2.mesh_buffer[0].name}.gr2", 'wb') as file:
+        dv.buffer.tofile(file)
 
 
 def save(operator, context, path, ob, global_matrix=None):
@@ -563,7 +560,7 @@ def save(operator, context, path, ob, global_matrix=None):
 
         if mesh:
             progress.step("Done, writing file ...", 2)
-            write(mesh, path)
+            write(mesh, path + os.sep)
             progress.leave_substeps(f"Done, finished exporting: \'{fullpath}\'")
 
             return True

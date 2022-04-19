@@ -10,13 +10,14 @@ https://github.com/SWTOR-Slicers/WikiPedia/wiki/JBA-File-Structure
 """
 
 from math import sqrt
+from os import path
 from typing import Union
 
 from bpy.types import Context, Object, Operator
 from mathutils import Matrix, Quaternion, Vector
 
 from ..types.jba import JointBoneAnimation
-from ..utils.binary import DataView
+from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import readCString
 
 
@@ -51,160 +52,163 @@ def _read_translation_compressed(dv, pos, base, stride):
 def read(operator, filepath):
     # type: (Operator, str) -> Union[JointBoneAnimation, None]
     with open(filepath, 'rb') as file:
-        dv = DataView(file)
-        pos = 0
+        buffer = ArrayBuffer()
+        buffer.fromfile(file, path.getsize(filepath))
 
-        # Cancel import if this is not a BioWare Austin / SWTOR JBA file
-        if dv.getUint32(pos, True) != 0:
-            operator.report({'ERROR'}, f"\'{filepath}\' is not a valid SWTOR jba file.")
-            return None
-        pos += 4
+    dv = DataView(buffer)
+    pos = 0
 
-        # NOTE: File header
-        length = dv.getFloat32(pos, True)
-        pos += 4
-        fps = dv.getFloat32(pos, True)
-        pos += 4
-        num_blocks = dv.getUint32(pos, True)
-        pos += 4
-        pos += 8  # unknown
-        num_bones = dv.getUint32(pos, True)
-        pos += 4
-        pos += 12  # unknown
+    # Cancel import if this is not a BioWare Austin / SWTOR JBA file
+    if dv.getUint32(pos, True) != 0:
+        operator.report({'ERROR'}, f"\'{filepath}\' is not a valid SWTOR jba file.")
+        return None
+    pos += 4
 
-        # NOTE: Block headers
-        num_frames = round(length * fps) + 1
-        blocks = [None] * num_blocks
-        for i in range(num_blocks):
-            start_frame = dv.getUint32(pos, True)
+    # NOTE: File header
+    length = dv.getFloat32(pos, True)
+    pos += 4
+    fps = dv.getFloat32(pos, True)
+    pos += 4
+    num_blocks = dv.getUint32(pos, True)
+    pos += 4
+    pos += 8  # unknown
+    num_bones = dv.getUint32(pos, True)
+    pos += 4
+    pos += 12  # unknown
+
+    # NOTE: Block headers
+    num_frames = round(length * fps) + 1
+    blocks = [None] * num_blocks
+    for i in range(num_blocks):
+        start_frame = dv.getUint32(pos, True)
+        pos += 4
+        block_size = dv.getUint32(pos, True)
+        pos += 4
+        blocks[i] = JointBoneAnimation.Block(start_frame, block_size)
+        if i > 0:
+            blocks[i - 1].num_frames = 1 + blocks[i].start_frame - blocks[i - 1].start_frame
+        if i + 1 == num_blocks:
+            blocks[i].num_frames = num_frames - blocks[i].start_frame
+    pos += num_blocks * 4  # unknown
+
+    # NOTE: Bone data
+    pos = (pos + 127) & -128
+    bones = [None] * num_bones
+    for i in range(num_bones):
+        translation_stride = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
+        pos += 12
+        translation_base = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
+        pos += 12
+        rotation_stride = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
+        pos += 12
+        rotation_base = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
+        pos += 12
+        bone = JointBoneAnimation.Bone(rotation_base, rotation_stride, translation_base, translation_stride)
+        bone.rotations = [None] * num_frames
+        bone.translations = [None] * num_frames
+        bones[i] = bone
+
+    # NOTE: Block data
+    pos = (pos + 127) & -128
+    for i in range(num_blocks):
+        block = blocks[i]
+        block_end = pos + block.size
+
+        num_block_bones = dv.getUint32(pos, True)
+        pos += 4
+        assert(num_block_bones == num_bones)
+        pos += 4  # unknown
+
+        # Keyframe layout
+        has_translations = [None] * num_block_bones
+        for j in range(num_block_bones):
+            # num_rotations = dv.getUint32(pos, True)
             pos += 4
-            block_size = dv.getUint32(pos, True)
-            pos += 4
-            blocks[i] = JointBoneAnimation.Block(start_frame, block_size)
-            if i > 0:
-                blocks[i - 1].num_frames = 1 + blocks[i].start_frame - blocks[i - 1].start_frame
-            if i + 1 == num_blocks:
-                blocks[i].num_frames = num_frames - blocks[i].start_frame
-        pos += num_blocks * 4  # unknown
-
-        # NOTE: Bone data
-        pos = (pos + 127) & -128
-        bones = [None] * num_bones
-        for i in range(num_bones):
-            translation_stride = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
-            pos += 12
-            translation_base = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
-            pos += 12
-            rotation_stride = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
-            pos += 12
-            rotation_base = Vector([dv.getFloat32(pos + (j * 4), True) for j in range(3)])
-            pos += 12
-            bone = JointBoneAnimation.Bone(rotation_base, rotation_stride, translation_base, translation_stride)
-            bone.rotations = [None] * num_frames
-            bone.translations = [None] * num_frames
-            bones[i] = bone
-
-        # NOTE: Block data
-        pos = (pos + 127) & -128
-        for i in range(num_blocks):
-            block = blocks[i]
-            block_end = pos + block.size
-
-            num_block_bones = dv.getUint32(pos, True)
-            pos += 4
-            assert(num_block_bones == num_bones)
             pos += 4  # unknown
+            num_translations = dv.getUint32(pos, True)
+            pos += 4
+            pos += 4  # unknown
+            has_translations[j] = num_translations > 0
 
-            # Keyframe layout
-            has_translations = [None] * num_block_bones
-            for j in range(num_block_bones):
-                # num_rotations = dv.getUint32(pos, True)
-                pos += 4
-                pos += 4  # unknown
-                num_translations = dv.getUint32(pos, True)
-                pos += 4
-                pos += 4  # unknown
-                has_translations[j] = num_translations > 0
+        # Keyframes
+        for j in range(num_bones):
+            bone = bones[j]
 
-            # Keyframes
-            for j in range(num_bones):
-                bone = bones[j]
+            # Rotations
+            for k in range(block.num_frames):
+                bone.rotations[block.start_frame + k] = _read_rotation_compressed(
+                    dv, pos, bone.rotation_base, bone.rotation_stride)
+                pos += 6
 
-                # Rotations
+            # Translations
+            pos = (pos + 3) & -4
+            if has_translations[j]:
                 for k in range(block.num_frames):
-                    bone.rotations[block.start_frame + k] = _read_rotation_compressed(
-                        dv, pos, bone.rotation_base, bone.rotation_stride)
-                    pos += 6
+                    bone.translations[block.start_frame + k] = _read_translation_compressed(
+                        dv, pos, bone.translation_base, bone.translation_stride)
+                    pos += 4
+            else:
+                for k in range(block.num_frames):
+                    pos_x = bone.translation_base.x + 2047 * bone.translation_stride.x
+                    pos_y = bone.translation_base.y + 2047 * bone.translation_stride.y
+                    pos_z = bone.translation_base.z + 1023 * bone.translation_stride.z
+                    bone.translations[block.start_frame + k] = Vector((pos_x, pos_y, pos_z))
 
-                # Translations
-                pos = (pos + 3) & -4
-                if has_translations[j]:
-                    for k in range(block.num_frames):
-                        bone.translations[block.start_frame + k] = _read_translation_compressed(
-                            dv, pos, bone.translation_base, bone.translation_stride)
-                        pos += 4
-                else:
-                    for k in range(block.num_frames):
-                        pos_x = bone.translation_base.x + 2047 * bone.translation_stride.x
-                        pos_y = bone.translation_base.y + 2047 * bone.translation_stride.y
-                        pos_z = bone.translation_base.z + 1023 * bone.translation_stride.z
-                        bone.translations[block.start_frame + k] = Vector((pos_x, pos_y, pos_z))
+        pos = block_end
 
-            pos = block_end
+    # World space
+    pos += 4  # unknown
+    # fps = dv.getFloat32(pos, True)
+    pos += 4
+    translation_stride = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
+    pos += 12
+    translation_base = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
+    pos += 12
+    rotation_stride = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
+    pos += 12
+    rotation_base = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
+    pos += 12
+    num_rotations = dv.getUint32(pos, True)
+    pos += 4
+    assert(num_rotations == num_frames)
+    pos += 4  # unknown
+    # num_translations = dv.getUint32(pos, True)
+    pos += 4
+    # assert(num_translations == num_faces)
+    pos += 4  # unknown
 
-        # World space
-        pos += 4  # unknown
-        # fps = dv.getFloat32(pos, True)
-        pos += 4
-        translation_stride = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
-        pos += 12
-        translation_base = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
-        pos += 12
-        rotation_stride = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
-        pos += 12
-        rotation_base = Vector([dv.getFloat32(pos + (i * 4), True) for i in range(3)])
-        pos += 12
-        num_rotations = dv.getUint32(pos, True)
-        pos += 4
-        assert(num_rotations == num_frames)
-        pos += 4  # unknown
-        # num_translations = dv.getUint32(pos, True)
-        pos += 4
-        # assert(num_translations == num_faces)
-        pos += 4  # unknown
+    rotations = [_read_rotation_compressed(dv, pos + (i * 8), rotation_base, rotation_stride)
+                 for i in range(num_frames)]
+    pos += num_frames * 6
 
-        rotations = [_read_rotation_compressed(dv, pos + (i * 8), rotation_base, rotation_stride)
-                     for i in range(num_frames)]
-        pos += num_frames * 6
+    pos = (pos + 3) & -4
 
-        pos = (pos + 3) & -4
+    translations = [_read_translation_compressed(dv, pos + (i * 4), translation_base, translation_stride)
+                    for i in range(num_frames)]
+    pos += num_frames * 4
 
-        translations = [_read_translation_compressed(dv, pos + (i * 4), translation_base, translation_stride)
-                        for i in range(num_frames)]
-        pos += num_frames * 4
+    world_space = JointBoneAnimation.WorldSpace(rotations, translations)
 
-        world_space = JointBoneAnimation.WorldSpace(rotations, translations)
+    # Bone names
+    names_start = pos
+    num_names = dv.getUint32(pos, True)
+    pos += 4
+    pos += 4  # unknown
+    # off_indices = dv.getUint32(pos, True)
+    pos += 4
+    # off_offsets = dv.getUint32(pos, True)
+    pos += 4
+    off_names = dv.getUint32(pos, True)
+    pos += 4
+    pos += num_names * 4  # numbers from 0 to num_names - 1
+    name_offsets = [dv.getUint32(pos + (i * 4), True) for i in range(num_names)]
+    pos += num_names * 4
+    bone_names = [readCString(dv, names_start + off_names + name_offsets[i]) for i in range(num_names)]
 
-        # Bone names
-        names_start = pos
-        num_names = dv.getUint32(pos, True)
-        pos += 4
-        pos += 4  # unknown
-        # off_indices = dv.getUint32(pos, True)
-        pos += 4
-        # off_offsets = dv.getUint32(pos, True)
-        pos += 4
-        off_names = dv.getUint32(pos, True)
-        pos += 4
-        pos += num_names * 4  # numbers from 0 to num_names - 1
-        name_offsets = [dv.getUint32(pos + (i * 4), True) for i in range(num_names)]
-        pos += num_names * 4
-        bone_names = [readCString(dv, names_start + off_names + name_offsets[i]) for i in range(num_names)]
+    for i, name in enumerate(bone_names):
+        bones[i].name = name if name != "GOD" else "Bip01"
 
-        for i, name in enumerate(bone_names):
-            bones[i].name = name if name != "GOD" else "Bip01"
-
-        return JointBoneAnimation(length, fps, num_frames, bones, world_space)
+    return JointBoneAnimation(length, fps, num_frames, bones, world_space)
 
 
 def build(operator, context, filepath, jba):
