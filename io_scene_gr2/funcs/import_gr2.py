@@ -8,12 +8,14 @@ Run this script from "File->Import" menu and then load the desired GR2 model fil
 
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 """
-from os import path
+
+from os import path, sep
+from math import pi
 from typing import Union
 
 import bpy
 from bpy.types import Context, Operator
-from mathutils import Color, Vector
+from mathutils import Color, Matrix, Vector
 
 from ..types.gr2 import Granny2
 from ..utils.binary import ArrayBuffer, DataView
@@ -23,7 +25,8 @@ from ..utils.number import decodeHalfFloat
 
 def read(operator, filepath):
     # type: (Operator, str) -> Union[Granny2, None]
-
+    """
+    """
     with open(filepath, 'rb') as file:
         buffer = ArrayBuffer()
         buffer.fromfile(file, path.getsize(filepath))
@@ -68,9 +71,8 @@ def read(operator, filepath):
     gr2.mesh_buffer = {}
     for i in range(num_meshes):
         pos = offset_mesh_header + (i * 40)
-        mesh = Granny2.Mesh()
         # Mesh name
-        mesh.name = readString(dv, pos)
+        mesh = Granny2.Mesh(readString(dv, pos))
         pos += 4
         # BitFlag1
         pos += 4
@@ -172,8 +174,7 @@ def read(operator, filepath):
         mesh.indices_buffer = {}
         for j in range(int(num_polygons / 3)):
             pos = mesh.offset_indices_buffer + (j * 6)
-            mesh.indices_buffer[j] = Vector(
-                [dv.getUint16(pos + (k * 2), 1) for k in range(3)])
+            mesh.indices_buffer[j] = tuple([dv.getUint16(pos + (k * 2), 1) for k in range(3)])
 
         # Bone(s) buffer
         mesh.bone_names = {j: readString(dv, mesh.offset_bones_buffer + (j * 28))
@@ -191,9 +192,9 @@ def read(operator, filepath):
             pos += 4
     else:
         count = 0
-        for _, mesh in gr2.mesh_buffer.items():
+        for mesh in gr2.mesh_buffer.values():
             if mesh.bit_flag2 & 32:
-                for j, _ in mesh.piece_header_buffer.items():  # Use "mesh name".00x for name
+                for j in mesh.piece_header_buffer.keys():  # Use "mesh name".00x for name
                     gr2.material_names[count] = f"{mesh.name}.{j:03d}"
                     count += 1
 
@@ -217,9 +218,8 @@ def read(operator, filepath):
 
 def build(gr2, filepath="", import_collision=False):
     # type: (Granny2, str, bool) -> None
-    from math import pi
-    from mathutils import Matrix
-
+    """
+    """
     # NOTE: Create Materials
     for i, material in gr2.material_names.items():
         new_material = bpy.data.materials.new(name=material)
@@ -231,9 +231,9 @@ def build(gr2, filepath="", import_collision=False):
             continue
 
         bmesh = bpy.data.meshes.new(mesh.name)
-        bmesh.from_pydata([v.position for _, v in mesh.vertex_buffer.items()],
+        bmesh.from_pydata([vert.position for vert in mesh.vertex_buffer.values()],
                           [],
-                          [v for _, v in mesh.indices_buffer.items()])
+                          [index for index in mesh.indices_buffer.values()])
 
         if mesh.bit_flag2 & 32:  # 0x20
             # Link Materials
@@ -299,10 +299,10 @@ def build(gr2, filepath="", import_collision=False):
     if gr2.type_flag == 2 and len(gr2.bone_buffer) > 0:
         bpy.ops.object.add(type='ARMATURE', enter_editmode=True)
         armature: bpy.types.Armature = bpy.context.object.data
-        armature.name = filepath.split('\\' if '\\' in filepath else '/')[-1][:-4]
+        armature.name = filepath.split(sep)[-1][:-4]
         armature.display_type = 'STICK'
 
-        for _, bone in gr2.bone_buffer.items():
+        for bone in gr2.bone_buffer.values():
             new_bone = armature.edit_bones.new(bone.name)
             new_bone.tail = [0, 0.00001, 0]
 

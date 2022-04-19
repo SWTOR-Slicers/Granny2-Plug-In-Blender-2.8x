@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-from typing import Dict, Iterator, Sequence, Union
+from typing import Dict, Iterator, Sequence, Tuple, Union
 
 from mathutils import Color, Vector
 
@@ -85,6 +85,10 @@ class Granny2:
                      "offset_piece_headers", "offset_indices_buffer", "offset_bones_buffer",
                      "piece_header_buffer", "vertex_buffer", "indices_buffer", "bone_names")
 
+        def __init__(self, name):
+            # type: (str) -> None
+            self._mesh_name = name
+
         offset_mesh_name: int          # 0x70 Uint32
 
         @property
@@ -94,14 +98,6 @@ class Granny2:
                 return self._mesh_name.replace(' ', '_')
             else:
                 return "None"
-
-        @name.setter
-        def name(self, value):
-            # type: (str) -> None
-            if isinstance(value, str):
-                self._mesh_name = value
-            else:
-                raise TypeError(f"Name value must be string, not {type(value)}")
 
         @property
         def bit_flag1(self):           # 0x74 Uint32
@@ -190,7 +186,7 @@ class Granny2:
 
         piece_header_buffer: Dict[int, "Granny2.Piece"]
         vertex_buffer: Dict[int, "Granny2.Vertex"]
-        indices_buffer: Dict[int, Vector]
+        indices_buffer: Dict[int, Tuple[int]]
         bone_names: Dict[int, str]
 
     class Vertex:
@@ -241,7 +237,7 @@ class Granny2:
         if self.num_materials:
             count += self.num_materials
         if getattr(self, "mesh_buffer"):
-            for _, mesh in self.mesh_buffer.items():
+            for mesh in self.mesh_buffer.values():
                 if getattr(mesh, "bone_names", None):
                     count += mesh.num_used_bones
         return count
@@ -313,7 +309,7 @@ class Granny2:
         while (count % 16) != 0:
             count += 1
         # Sub mesh header(s)
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             mesh.offset_piece_headers = count
             count += 48 * mesh.num_pieces
         # Offset of each Material Name string
@@ -323,19 +319,19 @@ class Granny2:
         while (count % 16) != 0:
             count += 1
         # Vertex Buffer
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             mesh.offset_vertex_buffer = count
             count += mesh.vertex_size * mesh.num_vertices
         while (count % 16) != 0:
             count += 1
         # Indices Buffer
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             mesh.offset_indices_buffer = count
             count += mesh.num_polygons * 6
         while (count % 16) != 0:
             count += 1
         # Bones Buffer
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             mesh.offset_bones_buffer = count
             if mesh.bone_names:
                 count += 28 * mesh.num_used_bones
@@ -344,14 +340,14 @@ class Granny2:
         while (count % 16) != 0:
             count += 1
         # Strings buffer
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             mesh.offset_mesh_name = count
             count += len(mesh.name) + 1
-        for _, name in self.material_names.items():
+        for name in self.material_names.values():
             count += len(name) + 1
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             if mesh.bone_names:
-                for _, name in mesh.bone_names.items():
+                for name in mesh.bone_names.values():
                     count += len(name) + 1
         while (count % 16) != 0:
             count += 1
@@ -360,7 +356,7 @@ class Granny2:
         count += 24
         count += 40 * self.num_meshes
         count += 8 * self.num_materials
-        for _, mesh in self.mesh_buffer.items():
+        for mesh in self.mesh_buffer.values():
             count += 8 * mesh.num_used_bones
         while (count % 16) != 0:
             count += 1

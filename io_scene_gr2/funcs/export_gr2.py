@@ -11,6 +11,7 @@ https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 
 from typing import List, Union
 
+import bpy
 from bpy.types import Context, Mesh, Object, Operator
 from bpy_extras.wm_utils.progress_report import ProgressReport
 from mathutils import Vector, Matrix
@@ -25,11 +26,8 @@ def parse(ob, mesh, has_clo=False):
     gr2 = Granny2()
 
     # Meshes
-    gr2.mesh_buffer = {0: Granny2.Mesh()}
+    gr2.mesh_buffer = {0: Granny2.Mesh(ob.name)}
     gmesh = gr2.mesh_buffer[0]
-
-    # Mesh Name
-    gmesh.name = ob.name
 
     # Parse materials / sub-meshes
     gr2.material_names = {}
@@ -45,13 +43,13 @@ def parse(ob, mesh, has_clo=False):
 
         piece.bounds = Granny2.BoundingBox(
             (
-                min([min([mesh.vertices[i].co[0] for i in poly.vertices]) for poly in polygons]),
-                min([min([mesh.vertices[i].co[1] for i in poly.vertices]) for poly in polygons]),
-                min([min([mesh.vertices[i].co[2] for i in poly.vertices]) for poly in polygons]),
+                min([co[0] for co in ob.bound_box]),
+                min([co[1] for co in ob.bound_box]),
+                min([co[2] for co in ob.bound_box]),
                 1.0,
-                max([max([mesh.vertices[i].co[0] for i in poly.vertices]) for poly in polygons]),
-                max([max([mesh.vertices[i].co[1] for i in poly.vertices]) for poly in polygons]),
-                max([max([mesh.vertices[i].co[2] for i in poly.vertices]) for poly in polygons]),
+                max([co[0] for co in ob.bound_box]),
+                max([co[1] for co in ob.bound_box]),
+                max([co[2] for co in ob.bound_box]),
                 1.0,
             )
         )
@@ -101,7 +99,7 @@ def parse(ob, mesh, has_clo=False):
         gmesh.vertex_buffer[vert.index] = vertex
 
     # Parse mesh indices
-    gmesh.indices_buffer = {poly.index: Vector(poly.vertices) for poly in mesh.polygons}
+    gmesh.indices_buffer = {poly.index: tuple(poly.vertices) for poly in mesh.polygons}
 
     # Type Flag
     gr2.type_flag = 1 if has_clo else 0
@@ -109,13 +107,13 @@ def parse(ob, mesh, has_clo=False):
     # Calculate Bounds
     gr2.bounds = Granny2.BoundingBox(
         (
-            min([min([mesh.vertices[i].co[0] for i in poly.vertices]) for poly in mesh.polygons]),
-            min([min([mesh.vertices[i].co[1] for i in poly.vertices]) for poly in mesh.polygons]),
-            min([min([mesh.vertices[i].co[2] for i in poly.vertices]) for poly in mesh.polygons]),
+            min([co[0] for co in ob.bound_box]),
+            min([co[1] for co in ob.bound_box]),
+            min([co[2] for co in ob.bound_box]),
             1.0,
-            max([max([mesh.vertices[i].co[0] for i in poly.vertices]) for poly in mesh.polygons]),
-            max([max([mesh.vertices[i].co[1] for i in poly.vertices]) for poly in mesh.polygons]),
-            max([max([mesh.vertices[i].co[2] for i in poly.vertices]) for poly in mesh.polygons]),
+            max([co[0] for co in ob.bound_box]),
+            max([co[1] for co in ob.bound_box]),
+            max([co[2] for co in ob.bound_box]),
             1.0,
         )
     )
@@ -244,8 +242,8 @@ def write(gr2, path):
         pos += 1
 
     # Sub mesh headers
-    for _, mesh in gr2.mesh_buffer.items():
-        for _, piece in mesh.piece_header_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
+        for piece in mesh.piece_header_buffer.values():
             # Offset of sub polygons within indices buffer
             dv.setUint32(pos, piece.offset_indices, 1)
             pos += 4
@@ -269,7 +267,7 @@ def write(gr2, path):
     for i, mesh in gr2.mesh_buffer.items():
         offset = mesh.offset_mesh_name if i == 0 else offset
         offset += len(mesh.name) + 1
-    for _, material_name in gr2.material_names.items():
+    for material_name in gr2.material_names.values():
         dv.setUint32(pos, offset, 1)
         offset += len(material_name) + 1
         pos += 4
@@ -283,8 +281,8 @@ def write(gr2, path):
     # TODO: Figure out how to handle attachments, skip for now.
 
     # Vertices buffer
-    for _, mesh in gr2.mesh_buffer.items():
-        for _, vertex in mesh.vertex_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
+        for vertex in mesh.vertex_buffer.values():
             dv.setFloat32(pos, vertex.position.x, 1)
             pos += 4
             dv.setFloat32(pos, vertex.position.y, 1)
@@ -320,8 +318,8 @@ def write(gr2, path):
         pos += 1
 
     # Indices buffer
-    for _, mesh in gr2.mesh_buffer.items():
-        for _, polygon in mesh.indices_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
+        for polygon in mesh.indices_buffer.values():
             for vertex_index in polygon:
                 dv.setUint16(pos, int(vertex_index), 1)
                 pos += 2
@@ -332,10 +330,10 @@ def write(gr2, path):
         pos += 1
 
     # Bones buffer
-    for _, mesh in gr2.mesh_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
         def bone_bounds(bone, axis):
             # type: (int, int) -> List[float]
-            result = [v.position[axis] for _, v in mesh.vertex_buffer.items() if bone in v.bone_indices]
+            result = [v.position[axis] for v in mesh.vertex_buffer.values() if bone in v.bone_indices]
             return result if result else [0]
 
         if mesh.bone_names:
@@ -377,7 +375,7 @@ def write(gr2, path):
         pos += 1
 
     # Strings
-    for _, mesh in gr2.mesh_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
         for ch in mesh.name:
             dv.setUint8(pos, ord(ch))
             pos += 1
@@ -385,7 +383,7 @@ def write(gr2, path):
         pos += 1
 
     offset_material_names = pos
-    for _, material_name in gr2.material_names.items():
+    for material_name in gr2.material_names.values():
         for ch in material_name:
             dv.setUint8(pos, ord(ch))
             pos += 1
@@ -393,9 +391,9 @@ def write(gr2, path):
         pos += 1
 
     offset_bone_names = pos
-    for _, mesh in gr2.mesh_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
         if mesh.bone_names:
-            for _, bone_name in mesh.bone_names.items():
+            for bone_name in mesh.bone_names.values():
                 for ch in bone_name:
                     dv.setUint8(pos, ord(ch))
                     pos += 1
@@ -458,7 +456,7 @@ def write(gr2, path):
             offset += len(material_name) + 1
             pos += 4
 
-    for _, mesh in gr2.mesh_buffer.items():
+    for mesh in gr2.mesh_buffer.values():
         for i, bone_name in mesh.bone_names.items():
             # Offset bone name offset
             dv.setUint32(pos, mesh.offset_bones_buffer + (28 * i), 1)
@@ -515,7 +513,6 @@ def write(gr2, path):
 def save(operator, context, path, ob, global_matrix=None):
     # type: (Operator, Context, str, Object, Union[Matrix, None]) -> bool
     import os
-    import bpy
 
     fullpath = os.path.join(path, f"{ob.name.replace(' ', '_')}.gr2")
 
