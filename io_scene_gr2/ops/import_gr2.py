@@ -259,8 +259,7 @@ def build(gr2, filepath="", import_collision=False):
     """
     # NOTE: Create Materials
     for i, material in gr2.material_names.items():
-        new_material = bpy.data.materials.new(name=material)
-        new_material.use_nodes = True
+        bpy.data.materials.new(name=material).use_nodes = True
 
     # NOTE: Create Meshes
     for i, mesh in gr2.mesh_buffer.items():
@@ -276,8 +275,8 @@ def build(gr2, filepath="", import_collision=False):
             # Link Materials
             material_indices = []
             for j, piece in mesh.piece_header_buffer.items():
-                material_index = j if piece.material_index == 4294967295 else piece.material_index
-                bmesh.materials.append(bpy.data.materials[material_index])
+                material = gr2.material_names[j if piece.material_index == 4294967295 else piece.material_index]
+                bmesh.materials.append(bpy.data.materials[material])
 
                 for _ in range(piece.num_polygons):
                     material_indices.append(j)
