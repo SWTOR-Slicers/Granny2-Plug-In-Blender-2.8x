@@ -8,18 +8,59 @@ Run this script from "File->Import" menu and then load the desired JSON file.
 """
 
 import json
-from typing import Any, Dict, List, Tuple, Union
+import os
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import bpy
-from bpy.types import Context, Operator
+from bpy import app
+from bpy.props import BoolProperty, CollectionProperty, StringProperty
+from bpy.types import Context, Operator, OperatorFileListElement
+from bpy_extras.io_utils import ImportHelper
 
 from ..utils.string import path_format, path_split
+
+
+class ImportCHA(Operator, ImportHelper):
+    """Import from JSON file format (.json)"""
+    bl_idname = "import_mesh.gr2_json"
+    bl_label = "Import SWTOR (.json)"
+    bl_options = {'UNDO'}
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the JSON file",
+        type=OperatorFileListElement,
+    )
+
+    if app.version < (2, 82, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
+
+    import_collision: BoolProperty(name="Import collision mesh", default=False)
+
+    def execute(self, context):
+        # type: (Context) -> Set[str]
+        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        if not paths:
+            paths.append(self.filepath)
+
+        for path in paths:
+            if not load(self, context, path):
+                return {'CANCELLED'}
+
+        return {'FINISHED'}
+
 
 _eye_mat_info = None
 
 
 def read(filepath):
-    # type: (str) -> Tuple[List, Union[Dict, None]]
+    # type: (str) -> Tuple[List, Optional[Dict]]
     with open(filepath) as file:
         data: List[Dict[str, Any]] = json.load(file)
 

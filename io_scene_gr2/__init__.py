@@ -3,13 +3,16 @@
 import importlib
 import os
 import sys
-from typing import List, Set
+from typing import List
 
-import bpy
 from bpy.app.handlers import depsgraph_update_post
-from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
-from bpy.types import Context, KeyMap, Menu, Operator, OperatorFileListElement
-from bpy_extras.io_utils import ExportHelper, ImportHelper, axis_conversion, orientation_helper
+from bpy.types import Context, KeyMap, Menu
+
+from .ops.export_gr2 import ExportGR2
+from .ops.import_cha import ImportCHA
+from .ops.import_clo import ImportCLO
+from .ops.import_gr2 import ImportGR2
+from .ops.import_jba import ImportJBA
 
 from .types.node import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 
@@ -25,239 +28,21 @@ bl_info = {
 }
 
 # Python doesn't reload package sub-modules at the same time as __init__.py!
-for filename in [file for file in os.listdir(os.path.dirname(os.path.realpath(__file__)))
-                 if file.endswith('.py')]:
-    if filename == os.path.basename(__file__):
-        continue
+for directory in [os.path.join(os.path.dirname(os.path.realpath(__file__)), entry)
+                  for entry in {'ops', 'types', 'utils'}]:
+    for entry in os.listdir(directory):
+        if entry.endswith('.py'):
+            module = sys.modules.get(f"{__name__}.{entry[:-3]}")
 
-    module = sys.modules.get("{}.{}".format(__name__, filename[:-3]))
+            if module:
+                importlib.reload(module)
 
-    if module:
-        importlib.reload(module)
-
-# clear out any scene update funcs hanging around, e.g. after a script reload
+# Clear out any scene update funcs hanging around, e.g. after a script reload
 for func in depsgraph_update_post:
     if func.__module__.startswith(__name__):
         depsgraph_update_post.remove(func)
 
 del importlib, os, sys, depsgraph_update_post
-
-
-@orientation_helper(axis_forward='-Z', axis_up='Y')
-class ExportGR2(Operator, ExportHelper):
-    """Export SWTOR GR2 file format (.gr2)"""
-    bl_idname = "export_mesh.gr2"
-    bl_label = "Export SWTOR (.gr2)"
-    bl_options = {'PRESET'}
-
-    filename_ext = ".gr2"
-    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
-
-    has_clo: BoolProperty(
-        name="Has .clo file?",
-        description="Enable if there is a corresponding .clo file to go with this model",
-        default=False)
-
-    def execute(self, context):
-        # type: (Context) -> Set[str]
-        from .funcs import export_gr2
-
-        import os
-        # from mathutils import Matrix
-
-        global_matrix = axis_conversion(to_forward=self.axis_forward, to_up=self.axis_up).to_4x4()
-
-        # global_matrix = axis_conversion(
-        #     to_forward=self.axis_forward,
-        #     to_up=self.axis_up
-        # ).to_4x4() @ Matrix.Scale(0.1, 4)  # Scale down to 10%
-
-        # Cache selected objects.
-        obs = context.selected_objects
-
-        path, _ = os.path.split(self.filepath)
-
-        for ob in obs:
-            # Clear selected object(s).
-            bpy.ops.object.select_all(action='DESELECT')
-
-            # Select ob
-            ob.select_set(True)
-
-            # Export ob
-            if not export_gr2.save(self, context, path, ob, global_matrix=global_matrix):
-                return {'CANCELLED'}
-
-        return {'FINISHED'}
-
-
-class ImportCHA(Operator, ImportHelper):
-    """Import from JSON file format (.json)"""
-    bl_idname = "import_mesh.gr2_json"
-    bl_label = "Import SWTOR (.json)"
-    bl_options = {'UNDO'}
-
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the JSON file",
-        type=OperatorFileListElement,
-    )
-
-    if bpy.app.version < (2, 82, 0):
-        directory = StringProperty(subtype='DIR_PATH')
-    else:
-        directory: StringProperty(subtype='DIR_PATH')
-
-    filename_ext = ".json"
-    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
-
-    import_collision: BoolProperty(name="Import collision mesh", default=False)
-
-    def execute(self, context):
-        # type: (Context) -> Set[str]
-        import os
-
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
-
-        if not paths:
-            paths.append(self.filepath)
-
-        from .funcs import import_cha
-
-        for path in paths:
-            if not import_cha.load(self, context, path):
-                return {'CANCELLED'}
-
-        return {'FINISHED'}
-
-
-class ImportCLO(Operator, ImportHelper):
-    """Import SWTOR CLO file format (.clo)"""
-    bl_idname = "import_cloth.clo"
-    bl_label = "Import SWTOR (.clo)"
-    bl_options = {'UNDO'}
-
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the CLO file",
-        type=OperatorFileListElement,
-    )
-
-    if bpy.app.version < (2, 82, 0):
-        directory = StringProperty(subtype='DIR_PATH')
-    else:
-        directory: StringProperty(subtype='DIR_PATH')
-
-    filename_ext = ".clo"
-    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
-
-    def execute(self, context):
-        # type: (Context) -> Set[str]
-        import os
-
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
-
-        if not paths:
-            paths.append(self.filepath)
-
-        from .funcs import import_clo
-
-        for path in paths:
-            if not import_clo.load(self, context, path):
-                return {'CANCELLED'}
-
-        return {'FINISHED'}
-
-
-class ImportGR2(Operator, ImportHelper):
-    """Import SWTOR GR2 file format (.gr2)"""
-    bl_idname = "import_mesh.gr2"
-    bl_label = "Import SWTOR (.gr2)"
-    bl_options = {'UNDO'}
-
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the GR2 file",
-        type=OperatorFileListElement,
-    )
-
-    if bpy.app.version < (2, 82, 0):
-        directory = StringProperty(subtype='DIR_PATH')
-    else:
-        directory: StringProperty(subtype='DIR_PATH')
-
-    filename_ext = ".gr2"
-    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
-
-    import_collision: BoolProperty(name="Import Collision Mesh", default=False)
-
-    def execute(self, context):
-        # type: (Context) -> Set[str]
-        import os
-
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
-
-        if not paths:
-            paths.append(self.filepath)
-
-        from .funcs import import_gr2
-
-        for path in paths:
-            if not import_gr2.load(self, context, path):
-                return {'CANCELLED'}
-
-        return {"FINISHED"}
-
-
-class ImportJBA(Operator, ImportHelper):
-    """Import from SWTOR JBA file format (.jba)"""
-    bl_idname = "import_animation.jba"
-    bl_label = "Import SWTOR (.jba)"
-    bl_options = {'UNDO'}
-
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the JBA file",
-        type=OperatorFileListElement,
-    )
-
-    if bpy.app.version < (2, 82, 0):
-        directory = StringProperty(subtype='DIR_PATH')
-    else:
-        directory: StringProperty(subtype='DIR_PATH')
-
-    filename_ext = ".jba"
-    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
-
-    ignore_facial_bones: BoolProperty(
-        name="Import Facial Bones",
-        description="Ignore translation keyframe for facial bones",
-        default=True,
-    )
-    scale_factor: FloatProperty(
-        name="Scale Factor",
-        description="Scale factor of the animation (try 1.05 for character animations)",
-        default=1.0,
-        soft_min=0.1,
-        soft_max=2.0,
-    )
-
-    def execute(self, context):
-        # type: (Context) -> Set[str]
-        import os
-
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
-
-        if not paths:
-            paths.append(self.filepath)
-
-        from .funcs import import_jba
-
-        for path in paths:
-            if not import_jba.load(self, context, path):
-                return {'CANCELLED'}
-
-        return {'FINISHED'}
 
 
 def _import_cha(self, _context):
@@ -315,6 +100,7 @@ def register():
     TOPBAR_MT_file_import.append(_import_jba)
     TOPBAR_MT_file_export.append(_export_gr2)
 
+    import bpy
     wm = bpy.context.window_manager
     km = wm.keyconfigs.addon.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
     kmi = km.keymap_items.new(node.NODE_OT_ngroup_edit.bl_idname, 'TAB', 'PRESS')
@@ -332,7 +118,6 @@ def unregister():
     keymaps.clear()
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
-
     TOPBAR_MT_file_import.remove(_import_cha)
     TOPBAR_MT_file_import.remove(_import_clo)
     TOPBAR_MT_file_import.remove(_import_gr2)
@@ -347,10 +132,10 @@ def unregister():
         unregister_class(cls)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         unregister()
-    except (KeyError, RuntimeError):
+    except Exception:
         pass
 
     register()

@@ -9,16 +9,66 @@ Run this script from "File->Import" menu and then load the desired JBA animation
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/JBA-File-Structure
 """
 
-from math import sqrt
-from os import path
-from typing import Union
+import math
+import os
+from typing import Optional, Set
 
-from bpy.types import Context, Object, Operator
+from bpy import app
+from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
+from bpy.types import Context, Object, Operator, OperatorFileListElement
+from bpy_extras.io_utils import ImportHelper
 from mathutils import Matrix, Quaternion, Vector
 
 from ..types.jba import JointBoneAnimation
 from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import readCString
+
+
+class ImportJBA(Operator, ImportHelper):
+    """Import from SWTOR JBA file format (.jba)"""
+    bl_idname = "import_animation.jba"
+    bl_label = "Import SWTOR (.jba)"
+    bl_options = {'UNDO'}
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the JBA file",
+        type=OperatorFileListElement,
+    )
+
+    if app.version < (2, 82, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    filename_ext = ".jba"
+    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
+
+    ignore_facial_bones: BoolProperty(
+        name="Import Facial Bones",
+        description="Ignore translation keyframe for facial bones",
+        default=True,
+    )
+    scale_factor: FloatProperty(
+        name="Scale Factor",
+        description="Scale factor of the animation (try 1.05 for character animations)",
+        default=1.0,
+        soft_min=0.1,
+        soft_max=2.0,
+    )
+
+    def execute(self, context):
+        # type: (Context) -> Set[str]
+        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        if not paths:
+            paths.append(self.filepath)
+
+        for path in paths:
+            if not load(self, context, path):
+                return {'CANCELLED'}
+
+        return {'FINISHED'}
 
 
 def _read_rotation_compressed(dv, pos, base, stride):
@@ -29,7 +79,7 @@ def _read_rotation_compressed(dv, pos, base, stride):
     rot_z = base.z + dv.getUint16(pos + 4, True) * stride.z
     pos += 6
     rot_dot = rot_x * rot_x + rot_y * rot_y + rot_z * rot_z
-    rot_w = 0.0 if rot_dot > 1.0 else sqrt(1.0 - rot_dot)
+    rot_w = 0.0 if rot_dot > 1.0 else math.sqrt(1.0 - rot_dot)
 
     if rot_x_raw & 32768:
         rot_w *= -1.0
@@ -50,10 +100,10 @@ def _read_translation_compressed(dv, pos, base, stride):
 
 
 def read(operator, filepath):
-    # type: (Operator, str) -> Union[JointBoneAnimation, None]
+    # type: (Operator, str) -> Optional[JointBoneAnimation]
     with open(filepath, 'rb') as file:
         buffer = ArrayBuffer()
-        buffer.fromfile(file, path.getsize(filepath))
+        buffer.fromfile(file, os.path.getsize(filepath))
 
     dv = DataView(buffer)
     pos = 0

@@ -9,27 +9,64 @@ Run this script from "File->Import" menu and then load the desired GR2 model fil
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 """
 
-from os import path, sep
-from math import pi
-from typing import Union
+import os
+from math import pi as PI
+from typing import Optional, Set
 
 import bpy
-from bpy.types import Context, Operator
+from bpy import app
+from bpy.props import BoolProperty, CollectionProperty, StringProperty
+from bpy.types import Context, Operator, OperatorFileListElement
+from bpy_extras.io_utils import ImportHelper
 from mathutils import Color, Matrix, Vector
 
 from ..types.gr2 import Granny2
 from ..utils.binary import ArrayBuffer, DataView
-from ..utils.string import readString
 from ..utils.number import decodeHalfFloat
+from ..utils.string import readString
+
+
+class ImportGR2(Operator, ImportHelper):
+    """Import SWTOR GR2 file format (.gr2)"""
+    bl_idname = "import_mesh.gr2"
+    bl_label = "Import SWTOR (.gr2)"
+    bl_options = {'UNDO'}
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the GR2 file",
+        type=OperatorFileListElement,
+    )
+
+    if app.version < (2, 82, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    filename_ext = ".gr2"
+    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
+
+    import_collision: BoolProperty(name="Import Collision Mesh", default=False)
+
+    def execute(self, context):
+        # type: (Context) -> Set[str]
+        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        if not paths:
+            paths.append(self.filepath)
+
+        for path in paths:
+            if not load(self, context, path):
+                return {'CANCELLED'}
+
+        return {"FINISHED"}
 
 
 def read(operator, filepath):
-    # type: (Operator, str) -> Union[Granny2, None]
-    """
-    """
+    # type: (Operator, str) -> Optional[Granny2]
     with open(filepath, 'rb') as file:
         buffer = ArrayBuffer()
-        buffer.fromfile(file, path.getsize(filepath))
+        buffer.fromfile(file, os.path.getsize(filepath))
 
     dv = DataView(buffer)
     pos = 0
@@ -187,7 +224,7 @@ def read(operator, filepath):
     gr2.material_names = {}
     if num_materials:
         pos = offset_material_name_offsets
-        for i in range(num_materials):                         # Use string name for name
+        for i in range(num_materials):                     # Use string name for name
             gr2.material_names[i] = readString(dv, pos)
             pos += 4
     else:
@@ -288,7 +325,7 @@ def build(gr2, filepath="", import_collision=False):
         bpy.context.collection.objects.link(ob)
 
         # Adjust the orientation of the model
-        ob.matrix_local = Matrix.Rotation(pi * 0.5, 4, 'X')
+        ob.matrix_local = Matrix.Rotation(PI * 0.5, 4, 'X')
 
         # Deselect all, then select imported model
         bpy.ops.object.select_all(action='DESELECT')
@@ -299,7 +336,7 @@ def build(gr2, filepath="", import_collision=False):
     if gr2.type_flag == 2 and len(gr2.bone_buffer) > 0:
         bpy.ops.object.add(type='ARMATURE', enter_editmode=True)
         armature: bpy.types.Armature = bpy.context.object.data
-        armature.name = filepath.split(sep)[-1][:-4]
+        armature.name = filepath.split(os.sep)[-1][:-4]
         armature.display_type = 'STICK'
 
         for bone in gr2.bone_buffer.values():
@@ -317,7 +354,7 @@ def build(gr2, filepath="", import_collision=False):
             armature_bone.transform(matrix.inverted())
 
         bpy.context.object.name = armature.name
-        bpy.context.object.matrix_local = Matrix.Rotation(pi * 0.5, 4, 'X')
+        bpy.context.object.matrix_local = Matrix.Rotation(PI * 0.5, 4, 'X')
         bpy.ops.object.mode_set(mode='OBJECT')
 
 

@@ -9,16 +9,63 @@ Run this script from "File->Export" menu and then save the desired GR2 model fil
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 """
 
-from typing import List, Union
+import os
+from typing import List, Optional, Set
 
 import bpy
-from bpy.types import Context, Mesh, Object, Operator
-from bpy_extras.wm_utils.progress_report import ProgressReport
-from mathutils import Vector, Matrix
+from bpy.props import BoolProperty, StringProperty
+from bpy.types import Context, Object, Operator, Mesh
+from bpy_extras.io_utils import ExportHelper, axis_conversion, orientation_helper
+from mathutils import Matrix, Vector
 
 from ..types.gr2 import Granny2
 from ..utils.binary import ArrayBuffer, DataView
 from ..utils.number import encodeHalfFloat
+
+
+@orientation_helper(axis_forward='-Z', axis_up='Y')
+class ExportGR2(Operator, ExportHelper):
+    """Export SWTOR GR2 file format (.gr2)"""
+    bl_idname = "export_mesh.gr2"
+    bl_label = "Export SWTOR (.gr2)"
+    bl_options = {'PRESET'}
+
+    filename_ext = ".gr2"
+    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
+
+    has_clo: BoolProperty(
+        name="Has .clo file?",
+        description="Enable if there is a corresponding .clo file to go with this model",
+        default=False)
+
+    def execute(self, context):
+        # type: (Context) -> Set[str]
+        # from mathutils import Matrix
+
+        global_matrix = axis_conversion(to_forward=self.axis_forward, to_up=self.axis_up).to_4x4()
+
+        # global_matrix = axis_conversion(
+        #     to_forward=self.axis_forward,
+        #     to_up=self.axis_up
+        # ).to_4x4() @ Matrix.Scale(0.1, 4)  # Scale down to 10%
+
+        # Cache selected objects.
+        obs = context.selected_objects
+
+        path, _ = os.path.split(self.filepath)
+
+        for ob in obs:
+            # Clear selected object(s).
+            bpy.ops.object.select_all(action='DESELECT')
+
+            # Select ob
+            ob.select_set(True)
+
+            # Export ob
+            if not save(self, context, path, ob, global_matrix=global_matrix):
+                return {'CANCELLED'}
+
+        return {'FINISHED'}
 
 
 def parse(ob, mesh, has_clo=False):
@@ -511,8 +558,8 @@ def write(gr2, path):
 
 
 def save(operator, context, path, ob, global_matrix=None):
-    # type: (Operator, Context, str, Object, Union[Matrix, None]) -> bool
-    import os
+    # type: (Operator, Context, str, Object, Optional[Matrix]) -> bool
+    from bpy_extras.wm_utils.progress_report import ProgressReport
 
     fullpath = os.path.join(path, f"{ob.name.replace(' ', '_')}.gr2")
 

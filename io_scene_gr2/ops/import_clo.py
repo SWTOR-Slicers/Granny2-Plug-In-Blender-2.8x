@@ -9,20 +9,57 @@ Run this script from "File->Import" menu and then load the desired CLO animation
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/CLO-File-Structure
 """
 
-from os import path
-from typing import Union
+import os
+from typing import Optional, Set
 
-from bpy.types import Context, Object, Operator
+from bpy import app
+from bpy.props import CollectionProperty, StringProperty
+from bpy.types import Context, Object, Operator, OperatorFileListElement
+from bpy_extras.io_utils import ImportHelper
 
 from ..types.clo import Cloth
 from ..utils.binary import ArrayBuffer, DataView
 
 
+class ImportCLO(Operator, ImportHelper):
+    """Import SWTOR CLO file format (.clo)"""
+    bl_idname = "import_cloth.clo"
+    bl_label = "Import SWTOR (.clo)"
+    bl_options = {'UNDO'}
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the CLO file",
+        type=OperatorFileListElement,
+    )
+
+    if app.version < (2, 82, 0):
+        directory = StringProperty(subtype='DIR_PATH')
+    else:
+        directory: StringProperty(subtype='DIR_PATH')
+
+    filename_ext = ".clo"
+    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
+
+    def execute(self, context):
+        # type: (Context) -> Set[str]
+        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        if not paths:
+            paths.append(self.filepath)
+
+        for path in paths:
+            if not load(self, context, path):
+                return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
 def read(operator, filepath):
-    # type: (Operator, str) -> Union[Cloth, None]
+    # type: (Operator, str) -> Optional[Cloth]
     with open(filepath, 'rb') as file:
         buffer = ArrayBuffer()
-        buffer.fromfile(file, path.getsize(filepath))
+        buffer.fromfile(file, os.path.getsize(filepath))
 
     dv = DataView(buffer)
     pos = 0

@@ -1,5 +1,8 @@
 # <pep8 compliant>
 
+"""
+"""
+
 from array import array
 from struct import pack_into, unpack_from
 from sys import maxsize
@@ -25,7 +28,7 @@ def ArrayBuffer(length=0):
     elif 0 > length > maxsize:
         raise ValueError("Invalid array buffer length")
 
-    return array('B', bytes(length))
+    return array('B', bytes(int(length)))
 
 
 class DataView:
