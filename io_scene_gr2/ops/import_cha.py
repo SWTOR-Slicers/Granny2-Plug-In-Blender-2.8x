@@ -149,7 +149,7 @@ def build(operator, context, slots, skin_mats):
                     new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
                 except KeyError:
                     if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
-                        if slot["mat_info"]["otherValues"]["materialSkinIndex"] == str(i):
+                        if slot["mat_info"]["otherValues"]["materialSkinIndex"] == i:
                             derived = "SkinB"
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
