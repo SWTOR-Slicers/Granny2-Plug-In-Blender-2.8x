@@ -34,11 +34,11 @@ This add-on provides Blender with several import/export features for **Star Wars
 * Imports and exports SWTOR's specific flavor of the .gr2 3D model format, including rigging data (vertex groups, weights) and armatures ("skeletons"). **It can import multiple files at once**.
 * Imports and applies .jba animation files. Works often enough to be worthy.
 * Imports .clo files for physics-based bones (clothes, hair, Twi'lek lekku, etc.). **Experimental**.
-* Imports .json files describing all the assets and data necessary to auto-assemble and auto-texture a Player Character or a NPC (please check our guides in this Github's [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/other-repositories/gr2-plugin/gr2_addon_010.png)).
+* Imports .json files describing all the assets and data necessary to auto-assemble and auto-texture a Player Character or a NPC (please check our guides in this Github's [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki/locating-swtor-characters-assets-automatically)).
 
 **This add-on produces a series of Shader Nodes that replicate SWTOR's materials system**. They allow for using the game's texture files and materials information without requiring any previous manipulation in a third party painting app: the Shaders do all the massaging involved (turning "green" normal maps to "purple", etc.) on the fly.
 
-The add-on is aware of the version of Blender it is running on, and will create the Shaders accordingly (Blender has been introducing slight differences in its Principled BSDF shader's number of inputs and parameters and their order since the 2.8 version, and the addon caters to those when creating new materials).
+The add-on is aware of the version of Blender it is running on, and will create the Shaders accordingly (Blender has been introducing slight differences in its Principled BSDF shader's number of inputs and parameters and their order since the 2.8 version, and the add-on caters to those when creating new materials).
 
 ### Installation
 
