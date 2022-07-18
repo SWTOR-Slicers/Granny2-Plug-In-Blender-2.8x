@@ -337,7 +337,7 @@ def write(gr2, path):
             dv.setFloat32(pos, vertex.position.z, 1)
             pos += 4
 
-            if vertex.bone_indices and vertex.bone_weights:
+            if hasattr(vertex, "bone_indices") and hasattr(vertex, "bone_weights"):
                 for co in vertex.bone_weights:
                     dv.setUint8(pos, int(co * 255))
                     pos += 1
@@ -371,7 +371,7 @@ def write(gr2, path):
                 dv.setUint16(pos, int(vertex_index), 1)
                 pos += 2
 
-    # Zero pading
+    # Zero padding
     while (pos % 16) != 0:
         dv.setUint8(pos, 0)
         pos += 1
@@ -403,17 +403,17 @@ def write(gr2, path):
         else:
             dv.setUint32(pos, mesh.offset_mesh_name, 1)
             pos += 4
-            dv.setFloat32(pos, gr2.bounds.minimum.x, 1)
+            dv.setFloat32(pos, gr2.bounds.min_x, 1)
             pos += 4
-            dv.setFloat32(pos, gr2.bounds.minimum.y, 1)
+            dv.setFloat32(pos, gr2.bounds.min_y, 1)
             pos += 4
-            dv.setFLoat32(pos, gr2.bounds.minimum.z, 1)
+            dv.setFloat32(pos, gr2.bounds.min_z, 1)
             pos += 4
-            dv.setFloat32(pos, gr2.bounds.maximum.x, 1)
+            dv.setFloat32(pos, gr2.bounds.max_x, 1)
             pos += 4
-            dv.setFloat32(pos, gr2.bounds.maximum.y, 1)
+            dv.setFloat32(pos, gr2.bounds.max_y, 1)
             pos += 4
-            dv.setFloat32(pos, gr2.bounds.maximum.z, 1)
+            dv.setFloat32(pos, gr2.bounds.max_z, 1)
             pos += 4
 
     # Zero padding
