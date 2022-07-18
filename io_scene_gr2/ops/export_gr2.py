@@ -81,25 +81,42 @@ def parse(ob, mesh, has_clo=False):
     gmesh.piece_header_buffer = {}
 
     for i, material in enumerate(mesh.materials):
-        polygons = [polygon for polygon in mesh.polygons if polygon.material_index == i]
+        # polygons = [polygon for polygon in mesh.polygons if polygon.material_index == i]
+
+        num_polygons = 0
+        co_x: List[float] = []
+        co_y: List[float] = []
+        co_z: List[float] = []
+
+        for polygon in mesh.polygons:
+            if polygon.material_index == i:
+                num_polygons += 1
+                for v in polygon.vertices:
+                    vertex = mesh.vertices[v]
+                    co_x.append(vertex.co[0])
+                    co_y.append(vertex.co[1])
+                    co_z.append(vertex.co[2])
 
         piece = Granny2.Piece()
         piece.material_index = piece.index = i
-        piece.num_polygons = len(polygons)
+        piece.num_polygons = num_polygons  # len(polygons)
         piece.offset_indices = gmesh.piece_header_buffer[i - 1].num_polygons if i != 0 else 0
 
+        # piece.bounds = Granny2.BoundingBox(
+        #     (
+        #         min([co[0] for co in ob.bound_box]),
+        #         min([co[1] for co in ob.bound_box]),
+        #         min([co[2] for co in ob.bound_box]),
+        #         1.0,
+        #         max([co[0] for co in ob.bound_box]),
+        #         max([co[1] for co in ob.bound_box]),
+        #         max([co[2] for co in ob.bound_box]),
+        #         1.0,
+        #     )
+        # )
+
         piece.bounds = Granny2.BoundingBox(
-            (
-                min([co[0] for co in ob.bound_box]),
-                min([co[1] for co in ob.bound_box]),
-                min([co[2] for co in ob.bound_box]),
-                1.0,
-                max([co[0] for co in ob.bound_box]),
-                max([co[1] for co in ob.bound_box]),
-                max([co[2] for co in ob.bound_box]),
-                1.0,
-            )
-        )
+            (min(co_x), min(co_y), min(co_z), 1.0, max(co_x), max(co_y), max(co_z), 1.0))
 
         gr2.material_names[i] = material.name
         gmesh.piece_header_buffer[i] = piece
