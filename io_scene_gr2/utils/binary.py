@@ -85,7 +85,7 @@ class DataView:
         # PARAM CHECK: BYTE OFFSET
         if not isinstance(offset, (float, int)):
             offset = 0
-        elif (offset < 0) or (self._bytes_length <= (self._bytes_offset + offset + t_len)):
+        elif (offset < 0) or (self._bytes_length < (self._bytes_offset + offset + t_len)):
             raise IndexError("Offset is outside the bounds of the DataView")
 
         return unpack_from(t_chr, self._bytes_buffer, self._bytes_offset + offset)[0]
@@ -96,7 +96,7 @@ class DataView:
         # PARAM CHECK: BYTE OFFSET
         if not isinstance(offset, (float, int)):
             offset = 0
-        elif (offset < 0) or (self._bytes_length <= (self._bytes_offset + offset + t_len)):
+        elif (offset < 0) or (self._bytes_length < (self._bytes_offset + offset + t_len)):
             raise IndexError("Offset is outside the bounds of the DataView")
 
         # PARAM CHECK: VALUE

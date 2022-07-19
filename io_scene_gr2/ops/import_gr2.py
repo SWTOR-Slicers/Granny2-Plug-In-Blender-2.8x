@@ -181,10 +181,10 @@ def read(operator, filepath):
 
             if bit_flag2 & 2:  # 0x02
                 vertex.normals = Vector(
-                    [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
+                    [(dv.getUint8(pos + k) - 127) / 127 for k in range(4)])
                 pos += 4
                 vertex.tangents = Vector(
-                    [(dv.getUint8(pos + k) - 127.5) / 127.5 for k in range(4)])
+                    [(dv.getUint8(pos + k) - 127) / 127 for k in range(4)])
                 pos += 4
 
             if bit_flag2 & 16:  # 0x10
@@ -310,14 +310,14 @@ def build(gr2, filepath="", import_collision=False):
         ob = bpy.data.objects.new(mesh.name, bmesh)
 
         # Create Vertex Groups
+        for bone in mesh.bone_names.values():
+            ob.vertex_groups.new(name=bone)
+
+        # Populate Vertex Groups
         for j, vertex in mesh.vertex_buffer.items():
             if mesh.bit_flag2 & 256:
                 for index in range(4):
                     bone = mesh.bone_names[vertex.bone_indices[index]]
-
-                    if bone not in ob.vertex_groups:
-                        ob.vertex_groups.new(name=bone)
-
                     ob.vertex_groups[bone].add([j], float(vertex.bone_weights[index] / 255), 'ADD')
 
         # Link Blender Object

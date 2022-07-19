@@ -157,7 +157,7 @@ def parse(ob, mesh, has_clo=False):
             vertex.bone_weights = Vector([groups[j][1] for j in range(4)])
 
         vertex.normals = Vector(nor[:3] + (1.0,))
-        vertex.tangents = Vector(tan[:3] + (bit,))
+        vertex.tangents = Vector(tan[:3] + (-bit,))
         vertex.uv_layer0 = Vector(tex[:2])
 
         gmesh.vertex_buffer[vert.index] = vertex
@@ -363,13 +363,19 @@ def write(gr2, path):
                     dv.setUint8(pos, int(co))
                     pos += 1
 
-            for co in vertex.normals:
-                dv.setUint8(pos, int((co * 127.5) + 128))
+            for co in vertex.normals[:3]:
+                dv.setUint8(pos, int((co * 127) + 127))
                 pos += 1
 
-            for co in vertex.tangents:
-                dv.setUint8(pos, int((co * 127.5) + 128))
+            dv.setUint8(pos, 255)
+            pos += 1
+
+            for co in vertex.tangents[:3]:
+                dv.setUint8(pos, int((co * 127) + 127))
                 pos += 1
+
+            dv.setUint8(pos, 255 if vertex.tangents[3] == 1.0 else 0)
+            pos += 1
 
             dv.setUint16(pos, encodeHalfFloat(vertex.uv_layer0.x), 1)
             pos += 2
@@ -395,27 +401,28 @@ def write(gr2, path):
 
     # Bones buffer
     for mesh in gr2.mesh_buffer.values():
-        def bone_bounds(bone, axis):
-            # type: (int, int) -> List[float]
-            result = [v.position[axis] for v in mesh.vertex_buffer.values() if bone in v.bone_indices]
-            return result if result else [0]
-
         if mesh.bone_names:
             for i, bone_name in mesh.bone_names.items():
                 dv.setUint32(pos, offset, 1)
                 offset += len(bone_name) + 1
                 pos += 4
-                dv.setFloat32(pos, min(bone_bounds(i, 0)), 1)
+
+                vertices = [v for v in mesh.vertex_buffer.values() if i in v.bone_indices]
+                x_bounds = [vertex.position.x for vertex in vertices] if vertices else [0]
+                y_bounds = [vertex.position.y for vertex in vertices] if vertices else [0]
+                z_bounds = [vertex.position.z for vertex in vertices] if vertices else [0]
+
+                dv.setFloat32(pos, min(x_bounds), 1)
                 pos += 4
-                dv.setFloat32(pos, min(bone_bounds(i, 1)), 1)
+                dv.setFloat32(pos, min(y_bounds), 1)
                 pos += 4
-                dv.setFloat32(pos, min(bone_bounds(i, 2)), 1)
+                dv.setFloat32(pos, min(z_bounds), 1)
                 pos += 4
-                dv.setFloat32(pos, max(bone_bounds(i, 0)), 1)
+                dv.setFloat32(pos, max(x_bounds), 1)
                 pos += 4
-                dv.setFloat32(pos, max(bone_bounds(i, 1)), 1)
+                dv.setFloat32(pos, max(y_bounds), 1)
                 pos += 4
-                dv.setFloat32(pos, max(bone_bounds(i, 2)), 1)
+                dv.setFloat32(pos, max(z_bounds), 1)
                 pos += 4
         else:
             dv.setUint32(pos, mesh.offset_mesh_name, 1)
@@ -470,17 +477,17 @@ def write(gr2, path):
         pos += 1
 
     # Cached offsets
-    dv.setUint32(pos, 80, 1)      # 0x50
+    dv.setUint32(pos, 80, 1)                     # 0x50
     pos += 4
     dv.setUint32(pos, pos - 4, 1)
     pos += 4
-    dv.setUint32(pos, 84, 1)      # 0x54
+    dv.setUint32(pos, 84, 1)                     # 0x54
     pos += 4
-    dv.setUint32(pos, 112, 1)     # 0x70
+    dv.setUint32(pos, 112, 1)
     pos += 4
-    dv.setUint32(pos, 88, 1)      # 0x58
+    dv.setUint32(pos, 88, 1)                     # 0x58
     pos += 4
-    dv.setUint32(pos, offset_material_names, 1)
+    dv.setUint32(pos, gr2.offset_material_name_offsets, 1)
     pos += 4
 
     for i, mesh in gr2.mesh_buffer.items():
@@ -514,12 +521,14 @@ def write(gr2, path):
         # Offset material name
         if i == 0:
             dv.setUint32(pos, offset_material_names, 1)
+            offset += len(material_name) + 1
             pos += 4
         else:
             dv.setUint32(pos, offset, 1)
             offset += len(material_name) + 1
             pos += 4
 
+    offset = offset_bone_names
     for mesh in gr2.mesh_buffer.values():
         for i, bone_name in mesh.bone_names.items():
             # Offset bone name offset
@@ -529,6 +538,7 @@ def write(gr2, path):
             # Offset bone name
             if i == 0:
                 dv.setUint32(pos, offset_bone_names, 1)
+                offset += len(bone_name) + 1
                 pos += 4
             else:
                 dv.setUint32(pos, offset, 1)
@@ -542,6 +552,10 @@ def write(gr2, path):
 
     # BNRY/LTLE
     # TODO:
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
+    dv.setBigUint64(pos, 0, 1)
+    pos += 8
     dv.setBigUint64(pos, 0, 1)
     pos += 8
     dv.setBigUint64(pos, 0, 1)
