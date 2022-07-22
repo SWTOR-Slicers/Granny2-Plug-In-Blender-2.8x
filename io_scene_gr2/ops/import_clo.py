@@ -27,19 +27,22 @@ class ImportCLO(Operator, ImportHelper):
     bl_label = "Import SWTOR (.clo)"
     bl_options = {'UNDO'}
 
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the CLO file",
-        type=OperatorFileListElement,
-    )
-
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
 
     filename_ext = ".clo"
-    filter_glob: StringProperty(default="*.clo", options={'HIDDEN'})
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the CLO file",
+        type=OperatorFileListElement,
+    )
+    filter_glob: StringProperty(
+        default="*.clo",
+        options={'HIDDEN'},
+    )
 
     def execute(self, context):
         # type: (Context) -> Set[str]

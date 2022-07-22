@@ -3,7 +3,13 @@
 from typing import Set
 
 import bpy
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, PointerProperty
+from bpy.props import (
+    BoolProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    PointerProperty
+)
 from bpy.types import Context, Image, Operator, ShaderNodeCustomGroup, UILayout
 from nodeitems_utils import NodeCategory, NodeItem
 

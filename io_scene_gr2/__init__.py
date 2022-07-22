@@ -6,7 +6,8 @@ import sys
 from typing import List
 
 from bpy.app.handlers import depsgraph_update_post
-from bpy.types import Context, KeyMap, Menu
+from bpy.props import FloatVectorProperty
+from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 from .ops.export_gr2 import ExportGR2
 from .ops.import_cha import ImportCHA
@@ -70,7 +71,12 @@ def _export_gr2(self, _context):
     self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
 
 
+class BoneBounds(PropertyGroup):
+    bounds: FloatVectorProperty(default=[0.0] * 6, name="Bounds", precision=6, size=6)
+
+
 classes = (
+    BoneBounds,
     ExportGR2,
     ImportCHA,
     ImportCLO,
@@ -99,6 +105,10 @@ def register():
     TOPBAR_MT_file_import.append(_import_gr2)
     TOPBAR_MT_file_import.append(_import_jba)
     TOPBAR_MT_file_export.append(_export_gr2)
+
+    from bpy.props import CollectionProperty
+    from bpy.types import Object
+    Object.bone_bounds = CollectionProperty(name="Bone Bounds", type=BoneBounds)
 
     import bpy
     wm = bpy.context.window_manager

@@ -32,21 +32,26 @@ class ImportGR2(Operator, ImportHelper):
     bl_label = "Import SWTOR (.gr2)"
     bl_options = {'UNDO'}
 
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the GR2 file",
-        type=OperatorFileListElement,
-    )
-
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
 
     filename_ext = ".gr2"
-    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
 
-    import_collision: BoolProperty(name="Import Collision Mesh", default=False)
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the GR2 file",
+        type=OperatorFileListElement,
+    )
+    filter_glob: StringProperty(
+        default="*.gr2",
+        options={'HIDDEN'},
+    )
+    import_collision: BoolProperty(
+        name="Import Collision Mesh",
+        default=False,
+    )
 
     def execute(self, context):
         # type: (Context) -> Set[str]
@@ -214,8 +219,8 @@ def read(operator, filepath):
             mesh.indices_buffer[j] = tuple([dv.getUint16(pos + (k * 2), 1) for k in range(3)])
 
         # Bone(s) buffer
-        mesh.bone_names = {j: readString(dv, mesh.offset_bones_buffer + (j * 28))
-                           for j in range(num_used_bones)}
+        mesh.bone_buffer = {j: Granny2.Bone(dv, mesh.offset_bones_buffer + (j * 28), True)
+                            for j in range(num_used_bones)}
 
         gr2.mesh_buffer[i] = mesh
 
@@ -236,19 +241,8 @@ def read(operator, filepath):
                     count += 1
 
     # Skeleton Bones
-    gr2.bone_buffer = {}
-    for i in range(num_bones):
-        pos = offset_bone_struct + (i * 136)
-        bone = Granny2.Bone()
-        bone.name = readString(dv, pos)
-        pos += 4
-        bone.parent_index = dv.getInt32(pos, 1)
-        pos += 4
-        # bone.bone_to_parent = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
-        pos += 64
-        bone.root_to_bone = [dv.getFloat32(pos + (j * 4), 1) for j in range(16)]
-        pos += 64
-        gr2.bone_buffer[i] = bone
+    gr2.bone_buffer = {i: Granny2.Bone(dv, offset_bone_struct + (i * 136))
+                       for i in range(num_bones)}
 
     return gr2
 
@@ -310,14 +304,17 @@ def build(gr2, filepath="", import_collision=False):
         ob = bpy.data.objects.new(mesh.name, bmesh)
 
         # Create Vertex Groups
-        for bone in mesh.bone_names.values():
-            ob.vertex_groups.new(name=bone)
+        for bone in mesh.bone_buffer.values():
+            ob.vertex_groups.new(name=bone.name)
+            entry = ob.bone_bounds.add()
+            entry.name = bone.name
+            entry.bounds = bone.bounds
 
         # Populate Vertex Groups
         for j, vertex in mesh.vertex_buffer.items():
             if mesh.bit_flag2 & 256:
                 for index in range(4):
-                    bone = mesh.bone_names[vertex.bone_indices[index]]
+                    bone = mesh.bone_buffer[vertex.bone_indices[index]].name
                     ob.vertex_groups[bone].add([j], float(vertex.bone_weights[index] / 255), 'ADD')
 
         # Link Blender Object

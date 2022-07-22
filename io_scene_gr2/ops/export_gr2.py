@@ -31,8 +31,11 @@ class ExportGR2(Operator, ExportHelper):
     bl_options = {'PRESET'}
 
     filename_ext = ".gr2"
-    filter_glob: StringProperty(default="*.gr2", options={'HIDDEN'})
 
+    filter_glob: StringProperty(
+        default="*.gr2",
+        options={'HIDDEN'},
+    )
     has_clo: BoolProperty(
         name="Has .clo file?",
         description="Enable if there is a corresponding .clo file to go with this model",
@@ -52,9 +55,13 @@ class ExportGR2(Operator, ExportHelper):
         # Cache selected objects.
         obs = context.selected_objects
 
-        path, _ = os.path.split(self.filepath)
-
         for ob in obs:
+            if len(obs) == 1:
+                path = os.path.normpath(self.filepath)
+            else:
+                path = os.path.join(os.path.split(self.filepath)[0],
+                                    ob.name.replace(' ', '_') + ".gr2")
+
             # Clear selected object(s).
             bpy.ops.object.select_all(action='DESELECT')
 
@@ -81,9 +88,7 @@ def parse(ob, mesh, has_clo=False):
     gmesh.piece_header_buffer = {}
 
     for i, material in enumerate(mesh.materials):
-        # polygons = [polygon for polygon in mesh.polygons if polygon.material_index == i]
-
-        num_polygons = 0
+        num_polygons: int = 0
         co_x: List[float] = []
         co_y: List[float] = []
         co_z: List[float] = []
@@ -99,21 +104,8 @@ def parse(ob, mesh, has_clo=False):
 
         piece = Granny2.Piece()
         piece.material_index = piece.index = i
-        piece.num_polygons = num_polygons  # len(polygons)
+        piece.num_polygons = num_polygons
         piece.offset_indices = gmesh.piece_header_buffer[i - 1].num_polygons if i != 0 else 0
-
-        # piece.bounds = Granny2.BoundingBox(
-        #     (
-        #         min([co[0] for co in ob.bound_box]),
-        #         min([co[1] for co in ob.bound_box]),
-        #         min([co[2] for co in ob.bound_box]),
-        #         1.0,
-        #         max([co[0] for co in ob.bound_box]),
-        #         max([co[1] for co in ob.bound_box]),
-        #         max([co[2] for co in ob.bound_box]),
-        #         1.0,
-        #     )
-        # )
 
         piece.bounds = Granny2.BoundingBox(
             (min(co_x), min(co_y), min(co_z), 1.0, max(co_x), max(co_y), max(co_z), 1.0))
@@ -122,7 +114,12 @@ def parse(ob, mesh, has_clo=False):
         gmesh.piece_header_buffer[i] = piece
 
     # Parse bone names
-    gmesh.bone_names = {i: name for i, name in enumerate(ob.vertex_groups.keys())}
+    if ob.bone_bounds.keys() == ob.vertex_groups.keys():
+        gmesh.bone_buffer = {i: Granny2.Bone(bone.name, bone.bounds[:])
+                             for i, bone in enumerate(ob.bone_bounds.values())}
+    else:
+        gmesh.bone_buffer = {i: Granny2.Bone(name)
+                             for i, name in enumerate(ob.vertex_groups.keys())}
 
     # Parse mesh vertices
     gmesh.vertex_buffer = {}
@@ -142,7 +139,7 @@ def parse(ob, mesh, has_clo=False):
 
         vertex = Granny2.Vertex(pos)
 
-        if gmesh.bone_names:
+        if gmesh.bone_buffer:
             groups = sorted([(g.group, g.weight) for g in vert.groups],
                             key=lambda xy: (xy[1], xy[0]),
                             reverse=True)
@@ -401,29 +398,44 @@ def write(gr2, path):
 
     # Bones buffer
     for mesh in gr2.mesh_buffer.values():
-        if mesh.bone_names:
-            for i, bone_name in mesh.bone_names.items():
+        if mesh.bone_buffer:
+            for i, bone in mesh.bone_buffer.items():
                 dv.setUint32(pos, offset, 1)
-                offset += len(bone_name) + 1
+                offset += len(bone.name) + 1
                 pos += 4
 
-                vertices = [v for v in mesh.vertex_buffer.values() if i in v.bone_indices]
-                x_bounds = [vertex.position.x for vertex in vertices] if vertices else [0]
-                y_bounds = [vertex.position.y for vertex in vertices] if vertices else [0]
-                z_bounds = [vertex.position.z for vertex in vertices] if vertices else [0]
+                if bone.bounds:
+                    dv.setFloat32(pos, bone.bounds[0], 1)
+                    pos += 4
+                    dv.setFloat32(pos, bone.bounds[1], 1)
+                    pos += 4
+                    dv.setFloat32(pos, bone.bounds[2], 1)
+                    pos += 4
+                    dv.setFloat32(pos, bone.bounds[3], 1)
+                    pos += 4
+                    dv.setFloat32(pos, bone.bounds[4], 1)
+                    pos += 4
+                    dv.setFloat32(pos, bone.bounds[5], 1)
+                    pos += 4
 
-                dv.setFloat32(pos, min(x_bounds), 1)
-                pos += 4
-                dv.setFloat32(pos, min(y_bounds), 1)
-                pos += 4
-                dv.setFloat32(pos, min(z_bounds), 1)
-                pos += 4
-                dv.setFloat32(pos, max(x_bounds), 1)
-                pos += 4
-                dv.setFloat32(pos, max(y_bounds), 1)
-                pos += 4
-                dv.setFloat32(pos, max(z_bounds), 1)
-                pos += 4
+                else:
+                    vertices = [v for v in mesh.vertex_buffer.values() if i in v.bone_indices]
+                    x_bounds = [vertex.position.x for vertex in vertices] if vertices else [0]
+                    y_bounds = [vertex.position.y for vertex in vertices] if vertices else [0]
+                    z_bounds = [vertex.position.z for vertex in vertices] if vertices else [0]
+
+                    dv.setFloat32(pos, min(x_bounds), 1)
+                    pos += 4
+                    dv.setFloat32(pos, min(y_bounds), 1)
+                    pos += 4
+                    dv.setFloat32(pos, min(z_bounds), 1)
+                    pos += 4
+                    dv.setFloat32(pos, max(x_bounds), 1)
+                    pos += 4
+                    dv.setFloat32(pos, max(y_bounds), 1)
+                    pos += 4
+                    dv.setFloat32(pos, max(z_bounds), 1)
+                    pos += 4
         else:
             dv.setUint32(pos, mesh.offset_mesh_name, 1)
             pos += 4
@@ -447,26 +459,26 @@ def write(gr2, path):
 
     # Strings
     for mesh in gr2.mesh_buffer.values():
-        for ch in mesh.name:
-            dv.setUint8(pos, ord(ch))
+        for char in mesh.name:
+            dv.setUint8(pos, ord(char))
             pos += 1
         dv.setUint8(pos, 0)
         pos += 1
 
     offset_material_names = pos
     for material_name in gr2.material_names.values():
-        for ch in material_name:
-            dv.setUint8(pos, ord(ch))
+        for char in material_name:
+            dv.setUint8(pos, ord(char))
             pos += 1
         dv.setUint8(pos, 0)
         pos += 1
 
     offset_bone_names = pos
     for mesh in gr2.mesh_buffer.values():
-        if mesh.bone_names:
-            for bone_name in mesh.bone_names.values():
-                for ch in bone_name:
-                    dv.setUint8(pos, ord(ch))
+        if mesh.bone_buffer:
+            for bone in mesh.bone_buffer.values():
+                for char in bone.name:
+                    dv.setUint8(pos, ord(char))
                     pos += 1
                 dv.setUint8(pos, 0)
                 pos += 1
@@ -519,31 +531,21 @@ def write(gr2, path):
         pos += 4
 
         # Offset material name
-        if i == 0:
-            dv.setUint32(pos, offset_material_names, 1)
-            offset += len(material_name) + 1
-            pos += 4
-        else:
-            dv.setUint32(pos, offset, 1)
-            offset += len(material_name) + 1
-            pos += 4
+        dv.setUint32(pos, offset_material_names if i == 0 else offset, 1)
+        offset += len(material_name) + 1
+        pos += 4
 
     offset = offset_bone_names
     for mesh in gr2.mesh_buffer.values():
-        for i, bone_name in mesh.bone_names.items():
+        for i, bone in mesh.bone_buffer.items():
             # Offset bone name offset
             dv.setUint32(pos, mesh.offset_bones_buffer + (28 * i), 1)
             pos += 4
 
             # Offset bone name
-            if i == 0:
-                dv.setUint32(pos, offset_bone_names, 1)
-                offset += len(bone_name) + 1
-                pos += 4
-            else:
-                dv.setUint32(pos, offset, 1)
-                offset += len(bone_name) + 1
-                pos += 4
+            dv.setUint32(pos, offset_bone_names if i == 0 else offset, 1)
+            offset += len(bone.name) + 1
+            pos += 4
 
     # Zero padding
     while (pos % 16) != 0:
@@ -576,15 +578,15 @@ def write(gr2, path):
     pos += 4
     dv.setUint32(pos, 0, 1)
     pos += 4
-    for ch in "EGCD":
-        dv.setUint8(pos, ord(ch))
+    for char in "EGCD":
+        dv.setUint8(pos, ord(char))
         pos += 1
     dv.setUint32(pos, 5, 1)
     pos += 4
     dv.setUint32(pos, gr2.offset_BNRY, 1)
     pos += 4
 
-    with open(f"{path}{gr2.mesh_buffer[0].name}.gr2", 'wb') as file:
+    with open(path, 'wb') as file:
         dv.buffer.tofile(file)
 
 
@@ -592,10 +594,8 @@ def save(operator, context, path, ob, global_matrix=None):
     # type: (Operator, Context, str, Object, Optional[Matrix]) -> bool
     from bpy_extras.wm_utils.progress_report import ProgressReport
 
-    fullpath = os.path.join(path, f"{ob.name.replace(' ', '_')}.gr2")
-
     with ProgressReport(context.window_manager) as progress:
-        progress.enter_substeps(3, f"Exporting \'{fullpath}\' ...")
+        progress.enter_substeps(3, f"Exporting \'{path}\' ...")
 
         if bpy.ops.object.mode_set.poll():
             # Enter edit mode.
@@ -635,8 +635,8 @@ def save(operator, context, path, ob, global_matrix=None):
 
         if mesh:
             progress.step("Done, writing file ...", 2)
-            write(mesh, path + os.sep)
-            progress.leave_substeps(f"Done, finished exporting: \'{fullpath}\'")
+            write(mesh, path)
+            progress.leave_substeps(f"Done, finished exporting: \'{path}\'")
 
             return True
         else:

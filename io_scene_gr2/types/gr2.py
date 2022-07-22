@@ -1,8 +1,11 @@
 # <pep8 compliant>
 
-from typing import Dict, Iterator, Sequence, Tuple, Union
+from typing import Dict, Iterator, List, Sequence, Tuple, Union
 
 from mathutils import Color, Vector
+
+from ..utils.binary import DataView
+from ..utils.string import readString
 
 
 class Granny2:
@@ -17,11 +20,46 @@ class Granny2:
         """
         """
 
-        __slots__ = ("name", "parent_index", "root_to_bone")
+        __slots__ = ("bounds", "name", "parent_index", "root_to_bone")
 
-        name: str
+        bounds:       Union[Tuple[float], None]
+        name:         str
         parent_index: int
-        root_to_bone: int
+        root_to_bone: List[float]
+
+        def __init__(self, *args, **kwargs):
+            num = len(args)
+
+            if num >= 1 and isinstance(kwargs.get("name", args[0]), str):
+                self.name = kwargs.get("name", args[0])
+
+                if num >= 2 and isinstance(kwargs.get("bounds", args[1]), tuple):
+                    self.bounds = kwargs.get("bounds", args[1])
+                else:
+                    self.bounds = None
+
+                return
+
+            if num >= 1 and isinstance(kwargs.get("dv", args[0]), DataView):
+                dv: DataView = kwargs.get("dv", args[0])
+
+                if num >= 2 and isinstance(kwargs.get("pos", args[1]), int):
+                    pos: int = kwargs.get("pos", args[1])
+
+                    self.name = readString(dv, pos)
+                    pos += 4
+
+                    if num >= 3 and kwargs.get("bounds", args[2]) is True:
+                        self.bounds = tuple(dv.getFloat32(pos + (i * 4), 1) for i in range(6))
+                        pos += 24
+                        return
+
+                    self.parent_index = dv.getInt32(pos, 1)
+                    pos += 4
+                    # self.bone_to_parent = [dv.getFloat32(pos + (i * 4), 1) for i in range(16)]
+                    pos += 64
+                    self.root_to_bone = [dv.getFloat32(pos + (i * 4), 1) for i in range(16)]
+                    pos += 64
 
     class BoundingBox:
         """
@@ -68,28 +106,42 @@ class Granny2:
         """
         """
 
-        __slots__ = ("offset_indices", "num_polygons", "material_index", "index", "bounds")
-
-        offset_indices: int
-        num_polygons: int
-        material_index: int
-        index: int
+        __slots__ = ("bounds", "index", "material_index", "num_polygons", "offset_indices")
 
         bounds: "Granny2.BoundingBox"
+
+        index:          int
+        material_index: int
+        num_polygons:   int
+        offset_indices: int
 
     class Mesh:
         """
         """
 
-        __slots__ = ("_mesh_name", "offset_mesh_name", "offset_vertex_buffer",
-                     "offset_piece_headers", "offset_indices_buffer", "offset_bones_buffer",
-                     "piece_header_buffer", "vertex_buffer", "indices_buffer", "bone_names")
+        __slots__ = ("_mesh_name", "bone_buffer", "indices_buffer", "offset_bones_buffer",
+                     "offset_indices_buffer", "offset_mesh_name", "offset_piece_headers",
+                     "offset_vertex_buffer", "piece_header_buffer", "vertex_buffer")
+
+        bone_buffer:         Dict[int, "Granny2.Bone"]
+        indices_buffer:      Dict[int, Tuple[int]]
+        piece_header_buffer: Dict[int, "Granny2.Piece"]
+        vertex_buffer:       Dict[int, "Granny2.Vertex"]
+
+        offset_mesh_name: int       # 0x70 Uint32
+
+        offset_vertex_buffer:  int  # 0x88 Uint32
+        offset_piece_headers:  int  # 0x8C Uint32
+        offset_indices_buffer: int  # 0x90 Uint32
+        offset_bones_buffer:   int  # 0x94 Uint32
 
         def __init__(self, name):
             # type: (str) -> None
             self._mesh_name = name
 
-        offset_mesh_name: int          # 0x70 Uint32
+        def __str__(self):
+            # type: () -> str
+            return self.name
 
         @property
         def name(self):
@@ -102,7 +154,7 @@ class Granny2:
         @property
         def bit_flag1(self):           # 0x74 Uint32
             # type: () -> int
-            return 0 if getattr(self, "bone_names", None) else 128
+            return 0 if getattr(self, "bone_buffer", None) else 128
 
         @property
         def num_pieces(self):          # 0x78 Uint16
@@ -115,8 +167,8 @@ class Granny2:
         @property
         def num_used_bones(self):      # 0x7A Uint16
             # type: () -> int
-            if getattr(self, "bone_names", None):
-                return len(self.bone_names)
+            if getattr(self, "bone_buffer", None):
+                return len(self.bone_buffer)
             else:
                 return 0
 
@@ -179,16 +231,6 @@ class Granny2:
             else:
                 return 0
 
-        offset_vertex_buffer: int      # 0x88 Uint32
-        offset_piece_headers: int      # 0x8C Uint32
-        offset_indices_buffer: int     # 0x90 Uint32
-        offset_bones_buffer: int       # 0x94 Uint32
-
-        piece_header_buffer: Dict[int, "Granny2.Piece"]
-        vertex_buffer: Dict[int, "Granny2.Vertex"]
-        indices_buffer: Dict[int, Tuple[int]]
-        bone_names: Dict[int, str]
-
     class Vertex:
         """
         """
@@ -196,19 +238,34 @@ class Granny2:
         __slots__ = ("position", "bone_weights", "bone_indices", "color", "normals", "tangents",
                      "uv_layer0", "uv_layer1", "uv_layer2")
 
-        position: Vector      # vec3
+        position:     Vector  # vec3
         bone_weights: Vector  # vec4
         bone_indices: Vector  # vec4
-        color: Color          # rgb
-        normals: Vector       # vec4
-        tangents: Vector      # vec4
-        uv_layer0: Vector     # vec2
-        uv_layer1: Vector     # vec2
-        uv_layer2: Vector     # vec2
+        color:        Color   # rgb
+        normals:      Vector  # vec4
+        tangents:     Vector  # vec4
+        uv_layer0:    Vector  # vec2
+        uv_layer1:    Vector  # vec2
+        uv_layer2:    Vector  # vec2
 
         def __init__(self, seq=(0.0, 0.0, 0.0)):
             # type: (Sequence[Union[float, int]]) -> None
             self.position = Vector(seq)
+
+    bone_buffer:    Dict[int, "Granny2.Bone"]
+    material_names: Dict[int, str]
+    mesh_buffer:    Dict[int, "Granny2.Mesh"]
+
+    num_bytes: int
+
+    offset_BNRY: int                   # 0x0C Uint32
+    type_flag:   int                   # 0x14 Uint32
+
+    bounds: BoundingBox                # 0x30 Float32 x 8
+
+    offset_cached_offsets:        int  # 0x50 Uint32
+    offset_mesh_headers:          int  # 0x54 Uint32
+    offset_material_name_offsets: int  # 0x58 Uint32
 
     @property
     def magic_bytes(self):             # 0x00 Uint32
@@ -225,24 +282,19 @@ class Granny2:
         # type: () -> int
         return 3
 
-    offset_BNRY: int                   # 0x0C Uint32
-
     @property
     def num_cached_offsets(self):      # 0x10 Uint32
         # type: () -> int
         count = 3
         if getattr(self, "mesh_buffer", None):
-            for _ in self.mesh_buffer:
-                count += 5
+            count += 5 * len(self.mesh_buffer)
         if self.num_materials:
             count += self.num_materials
         if getattr(self, "mesh_buffer"):
             for mesh in self.mesh_buffer.values():
-                if getattr(mesh, "bone_names", None):
+                if getattr(mesh, "bone_buffer", None):
                     count += mesh.num_used_bones
         return count
-
-    type_flag: int                     # 0x14 Uint32
 
     @property
     def num_meshes(self):              # 0x18 Uint16
@@ -273,22 +325,10 @@ class Granny2:
         # type: () -> int
         return 0
 
-    bounds: BoundingBox                # 0x30 Float32 x 8
-
-    offset_cached_offsets: int         # 0x50 Uint32
-    offset_mesh_headers: int           # 0x54 Uint32
-    offset_material_name_offsets: int  # 0x58 Uint32
-
     @property
     def offset_attachments(self):      # 0x60 Uint32
         # type: () -> int
         return 0
-
-    mesh_buffer: Dict[int, "Granny2.Mesh"]
-    bone_buffer: Dict[int, "Granny2.Bone"]
-    material_names: Dict[int, str]
-
-    num_bytes: int
 
     def calculate_offsets(self):
         # type: () -> None
@@ -333,7 +373,7 @@ class Granny2:
         # Bones Buffer
         for mesh in self.mesh_buffer.values():
             mesh.offset_bones_buffer = count
-            if mesh.bone_names:
+            if mesh.bone_buffer:
                 count += 28 * mesh.num_used_bones
             else:
                 count += 28
@@ -346,9 +386,9 @@ class Granny2:
         for name in self.material_names.values():
             count += len(name) + 1
         for mesh in self.mesh_buffer.values():
-            if mesh.bone_names:
-                for name in mesh.bone_names.values():
-                    count += len(name) + 1
+            if mesh.bone_buffer:
+                for bone in mesh.bone_buffer.values():
+                    count += len(bone.name) + 1
         while (count % 16) != 0:
             count += 1
         # Cached Offsets

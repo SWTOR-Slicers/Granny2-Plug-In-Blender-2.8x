@@ -21,7 +21,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 from ..types.jba import JointBoneAnimation
 from ..utils.binary import ArrayBuffer, DataView
-from ..utils.string import readCString
+from ..utils.string import path_split, readCString
 
 
 class ImportJBA(Operator, ImportHelper):
@@ -42,8 +42,11 @@ class ImportJBA(Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     filename_ext = ".jba"
-    filter_glob: StringProperty(default="*.jba", options={'HIDDEN'})
 
+    filter_glob: StringProperty(
+        default="*.jba",
+        options={'HIDDEN'},
+    )
     ignore_facial_bones: BoolProperty(
         name="Import Facial Bones",
         description="Ignore translation keyframe for facial bones",
@@ -274,7 +277,7 @@ def build(operator, context, filepath, jba):
 
     # Create armature action
     # anim_name, _ = os.path.splitext(os.path.basename(filepath))
-    anim_name = filepath.split('\\' if '\\' in filepath else '/')[-1][:-4]
+    anim_name = path_split(filepath)[:-4]
 
     if not ob.animation_data:
         ob.animation_data_create()
