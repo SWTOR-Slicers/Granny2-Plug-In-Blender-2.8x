@@ -81,10 +81,14 @@ def read(filepath):
                 mat_info["otherValues"] = mat["otherValues"]
 
                 for key in mat_info["ddsPaths"]:
+                    tex = dds_dict[key][dds_dict[key].rfind('/'):]
+                    if tex == "/.dds" or tex == ".dds":
+                        tex = "black.dds"
+
                     mat_info["ddsPaths"][key] = \
                         path_format(filepath,
                                     f"/materials/skinMats/{slot_name}"
-                                    f"{dds_dict[key][dds_dict[key].rfind('/'):]}")
+                                    f"{tex}")
 
                 to_push["mats"].append({"slot_name": slot_name, "mat_info": mat_info})
 
@@ -98,10 +102,14 @@ def read(filepath):
                 dds_dict = entry["materialInfo"]["ddsPaths"]
 
                 for key in mat_info["ddsPaths"]:
+                    tex = dds_dict[key][dds_dict[key].rfind('/'):]
+                    if tex == "/.dds" or tex == ".dds":
+                        tex = "black.dds"
+
                     mat_info["ddsPaths"][key] = \
                         path_format(filepath,
                                     f"/materials/{slot_name}"
-                                    f"{dds_dict[key][dds_dict[key].rfind('/'):]}")
+                                    f"{tex}")
 
                 slot = {"slot_name": slot_name, "mat_info": mat_info, "models": models}
 
