@@ -83,7 +83,7 @@ def read(filepath):
                 for key in mat_info["ddsPaths"]:
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
                     if tex == "/.dds" or tex == ".dds":
-                        tex = "black.dds"
+                        tex = "/black.dds"
 
                     mat_info["ddsPaths"][key] = \
                         path_format(filepath,
@@ -104,7 +104,7 @@ def read(filepath):
                 for key in mat_info["ddsPaths"]:
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
                     if tex == "/.dds" or tex == ".dds":
-                        tex = "black.dds"
+                        tex = "/black.dds"
 
                     mat_info["ddsPaths"][key] = \
                         path_format(filepath,
