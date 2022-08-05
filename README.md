@@ -12,7 +12,7 @@
   
   On the other hand, this compactness makes extending and customizing such materials (by interposing other nodes or exposing internal parameters) a little less obvious. We'll explore how to go at it through new guides. Given this, if we happen to depend on doing such modifications, we might want to hold on to the previous version for a little longer while seeing how to adapt them to the new one.
   
-* These new shaders are even more faithful to the way SWTOR shaders work but, in order to achieve that, they calculate the game objects' glossiness in a manner that difficults Blender's usual workflow for "baking" textures meant to be exported to other apps. There are workarounds for that but, if assembling models to be exported out of Blender, the previous version of the shaders might be less troublesome for the time being. 
+* These new shaders are even more faithful to the way SWTOR shaders work but, in order to achieve that, they calculate the game objects' glossiness in a manner that difficults Blender's usual workflow for "baking" textures meant to be exported to other apps. [There are workarounds for that](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Baking-the-models-to-export-them-to-other-apps#baking-models-with-the-modern-shaders) but, if assembling models to be exported out of Blender, the previous version of the shaders might be less troublesome for the time being. 
   
   The previous version of the addon can be downloaded from [**this link**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0).
   
