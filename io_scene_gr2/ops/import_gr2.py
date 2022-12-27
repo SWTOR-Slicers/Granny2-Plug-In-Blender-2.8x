@@ -280,6 +280,10 @@ def build(gr2, filepath="", import_collision=False):
             #       we can only set custom loop normals *after* calling it.
             bmesh.create_normals_split()
             bmesh.uv_layers.new(do_init=False)
+            if mesh.bit_flag2 & 64:  # 0x40
+                bmesh.uv_layers.new(do_init=False)
+            if mesh.bit_flag2 & 128:  # 0x80
+                bmesh.uv_layers.new(do_init=False)
 
             for j, polygon in enumerate(bmesh.polygons):
                 loop_indices = polygon.loop_indices
@@ -288,6 +292,12 @@ def build(gr2, filepath="", import_collision=False):
                     v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
                     bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]
                     bmesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
+
+                    if mesh.bit_flag2 & 64:  # 0x40
+                        bmesh.uv_layers[1].data[loop_index].uv = [v.uv_layer1.x, 1 - v.uv_layer1.y]
+
+                    if mesh.bit_flag2 & 128:  # 0x80
+                        bmesh.uv_layers[2].data[loop_index].uv = [v.uv_layer2.x, 1 - v.uv_layer2.y]
 
                 polygon.material_index = material_indices[j]
 
