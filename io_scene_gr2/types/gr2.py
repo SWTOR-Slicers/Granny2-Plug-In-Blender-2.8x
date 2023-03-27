@@ -46,10 +46,20 @@ class Granny2:
 				if num >= 2 and isinstance(kwargs.get("pos", args[1]), int):
 					pos: int = kwargs.get("pos", args[1])
 
-					self.name = readString(dv, pos)
-					pos += 4
+					version: int = 4
+					if num >= 3 and isinstance(kwargs.get("version", args[2]), int):
+						version = kwargs.get("version", args[2])
 
-					if num >= 3 and kwargs.get("bounds", args[2]) is True:
+
+					if version == 4:
+						self.name = readString(dv, pos)
+						pos += 4
+					else:
+						# if version 5
+						self.name = readString(dv, pos,posOverride= dv.getUint64(pos, True))
+						pos += 8
+					
+					if num >= 4 and kwargs.get("bounds", args[3]) is True:
 						self.bounds = tuple(dv.getFloat32(pos + (i * 4), 1) for i in range(6))
 						pos += 24
 						return

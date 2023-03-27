@@ -278,7 +278,10 @@ def read(operator, filepath):
 			mesh.indices_buffer[j] = tuple([dv.getUint16(pos + (k * 2), 1) for k in range(3)])
 
 		# Bone(s) buffer
-		mesh.bone_buffer = {j: Granny2.Bone(dv, mesh.offset_bones_buffer + (j * 28), True)
+
+		boneSize = 32 if gr2.version == 5 else 28
+
+		mesh.bone_buffer = {j: Granny2.Bone(dv, mesh.offset_bones_buffer + (j * boneSize), gr2.version, True)
 							for j in range(num_used_bones)}
 
 		gr2.mesh_buffer[i] = mesh
