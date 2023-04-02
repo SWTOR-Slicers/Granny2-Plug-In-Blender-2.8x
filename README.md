@@ -1,4 +1,4 @@
-**The bug that made this addon fail to assign the correct material to certain objects' second material slots (such as visible skin in armor gear parts) has been solved. Please update your addon.**
+## WARNING: this importer addon isn't yet compatible with files extracted from the recent SWTOR Game Update 7.2.1. Until it is, you can keep on using it on assets from older versions of the game (which could be extracted from the game files in a system drive backup, if available).
 
 # SWTOR Granny2 (.gr2) Import/Export addon for Blender 2.8x and higher
 
