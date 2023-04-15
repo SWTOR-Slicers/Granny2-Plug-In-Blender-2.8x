@@ -20,7 +20,7 @@ from .types.node import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa",
-    "version": (2, 93, 1),
+    "version": (3, 5, 1),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
