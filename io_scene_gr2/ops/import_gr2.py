@@ -83,7 +83,12 @@ def read(operator, filepath):
 
     gr2 = Granny2()
 
-    pos = 20  # 0x14
+    pos = 4
+
+    gr2.version = dv.getUint32(pos, 1)                   # GR2 file version
+
+
+    pos = 20  # 0x14, skiiping the version numbers, magic numbers and collision offset
 
     # GR2 file type, 0 = geometry, 1 = geometry with .clo file, 2 = skeleton
     gr2.type_flag = dv.getUint32(pos, 1)
@@ -100,22 +105,54 @@ def read(operator, filepath):
     # gr2.bounds = Granny2.BoundingBox([dv.getFloat32(pos + (i * 4), 1) for i in range(8)])
     pos += 32
 
-    pos += 4  # 0x54
 
-    offset_mesh_header = dv.getUint32(pos, 1)            # Mesh header offset address
-    pos += 4
-    offset_material_name_offsets = dv.getUint32(pos, 1)  # Material header offset address
-    pos += 4
-    offset_bone_struct = dv.getUint32(pos, 1)            # Bone structure offset address
-    pos += 4
+
+    offset_mesh_header = None
+    offset_material_name_offsets = None
+    offset_bone_struct = None
+    # 0x50
+    # skipping offset CachedOffset as we don't use it
+    if gr2.version == 5:
+        pos += 8  # 0x54
+        offset_mesh_header = dv.getUint64(pos, 1)            # Mesh header offset address
+        pos += 8
+        offset_material_name_offsets = dv.getUint64(pos, 1)  # Material header offset address
+        pos += 8
+        offset_bone_struct = dv.getUint64(pos, 1)            # Bone structure offset address
+        pos += 8
+    else:	
+        pos += 4  # 0x54
+        offset_mesh_header = dv.getUint32(pos, 1)            # Mesh header offset address
+        pos += 4
+        offset_material_name_offsets = dv.getUint32(pos, 1)  # Material header offset address
+        pos += 4
+        offset_bone_struct = dv.getUint32(pos, 1)            # Bone structure offset address
+        pos += 4
+
 
     # Meshes
     gr2.mesh_buffer = {}
+
+    mesh_bin_size = 40
+
+    if gr2.version == 5:
+        mesh_bin_size = 64
+
     for i in range(num_meshes):
-        pos = offset_mesh_header + (i * 40)
+        pos = offset_mesh_header + (i * mesh_bin_size)
         # Mesh name
-        mesh = Granny2.Mesh(readString(dv, pos))
-        pos += 4
+
+        mesh = None
+
+        if gr2.version == 5:
+            mesh = Granny2.Mesh(readString(dv, pos, posOverride= dv.getUint64(pos, True)))
+            pos += 8
+        else:
+            mesh = Granny2.Mesh(readString(dv, pos))
+            pos += 4
+        
+        operator.report({'INFO'}, f"Read the header for mesh {mesh.name}... {pos}")
+
         # BitFlag1
         pos += 4
         # Number of sub meshes that make up this mesh
@@ -125,29 +162,52 @@ def read(operator, filepath):
         num_used_bones = dv.getUint16(pos, 1)
         pos += 2
         # BitFlag2
-        bit_flag2 = dv.getUint16(pos, 1)
-        pos += 2
-        # 12 = collision, 24 = static, 32+ = dynamic
-        vertex_size = dv.getUint16(pos, 1)
-        pos += 2
+
+        bit_flag2 = None
+        vertex_size = None
+
+        if gr2.version == 5:
+            bit_flag2 = dv.getUint32(pos, 1)
+            pos += 4
+            # 12 = collision, 24 = static, 32+ = dynamic
+            vertex_size = dv.getUint32(pos, 1)
+            pos += 4
+        else:
+            bit_flag2 = dv.getUint16(pos, 1)
+            pos += 2
+            # 12 = collision, 24 = static, 32+ = dynamic
+            vertex_size = dv.getUint16(pos, 1)
+            pos += 2
+
         # Total number of vertices used by this mesh
         num_vertices = dv.getUint32(pos, 1)
         pos += 4
         # Total number of polygons used by this mesh
         num_polygons = dv.getUint32(pos, 1)
         pos += 4
-        # Offset of the vertices buffer for this mesh
-        mesh.offset_vertex_buffer = dv.getUint32(pos, 1)
-        pos += 4
-        # Offset of the sub mesh header(s)
-        mesh.offset_piece_headers = dv.getUint32(pos, 1)
-        pos += 4
-        # Offset of the indices buffer for this mesh
-        mesh.offset_indices_buffer = dv.getUint32(pos, 1)
-        pos += 4
-        # Offset of the bone buffer for this mesh
-        mesh.offset_bones_buffer = dv.getUint32(pos, 1)
-        pos += 4
+
+        if gr2.version == 5:
+            # Offset of the vertices buffer for this mesh
+            mesh.offset_vertex_buffer = dv.getUint64(pos, 1)
+            pos += 8
+             # Offset of the sub mesh header(s)
+            mesh.offset_piece_headers = dv.getUint64(pos, 1)
+            pos += 8
+            # Offset of the indices buffer for this mesh
+            mesh.offset_indices_buffer = dv.getUint64(pos, 1)
+            pos += 8
+            # Offset of the bones buffer for this mesh
+            mesh.offset_bones_buffer = dv.getUint64(pos, 1)
+            pos += 8
+        else:
+            mesh.offset_vertex_buffer = dv.getUint32(pos, 1)
+            pos += 4
+            mesh.offset_piece_headers = dv.getUint32(pos, 1)
+            pos += 4
+            mesh.offset_indices_buffer = dv.getUint32(pos, 1)
+            pos += 4
+            mesh.offset_bones_buffer = dv.getUint32(pos, 1)
+            pos += 4
 
         # Sub mesh header(s)
         mesh.piece_header_buffer = {}
@@ -219,7 +279,10 @@ def read(operator, filepath):
             mesh.indices_buffer[j] = tuple([dv.getUint16(pos + (k * 2), 1) for k in range(3)])
 
         # Bone(s) buffer
-        mesh.bone_buffer = {j: Granny2.Bone(dv, mesh.offset_bones_buffer + (j * 28), True)
+
+        boneSize = 32 if gr2.version == 5 else 28
+
+        mesh.bone_buffer = {j: Granny2.Bone(dv, mesh.offset_bones_buffer + (j * boneSize), gr2.version, True)
                             for j in range(num_used_bones)}
 
         gr2.mesh_buffer[i] = mesh
@@ -229,9 +292,14 @@ def read(operator, filepath):
     gr2.material_names = {}
     if num_materials:
         pos = offset_material_name_offsets
-        for i in range(num_materials):                     # Use string name for name
-            gr2.material_names[i] = readString(dv, pos)
-            pos += 4
+        for i in range(num_materials):
+
+            if gr2.version == 5:
+                gr2.material_names[i] = readString(dv, pos, posOverride=dv.getUint64(pos, 1))
+                pos += 8
+            else:
+                gr2.material_names[i] = readString(dv, pos)
+                pos += 4
     else:
         count = 0
         for mesh in gr2.mesh_buffer.values():
