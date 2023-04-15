@@ -14,7 +14,7 @@ class Granny2:
 
     __slots__ = ("offset_BNRY", "type_flag", "bounds", "offset_cached_offsets",
                  "offset_mesh_headers", "offset_material_name_offsets", "mesh_buffer",
-                 "bone_buffer", "material_names", "num_bytes")
+                 "bone_buffer", "material_names", "num_bytes", "version")
 
     class Bone:
         """
@@ -46,10 +46,20 @@ class Granny2:
                 if num >= 2 and isinstance(kwargs.get("pos", args[1]), int):
                     pos: int = kwargs.get("pos", args[1])
 
-                    self.name = readString(dv, pos)
-                    pos += 4
+                    version: int = 4
+                    if num >= 3 and isinstance(kwargs.get("version", args[2]), int):
+                        version = kwargs.get("version", args[2])
 
-                    if num >= 3 and kwargs.get("bounds", args[2]) is True:
+
+                    if version == 4:
+                        self.name = readString(dv, pos)
+                        pos += 4
+                    else:
+                        # if version 5
+                        self.name = readString(dv, pos,posOverride= dv.getUint64(pos, True))
+                        pos += 8
+                    
+                    if num >= 4 and kwargs.get("bounds", args[3]) is True:
                         self.bounds = tuple(dv.getFloat32(pos + (i * 4), 1) for i in range(6))
                         pos += 24
                         return
@@ -257,7 +267,7 @@ class Granny2:
     mesh_buffer:    Dict[int, "Granny2.Mesh"]
 
     num_bytes: int
-
+    version:  int
     offset_BNRY: int                   # 0x0C Uint32
     type_flag:   int                   # 0x14 Uint32
 
@@ -275,7 +285,7 @@ class Granny2:
     @property
     def version_major(self):           # 0x04 Uint32
         # type: () -> int
-        return 4
+        return self.version 
 
     @property
     def version_minor(self):           # 0x08 Uint32
@@ -330,7 +340,96 @@ class Granny2:
         # type: () -> int
         return 0
 
-    def calculate_offsets(self):
+    def calculate_offsets64(self):
+
+        count = 0
+
+        # Header
+        count += 32
+        # Bounding Box
+        count += 32
+        #16 x 0x00
+        count += 16
+        # Offsets there are 5 64bit offsetPointers
+        count += 5 * 8
+
+        while (count % 16) != 0:
+            count += 1
+        # Mesh header(s)
+        self.offset_mesh_headers = count
+        # Meshes are 64 bytes each you can see the break down in the import file
+        count += 64 * len(self.mesh_buffer)
+
+        # This technically isn't needed, but it's here for consistency
+        while (count % 16) != 0:
+            count += 1
+
+        # Sub mesh header(s)
+        for mesh in self.mesh_buffer.values():
+            mesh.offset_piece_headers = count
+            count += 48 * mesh.num_pieces
+        # Offset of each Material Name String
+        self.offset_material_name_offsets = count
+        for _ in range(self.num_materials):
+            count += 8
+        
+        while (count % 16) != 0:
+            count += 1
+        # Vertex Buffer
+        for mesh in self.mesh_buffer.values():
+            mesh.offset_vertex_buffer = count
+            count += mesh.vertex_size * mesh.num_vertices
+        while (count % 16) != 0:
+            count += 1
+        # Indices Buffer
+        for mesh in self.mesh_buffer.values():
+            mesh.offset_indices_buffer = count
+            count += mesh.num_polygons * 6
+        while (count % 16) != 0:
+            count += 1
+        # Bones Buffer
+        for mesh in self.mesh_buffer.values():
+            mesh.offset_bones_buffer = count
+            if mesh.bone_buffer:
+                count += 32 * mesh.num_used_bones
+            else:
+                count += 32
+        while (count % 16) != 0:
+            count += 1
+        # Strings Buffer
+        for mesh in self.mesh_buffer.values():
+            mesh.offset_mesh_name = count
+            count += len(mesh.name) + 1
+        for name in self.material_names.values():
+            count += len(name) + 1
+        for mesh in self.mesh_buffer.values():
+            if mesh.bone_buffer:
+                for bone in mesh.bone_buffer.values():
+                    count += len(bone.name) + 1
+        while (count % 16) != 0:
+            count += 1
+        # Cached Offsets
+        self.offset_cached_offsets = count
+        # offset for itself
+        count += self.num_cached_offsets * 16
+
+        while (count % 16) != 0:
+            count += 1
+        #BNRY/LTLE
+        self.offset_BNRY = count
+        count += 32
+        count += 28
+        # EGCD
+        count += 12
+        self.num_bytes = count
+
+    def calculate_offsets(self, is64=False):
+
+
+        if is64:
+            self.calculate_offsets64()
+            return
+
         # type: () -> None
         count = 0
         # Header
