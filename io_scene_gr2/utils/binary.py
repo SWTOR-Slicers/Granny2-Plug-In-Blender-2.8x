@@ -431,3 +431,19 @@ class DataView:
 		:type littleEndian: `bool`
 		"""
 		return self._set_value(byteOffset, value, '<I' if littleEndian else '>I', 4, 0, 4294967295)
+	def setUint64(self, byteOffset, value, littleEndian=False):
+		# type: (int, int, bool) -> None
+		"""
+		Stores an `Uint64` value at the specified byte offset from the start of the view.
+
+		:param byteOffset: The place in the buffer at which the value should be set.
+		:type byteOffset: `int`
+		:param value: The value to set.
+		:type value: `int`
+		:param littleEndian: If false or undefined, a big-endian value should be written,
+		otherwise a little-endian value should be written.
+		:type littleEndian: `bool`
+		"""
+		return self._set_value(byteOffset, value, '<Q' if littleEndian else '>Q', 8, 0, 18446744073709551615)
+	
+	

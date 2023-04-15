@@ -10,6 +10,7 @@ from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 from .ops.export_gr2 import ExportGR2
+from .ops.export_gr2_32 import ExportGR2_32
 from .ops.import_cha import ImportCHA
 from .ops.import_clo import ImportCLO
 from .ops.import_gr2 import ImportGR2
@@ -70,6 +71,9 @@ def _export_gr2(self, _context):
     # type: (Menu, Context) -> None
     self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
 
+def _export_gr2_32(self, _context):
+    # type: (Menu, Context) -> None
+    self.layout.operator(ExportGR2_32.bl_idname, text="SW:TOR (.gr2 32bit)")
 
 class BoneBounds(PropertyGroup):
     bounds: FloatVectorProperty(default=[0.0] * 6, name="Bounds", precision=6, size=6)
@@ -78,6 +82,7 @@ class BoneBounds(PropertyGroup):
 classes = (
     BoneBounds,
     ExportGR2,
+    ExportGR2_32,
     ImportCHA,
     ImportCLO,
     ImportGR2,
@@ -105,6 +110,7 @@ def register():
     TOPBAR_MT_file_import.append(_import_gr2)
     TOPBAR_MT_file_import.append(_import_jba)
     TOPBAR_MT_file_export.append(_export_gr2)
+    TOPBAR_MT_file_export.append(_export_gr2_32)
 
     from bpy.props import CollectionProperty
     from bpy.types import Object
@@ -133,6 +139,7 @@ def unregister():
     TOPBAR_MT_file_import.remove(_import_gr2)
     TOPBAR_MT_file_import.remove(_import_jba)
     TOPBAR_MT_file_export.remove(_export_gr2)
+    TOPBAR_MT_file_export.remove(_export_gr2_32)
 
     from nodeitems_utils import unregister_node_categories
     unregister_node_categories('SWTOR')
