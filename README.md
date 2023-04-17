@@ -1,4 +1,4 @@
-## WARNING: this importer addon isn't yet compatible with files extracted from the recent SWTOR Game Update 7.2.1. Until it is, you can keep on using it on assets from older versions of the game (which can be extracted from the game files in a system drive backup, if available, or downloaded from **[here](https://drive.google.com/drive/folders/1ZkBNz1cK_IXBxBd4OIYL1jRImnnfHXKW?usp=sharing)**).
+## WARNING: this importer addon isn't completely compatible with files extracted from the recent SWTOR Game Update 7.2.1 just yet. It can import and apply materials correctly, but importing skeletons and animation files is still being reworked. If you need those last features, you could use it on assets from older versions of the game which can be downloaded from **[here](https://drive.google.com/drive/folders/1ZkBNz1cK_IXBxBd4OIYL1jRImnnfHXKW?usp=sharing)**).
 
 # SWTOR Granny2 (.gr2) Import/Export addon for Blender 2.8x and higher
 
