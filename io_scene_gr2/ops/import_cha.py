@@ -157,7 +157,7 @@ def build(operator, context, slots, skin_mats):
                     new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
                 except KeyError:
                     if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
-                        if slot["mat_info"]["otherValues"]["materialSkinIndex"] == i:
+                        if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
                             derived = "SkinB"
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
@@ -276,7 +276,7 @@ def build(operator, context, slots, skin_mats):
                             float(other_values['palette1MetallicSpecular'][2]),
                             1.0,
                         ]
-                    elif derived == 'Garment':
+                    elif derived == 'Garment' or derived == 'GarmentScrolling':
                         node.derived = 'GARMENT'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
