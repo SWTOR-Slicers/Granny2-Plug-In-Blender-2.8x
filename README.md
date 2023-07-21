@@ -18,7 +18,7 @@ This add-on provides Blender with several import/export features for **Star Wars
 
 Download the add-on through [**this link: io_scene_gr2.zip**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/raw/master/io_scene_gr2.zip).
 
-Once downloaded, **don't unzip it**, and install it in your Blender app through the usual means (Edit menu > Preferences > Add-ons > Install > Enable. If you had a previous version of the addon installed, disable and remove it first).
+Once downloaded, **don't unzip it**, and install it in your Blender app through the usual means (Edit menu > Preferences > Add-ons > Install > Enable). If you had a previous version of the addon installed, disable and remove it first).
 
 **For directions on its usage, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
