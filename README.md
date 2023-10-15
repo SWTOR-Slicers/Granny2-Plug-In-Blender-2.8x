@@ -2,7 +2,7 @@
 
 # SWTOR Granny2 (.gr2) Import/Export addon for Blender 2.8x and higher
 
-![](https://github.com/SWTOR-Slicers/WikiPedia/blob/main/images/readme_gr2_addon_010.png)
+![](https://github.com/SWTOR-Slicers/WikiPedia/wiki/images/readme_gr2_addon_010.png)
 ### Description
 
 This add-on provides Blender with several import/export features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets:
