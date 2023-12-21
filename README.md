@@ -1,6 +1,6 @@
 #### WARNING: not yet compatible with Blender 4.0. We are working on that.
 
-#### IMPORTANT NOTICE: [the latest version of this importer add-on](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest) can import objects, characters, and skeletons from both the old 32 bit and the new 64 bit (Game Update 7.2.1 onwards) SWTOR game apps.<br><br>Importing animation files from the 64 bit game is still being worked on. If you need those last features, you can use the animation files from a 32 bit game assets extraction (if needed, there is a backup of the game's .tor files that can be downloaded from **[here](https://drive.google.com/drive/folders/1ZkBNz1cK_IXBxBd4OIYL1jRImnnfHXKW?usp=sharing)**. Only the files with an "anim" in their filenames are needed).
+#### IMPORTANT NOTICE: [the latest version of this importer add-on](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest) can import objects, characters, and skeletons from both the old 32 bit and the new 64 bit (Game Update 7.2.1 onwards) SWTOR game apps.<br><br>Importing animation files from the 64 bit game is still being worked on. If you need those last features, you can use the animation files from a 32 bit game assets extraction (if needed, there is a backup of the game's .tor files that can be downloaded from **[here](https://drive.google.com/drive/folders/1ZkBNz1cK_IXBxBd4OIYL1jRImnnfHXKW?usp=sharing)**. Only the files with an "anim" in their filenames are required).
 
 # SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 3.6
 
