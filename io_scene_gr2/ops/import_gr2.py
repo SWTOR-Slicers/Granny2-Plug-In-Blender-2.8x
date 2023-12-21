@@ -309,7 +309,10 @@ def read(operator, filepath):
                     count += 1
 
     # Skeleton Bones
-    gr2.bone_buffer = {i: Granny2.Bone(dv, offset_bone_struct + (i * 136))
+
+    bone_size_of_mem = 144 if gr2.version == 5 else 136
+
+    gr2.bone_buffer = {i: Granny2.Bone(dv, offset_bone_struct + (i * bone_size_of_mem), gr2.version)
                        for i in range(num_bones)}
 
     return gr2

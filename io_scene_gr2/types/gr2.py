@@ -64,8 +64,14 @@ class Granny2:
                         pos += 24
                         return
 
+                  
                     self.parent_index = dv.getInt32(pos, 1)
                     pos += 4
+
+                    if version == 5:
+                        # something is here? we don't know what it is
+                        pos += 4
+
                     # self.bone_to_parent = [dv.getFloat32(pos + (i * 4), 1) for i in range(16)]
                     pos += 64
                     self.root_to_bone = [dv.getFloat32(pos + (i * 4), 1) for i in range(16)]
