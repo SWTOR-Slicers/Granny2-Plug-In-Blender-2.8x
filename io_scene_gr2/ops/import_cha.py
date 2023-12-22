@@ -543,7 +543,7 @@ def load(operator, context, filepath=""):
         progress.step("Parsing file ...", 1)
         slots, skin_mats = read(filepath)
 
-        if slots and skin_mats:
+        if slots:
             progress.step("Done, building ...", 2)
 
             if bpy.ops.object.mode_set.poll():
