@@ -5,23 +5,46 @@ import os
 import sys
 from typing import List
 
+# there is a stray "import bpy" in register() at line 149
+
+from bpy.app import version_string
 from bpy.app.handlers import depsgraph_update_post
 from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
-from .ops.export_gr2 import ExportGR2
-from .ops.export_gr2_32 import ExportGR2_32
-from .ops.import_cha import ImportCHA
-from .ops.import_clo import ImportCLO
-from .ops.import_gr2 import ImportGR2
-from .ops.import_jba import ImportJBA
 
-from .types.node import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+# Modules subfolder selection. lib3 covers from Blender 2.8.x to 3.6.x.
+blender_version = float(version_string[:3])
+if blender_version >= 4:
+    working_lib_path = (os.path.dirname(os.path.realpath(__file__)) + '/lib4/')
+else:
+    working_lib_path = (os.path.dirname(os.path.realpath(__file__)) + '/lib3/')
+
+
+# "Manual" module imports (the Add-on could still evolve so that
+# there are lib4 modules with no lib3 counterparts and viceversa)
+if blender_version >= 4:
+    from .lib4.ops.export_gr2    import ExportGR2
+    from .lib4.ops.export_gr2_32 import ExportGR2_32
+    from .lib4.ops.import_cha    import ImportCHA
+    from .lib4.ops.import_clo    import ImportCLO
+    from .lib4.ops.import_gr2    import ImportGR2
+    from .lib4.ops.import_jba    import ImportJBA
+    from .lib4.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+else:
+    from .lib3.ops.export_gr2    import ExportGR2
+    from .lib3.ops.export_gr2_32 import ExportGR2_32
+    from .lib3.ops.import_cha    import ImportCHA
+    from .lib3.ops.import_clo    import ImportCLO
+    from .lib3.ops.import_gr2    import ImportGR2
+    from .lib3.ops.import_jba    import ImportJBA
+    from .lib3.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+
 
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (3, 5, 4),
+    "version": (4, 0, 0),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -29,15 +52,15 @@ bl_info = {
     "category": "Import-Export"
 }
 
-# Python doesn't reload package sub-modules at the same time as __init__.py!
-for directory in [os.path.join(os.path.dirname(os.path.realpath(__file__)), entry)
-                  for entry in {'ops', 'types', 'utils'}]:
-    for entry in os.listdir(directory):
-        if entry.endswith('.py'):
-            module = sys.modules.get(f"{__name__}.{entry[:-3]}")
 
-            if module:
-                importlib.reload(module)
+# Python doesn't reload package sub-modules at the same time as __init__.py!
+for directory in [os.path.join(working_lib_path, entry) for entry in {'ops','types','utils'}]:
+        for entry in os.listdir(directory):
+            if entry.endswith('.py'):
+                module = sys.modules.get(f"{__name__}.{entry[:-3]}")
+
+                if module:
+                    importlib.reload(module)
 
 # Clear out any scene update funcs hanging around, e.g. after a script reload
 for func in depsgraph_update_post:
@@ -75,6 +98,7 @@ def _export_gr2_32(self, _context):
     # type: (Menu, Context) -> None
     self.layout.operator(ExportGR2_32.bl_idname, text="SW:TOR (.gr2 32bit)")
 
+
 class BoneBounds(PropertyGroup):
     bounds: FloatVectorProperty(default=[0.0] * 6, name="Bounds", precision=6, size=6)
 
@@ -101,7 +125,13 @@ def register():
         register_class(cls)
 
     from nodeitems_utils import register_node_categories
-    from .types import node
+    
+    blender_version = float(version_string[:3])
+    if blender_version >= 4:
+        from .lib4.types import node
+    else:
+        from .lib3.types import node
+        
     register_node_categories('SWTOR', node.node_categories)
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
