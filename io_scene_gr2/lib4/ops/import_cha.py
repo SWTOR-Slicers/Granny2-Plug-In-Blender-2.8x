@@ -163,7 +163,12 @@ def build(operator, context, slots, skin_mats):
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
                     new_mat.use_nodes = True
-                    new_mat.node_tree.nodes.remove(new_mat.node_tree.nodes["Principled BSDF"])
+                    
+                    # Delete default Principled BSDF shader node
+                    for nd in new_mat.node_tree.nodes:
+                        if nd.type == "BSDF_PRINCIPLED":
+                            new_mat.node_tree.nodes.remove(nd)
+                            break
 
                     node = new_mat.node_tree.nodes.new(type="ShaderNodeHeroEngine")
                     node.location = (0.0, 300.0)
