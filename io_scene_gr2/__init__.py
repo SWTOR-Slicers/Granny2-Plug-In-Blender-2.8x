@@ -5,7 +5,7 @@ import os
 import sys
 from typing import List
 
-# there is a stray "import bpy" in register() at line 149
+import bpy
 
 from bpy.app import version_string
 from bpy.app.handlers import depsgraph_update_post
@@ -31,6 +31,7 @@ if blender_version >= 4:
     from .lib4.ops.import_gr2    import ImportGR2
     from .lib4.ops.import_jba    import ImportJBA
     from .lib4.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+    from .lib4.ops.add_swtor_shaders_menu import *
 else:
     from .lib3.ops.export_gr2    import ExportGR2
     from .lib3.ops.export_gr2_32 import ExportGR2_32
@@ -113,13 +114,17 @@ classes = (
     ImportJBA,
     ShaderNodeHeroEngine,
     NODE_OT_ngroup_edit,
+    NODE_MT_add_swtor_shader, NODE_MT_swtor_shaders_menu
 )
+
 
 keymaps: List[KeyMap] = []
 
 
 def register():
     # type: () -> None
+    import bpy
+
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
@@ -129,10 +134,13 @@ def register():
     blender_version = float(version_string[:3])
     if blender_version >= 4:
         from .lib4.types import node
+        # Append the separator bar plus SWTOR menu to the Shader Editor's Add menu.
+        # swtor_shaders_submenu_element comes from .lib4.ops.add_swtor_shaders_menu,
+        # imported
+        bpy.types.NODE_MT_add.append(swtor_shaders_submenu_element)
     else:
         from .lib3.types import node
-        
-    register_node_categories('SWTOR', node.node_categories)
+        register_node_categories('SWTOR', node.node_categories)
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
     TOPBAR_MT_file_import.append(_import_cha)
@@ -146,7 +154,6 @@ def register():
     from bpy.types import Object
     Object.bone_bounds = CollectionProperty(name="Bone Bounds", type=BoneBounds)
 
-    import bpy
     wm = bpy.context.window_manager
     km = wm.keyconfigs.addon.keymaps.new(name='Node Editor', space_type='NODE_EDITOR')
     kmi = km.keymap_items.new(node.NODE_OT_ngroup_edit.bl_idname, 'TAB', 'PRESS')
@@ -155,8 +162,13 @@ def register():
     kmi.properties.exit = True
     keymaps.append(km)
 
-
 def unregister():
+    if blender_version >= 4:
+        bpy.types.NODE_MT_add.remove(swtor_shaders_submenu_element)
+    else:
+        from nodeitems_utils import unregister_node_categories
+        unregister_node_categories('SWTOR')
+
     # type: () -> None
     for km in keymaps:
         for kmi in km.keymap_items:
@@ -171,13 +183,9 @@ def unregister():
     TOPBAR_MT_file_export.remove(_export_gr2)
     TOPBAR_MT_file_export.remove(_export_gr2_32)
 
-    from nodeitems_utils import unregister_node_categories
-    unregister_node_categories('SWTOR')
-
     from bpy.utils import unregister_class
     for cls in classes:
         unregister_class(cls)
-
 
 if __name__ == '__main__':
     try:
