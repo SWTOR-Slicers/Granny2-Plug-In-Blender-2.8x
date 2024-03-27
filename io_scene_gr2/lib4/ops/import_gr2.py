@@ -349,7 +349,7 @@ def build(gr2, filepath="", import_collision=False):
         if mesh.bit_flag2 & 2:   # 0x02
             # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
             #       we can only set custom loop normals *after* calling it.
-            bmesh.create_normals_split()
+            bmesh.create_normals_split()  # DEPRECATED
             bmesh.uv_layers.new(do_init=False)
             if mesh.bit_flag2 & 64:  # 0x40
                 bmesh.uv_layers.new(do_init=False)
@@ -361,7 +361,8 @@ def build(gr2, filepath="", import_collision=False):
 
                 for k, loop_index in enumerate(loop_indices):
                     v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
-                    bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]
+                    bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]  # DEPRECATED
+                    
                     bmesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
 
                     if mesh.bit_flag2 & 64:  # 0x40
@@ -379,7 +380,7 @@ def build(gr2, filepath="", import_collision=False):
             bmesh.loops.foreach_get("normal", custom_loop_normals)
             bmesh.polygons.foreach_set("use_smooth", [True] * len(bmesh.polygons))
             bmesh.normals_split_custom_set(tuple(zip(*(iter(custom_loop_normals),) * 3)))
-            bmesh.use_auto_smooth = True
+            bmesh.use_auto_smooth = True  # DEPRECATED
 
         # Create Blender Object
         ob = bpy.data.objects.new(mesh.name, bmesh)
