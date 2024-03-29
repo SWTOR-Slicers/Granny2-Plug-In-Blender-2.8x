@@ -2,7 +2,7 @@
 ### We have a few showstoppers:
 
 * **The ShaderNodeHeroEngine node** is added correctly to materials, but **upon project reload it completely loses its custom UI and the material turns black** despite the underlying nodegroups ("SWTOR", "SWTOR.001", etc.) still existing. This happens in Blender 3.6.8, 3.6.9, and 4.1. Strangely, it doesn't happen in Blender 4.0.
-* **Several deprecations in bmesh break the .gr2 importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). They are marked with a "# DEPRECATED" in the code:
+* **Several deprecations in bmesh break the .gr2 importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). They are marked with a "# DEPRECATED" in `io_scene_gr2\lib4\ops\import_gr2.py`'s code:
 
   * **`Line 352 bmesh.create_normals_split()`**  
   
@@ -35,7 +35,7 @@
 
 * **Lazy duplication of code**: as we didn't know how considerable the API changes between Blender 3.x and 4.x were going to be (and it was clear that 4.1 was to be full of late arrivals), **basically everything but the `__init__.py` file has been subfoldered into a `lib3` and a `lib4` subfolder containing almost-duplicates of the original single set of code**.  
   
-  The thing is, the changes in 4.0 are varied enough to make adding Blender version conditionals where they happen a nuisance to chase around. And now, Blender 4.1 has its own add-on-breaking ones, further complicating things. An alternative might have been duplicating the specifically affected files. Using version conditionals in the code felt too cumbersome to do, given certain cases.
+  The thing is, the changes in 4.0 are varied enough to make adding Blender version conditionals where they happen a nuisance to chase around. And now, Blender 4.1 has its own add-on-breaking ones (and possibly 3.6.8/9 ought to, too), further complicating things. An alternative might have been duplicating the specifically affected files. Using version conditionals in the code felt too cumbersome to do, given certain cases.
   
   (As 4.1's features are what 4.0 was meant to include but weren't ready for the release, would skipping 4.0 support (half-way between 3.6.x and 4.1) merit consideration?)
 
