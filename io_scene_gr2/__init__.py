@@ -13,12 +13,14 @@ from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 
-# Modules subfolder selection. lib3 covers from Blender 2.8.x to 3.6.x.
+# "Manually segregated" module imports:
+# - lib4 covers Blender 4.0.x.
+# - lib3 covers from Blender 2.8.x to 3.6.7.
+# (new API deprecations and strange bugs suggest
+# that a lib38 and a lib41 might be needed. Blergh!)
+
 blender_version = float(version_string[:3])
 
-
-# "Manual" module imports (the Add-on could still evolve so that
-# there are lib4 modules with no lib3 counterparts and viceversa)
 if blender_version >= 4:
     from .lib4.ops.export_gr2    import ExportGR2
     from .lib4.ops.export_gr2_32 import ExportGR2_32
@@ -27,7 +29,7 @@ if blender_version >= 4:
     from .lib4.ops.import_gr2    import ImportGR2
     from .lib4.ops.import_jba    import ImportJBA
     from .lib4.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
-    from .lib4.ops.add_swtor_shaders_menu import *  # classes and fn for Sheader Editor's Add menu functionality in 4.x
+    from .lib4.ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
 else:
     from .lib3.ops.export_gr2    import ExportGR2
     from .lib3.ops.export_gr2_32 import ExportGR2_32
@@ -146,7 +148,7 @@ def register():
     if blender_version >= 4:
         from .lib4.types import node
         
-        # Append fn with separator bar plus SWTOR menu to the Shader Editor's Add menu
+        # Appends fn with separator bar plus SWTOR menu to the Shader Editor's Add menu
         # (swtor_shaders_submenu_element comes from .lib4.ops.add_swtor_shaders_menu).
         # This is a conventional way to extend menus.
         bpy.types.NODE_MT_add.append(swtor_shaders_submenu_element)
@@ -156,6 +158,8 @@ def register():
 
         # This was the specific way to extend shader menu categories
         # that has been deprecated in 4.x.
+        # (Oddly enough, it seems it was deprecated in 3.4
+        # but still it works in 3.6.x ?)
         from nodeitems_utils import register_node_categories
         register_node_categories('SWTOR', node.node_categories)
 
