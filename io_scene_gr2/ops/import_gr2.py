@@ -327,6 +327,13 @@ def build(gr2, filepath="", import_collision=False):
         bpy.data.materials.new(name=material).use_nodes = True
 
     # NOTE: Create Meshes
+    
+    # As using "art names" as object names makes workflows difficult,
+    # for single mesh objects we'll use the filename instead
+    # (they typically match, but there are exceptions).
+    # A decision and solution for multiple mesh objects is needed, though.
+    use_filename_as_object_name = len(gr2.mesh_buffer.items()) == 1
+    
     for i, mesh in gr2.mesh_buffer.items():
         if "collision" in mesh.name and not import_collision:
             continue
@@ -382,7 +389,11 @@ def build(gr2, filepath="", import_collision=False):
             bmesh.use_auto_smooth = True
 
         # Create Blender Object
-        ob = bpy.data.objects.new(mesh.name, bmesh)
+        if use_filename_as_object_name:
+            file_name = filepath.split(os.sep)[-1][:-4]
+            ob = bpy.data.objects.new(file_name, bmesh)
+        else:
+            ob = bpy.data.objects.new(mesh.name, bmesh)
 
         # Create Vertex Groups
         for bone in mesh.bone_buffer.values():
@@ -427,6 +438,7 @@ def build(gr2, filepath="", import_collision=False):
                 armature_bone.parent = armature.edit_bones[bone.parent_index]
 
             matrix = Matrix([bone.root_to_bone[j*4:j*4+4] for j in range(4)])
+            print(matrix, i , bone.name)
             matrix.transpose()
             armature_bone.transform(matrix.inverted())
 
