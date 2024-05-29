@@ -36,11 +36,11 @@
 
 ### What's different to the Master branch.
 
-* **Lazy duplication of code**: as we didn't know how considerable the API changes between Blender 3.x and 4.x were going to be (and it was clear that 4.1 was to be full of late arrivals), **basically everything but the `__init__.py` file has been subfoldered into a `lib3` and a `lib4` subfolder containing almost-duplicates of the original single set of code**.  
+* **Excessive duplication of code**: as we didn't know how considerable the API changes between Blender 3.x and 4.x were going to be (and it was clear that 4.1 was to be full of late arrivals), **basically everything but the `__init__.py` file has been subfoldered into a `lib3` and a `lib4` subfolder containing almost-duplicates of the original single set of code**. Some elements, like  the whole `utils` subfolder, could have been left alone, but this seemed simpler to maintain.  
   
-  The thing is, the changes in 4.0 are varied enough to make adding Blender version conditionals where they happen a nuisance to chase around. And now, Blender 4.1 has its own add-on-breaking ones (and possibly 3.6.8/9 ought to, too), further complicating things. An alternative might have been duplicating the specifically affected files. Using version conditionals in the code felt too cumbersome to do, given certain cases.
+  The thing is, the changes in 4.0 are varied enough to make adding Blender version conditionals where they happen a nuisance to chase around. And now, Blender 4.1 has its own add-on-breaking ones (and possibly 3.6.8 and higher ought to, too), further complicating things.
   
-  (As 4.1's features are what 4.0 was meant to include but weren't ready for the release, would skipping 4.0 support (half-way between 3.6.x and 4.1) merit consideration? 4.1's deprecation of Auto Smooth for a Modifier means that many are going to stay in 4.0 until a better user experience surfaces)
+  (As 4.1's features are what 4.0 was meant to include but weren't ready for the release, would skipping 4.0 support merit consideration? 4.1's moving on from Auto Smooth to the new equivalent Modifier means that many people are going to stay in 4.0 until a better user experience comes up)
 
 * **Messy `__init__.py` file**: again, due to the tentative nature of the 4.0-compatibility changes, the init code support for the almost-duplication of code is rather crude.
   

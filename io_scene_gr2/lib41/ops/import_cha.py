@@ -21,14 +21,7 @@ from ..utils.string import path_format, path_split
 
 
 class ImportCHA(Operator, ImportHelper):
-    """
-    Import from JSON file format (.json)
-    
-    Produces a file browser for manually
-    selecting a TORCommunity.com-formatted
-    paths.json file describing a SWTOR character
-    and their gear.
-    """
+    """Import from JSON file format (.json)"""
     bl_idname = "import_mesh.gr2_json"
     bl_label = "Import SWTOR (.json)"
     bl_options = {'UNDO'}
@@ -68,10 +61,6 @@ _eye_mat_info = None
 
 def read(filepath):
     # type: (str) -> Tuple[List, Optional[Dict]]
-    '''
-    Parses a TORCommunity.com's Character Designer-formatted .json file
-    returning objects and materials data to process
-    '''
     with open(filepath) as file:
         data: List[Dict[str, Any]] = json.load(file)
 
@@ -95,7 +84,7 @@ def read(filepath):
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
                     if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
                         tex = "/black.dds"
-
+                    
                     mat_info["ddsPaths"][key] = \
                         path_format(filepath,
                                     f"/materials/skinMats/{slot_name}"
@@ -139,15 +128,12 @@ def read(filepath):
             except Exception:
                 print("AN ERROR HAS OCCURED.")  # TODO: Improve this error handling!
 
+    print(skin_materials)
     return parsed_objects, skin_materials
 
 
 def build(operator, context, slots, skin_mats):
     # type: (Operator, Context, None, None) -> bool
-    '''
-    Imports .gr2 object files and assigns them
-    materials using this add-on's SWTOR shaders
-    '''
     from .import_gr2 import load as load_gr2
 
     for slot in slots:

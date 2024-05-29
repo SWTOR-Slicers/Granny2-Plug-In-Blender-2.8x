@@ -1,5 +1,17 @@
 # <pep8 compliant>
 
+bl_info = {
+    "name": "Star Wars: The Old Republic (.gr2)",
+    "author": "Darth Atroxa, SWTOR Slicers",
+    "version": (4, 0, 1),
+    "blender": (2, 82, 0),
+    "location": "File > Import-Export",
+    "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
+    "support": 'COMMUNITY',
+    "category": "Import-Export",
+}
+
+
 import importlib
 import os
 import sys
@@ -14,14 +26,16 @@ from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 
 # "Manually segregated" module imports:
+# - lib3 covers from Blender 2.8.x to 3.6.x.
 # - lib4 covers Blender 4.0.x.
-# - lib3 covers from Blender 2.8.x to 3.6.7.
-# (new API deprecations and strange bugs suggest
-# that a lib38 and a lib41 might be needed. Blergh!)
+# - lib41 covers Blender 4.1.x. (not yet implemented)
 
 blender_version = float(version_string[:3])
 
+from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
+
 if blender_version >= 4:
+    lib_version = 'lib4'
     from .lib4.ops.export_gr2    import ExportGR2
     from .lib4.ops.export_gr2_32 import ExportGR2_32
     from .lib4.ops.import_cha    import ImportCHA
@@ -31,6 +45,7 @@ if blender_version >= 4:
     from .lib4.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
     from .lib4.ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
 else:
+    lib_version = 'lib3'
     from .lib3.ops.export_gr2    import ExportGR2
     from .lib3.ops.export_gr2_32 import ExportGR2_32
     from .lib3.ops.import_cha    import ImportCHA
@@ -40,29 +55,28 @@ else:
     from .lib3.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 
 
-bl_info = {
-    "name": "Star Wars: The Old Republic (.gr2)",
-    "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 1),
-    "blender": (2, 82, 0),
-    "location": "File > Import-Export",
-    "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
-    "support": 'COMMUNITY',
-    "category": "Import-Export"
-}
-
 
 # Python doesn't reload package sub-modules at the same time as __init__.py!
 
-working_lib_path = (os.path.dirname(os.path.realpath(__file__)) + f'/lib{int(blender_version)}/')
+# reload modules in subfolder for current Blender version
+addon_root_path = os.path.dirname(os.path.realpath(__file__))
+addon_versioned_lib_path = os.path.join(addon_root_path, lib_version)
 
-for directory in [os.path.join(working_lib_path, entry) for entry in {'ops','types','utils'}]:
-        for entry in os.listdir(directory):
-            if entry.endswith('.py'):
-                module = sys.modules.get(f"{__name__}.{entry[:-3]}")
+directories = [os.path.join(addon_versioned_lib_path, entry) for entry in {'ops','types','utils'}]
+                              
+for directory in directories:
+    for entry in os.listdir(directory):
+        if entry.endswith('.py'):
+            module = sys.modules.get(f"{__name__}.{entry[:-3]}")
 
-                if module:
-                    importlib.reload(module)
+            if module:
+                importlib.reload(module)
+
+# …And reload common preferences module in root of add-on
+module = sys.modules.get("addon_prefs")
+if module:
+    importlib.reload(module)
+
 
 # Clear out any scene update funcs hanging around, e.g. after a script reload
 for func in depsgraph_update_post:
@@ -103,6 +117,7 @@ class BoneBounds(PropertyGroup):
 
 
 classes = (
+    Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset,
     BoneBounds,
     ExportGR2,
     ExportGR2_32,
