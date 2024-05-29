@@ -31,7 +31,7 @@
 ### Other than that:
 * Skeleton objects import works correctly.
 * Character Import (.json) works correctly (actual .gr2 objects import aside)
-* Animation Import (**32 bit-only .jba**) works correctly.
+* Animation Import (**32 bit-only .jba**) works correctly, **BUT: there seems to be a long standing bug that makes turns bigger than 360º glitch: it can be seen in some of the Twi'lek dances**.
 
 ---
 
