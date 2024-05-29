@@ -1,10 +1,11 @@
 ## Current state of the branch:
-### We have a few showstoppers:
+### Progress!
 
-* **The ShaderNodeHeroEngine node** is added correctly to materials, but **upon project reload (or "equivalent" undo-then-redo action) it completely loses its custom UI and the material turns black** despite the underlying nodegroups ("SWTOR", "SWTOR.001", etc.) still existing. This happens in Blender 3.6.8 upwards, and 4.1. Strangely, it doesn't happen in Blender 4.0.
+* **Our ShaderNodeHeroEngine node's disappearances were a Blender bug!** It began in 3.6.8 and has just been corrected in 3.6.12 (it had been solved in 4.0 but reappeared in 4.1.0 and again was corrected in 4.1.1). It was the most mystifying issue, and in the end it happened not to be our fault.
   
-  [4.0's API deprecates NodeItem and NodeCategory](https://developer.blender.org/docs/release_notes/4.0/python_api/#nodes). That impacted the previous SWTOR shaders submenu in the Shader Editor's Add menu, which now is implemented as a conventional appending to that menu, but it might have to do with this issue, too. 
+* **The Shader Editor's Add menu has our SWTOR shaders submenu implemented as a conventional fn appending, now** (see [4.0's API deprecated NodeItem and NodeCategory](https://developer.blender.org/docs/release_notes/4.0/python_api/#nodes). That impacted the previous way of doing it).
 
+### The showstopper:
 * **Several deprecations in bmesh break the .gr2 importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). They are marked with a "# DEPRECATED" in `io_scene_gr2\lib4\ops\import_gr2.py`'s code. Here there are the lines and a mention to what seems to be relevant in Blender's 4.1 changelog.
 
   * **`Line 352 bmesh.create_normals_split()`**  
@@ -30,17 +31,29 @@
 ### Other than that:
 * Skeleton objects import works correctly.
 * Character Import (.json) works correctly (actual .gr2 objects import aside)
-* Animation Import (32 bit-only .jba) works correctly.
-* We have the SWTOR Shaders sub-menu back into the Shader Editor's Add menu.
+* Animation Import (**32 bit-only .jba**) works correctly.
 
+---
+
+### New features:
+
+While working on this, we've implemented a series of long wanted new features, accessible both from the importers' properties in their File Browsers and from a new Preferences Panel:
+
+* **Use Filename as object name**: solves issues with Nautolan PCs and others.
+* **Axis Conversion and Scale Factor**: they do the Z-is-Up x=90º rotation and typical x10 scaling at the mesh level instead of at the object level.
+* **The .jba animation importer's scale factor is synced to the .gr2 importer's one**, although it can be set differently, too.
+* **It offers a Delete 180º Rotation option so that animations don't rotate characters away from us**.
+* **There is a presets system**: BLENDER (for arting), PORTING (to other apps), and NEUTRAL (the old settings). Porting settings are tentative: we need feedback from people doing actual ports to VRchat and other targets.
+
+(Other add-ons that use this one are being made aware of these settings to react accordingly)
+
+---
 
 ### What's different to the Master branch.
 
 * **Excessive duplication of code**: as we didn't know how considerable the API changes between Blender 3.x and 4.x were going to be (and it was clear that 4.1 was to be full of late arrivals), **basically everything but the `__init__.py` file has been subfoldered into a `lib3` and a `lib4` subfolder containing almost-duplicates of the original single set of code**. Some elements, like  the whole `utils` subfolder, could have been left alone, but this seemed simpler to maintain.  
   
-  The thing is, the changes in 4.0 are varied enough to make adding Blender version conditionals where they happen a nuisance to chase around. And now, Blender 4.1 has its own add-on-breaking ones (and possibly 3.6.8 and higher ought to, too), further complicating things.
-  
-  (As 4.1's features are what 4.0 was meant to include but weren't ready for the release, would skipping 4.0 support merit consideration? 4.1's moving on from Auto Smooth to the new equivalent Modifier means that many people are going to stay in 4.0 until a better user experience comes up)
+  **The thing is, Blender 4.1 has its own add-on-breaking API changes and is going to need its own lib41.** We *don't knoww about 4.2, but…
 
 * **Messy `__init__.py` file**: again, due to the tentative nature of the 4.0-compatibility changes, the init code support for the almost-duplication of code is rather crude.
   
@@ -55,5 +68,6 @@
     Also, little changes here and there, related to setting the default_value of several Principled BSDF Shader inputs in the SWTOR Eye shader. The Principled Shader has changed considerably between versions ("Clearcoat XYZ" is now "Coat XYZ" and so on, for one thing, and some inputs mean now different things and require different default values to produce the same results).
 
   * **`\ops\add_swtor_shaders_menu.py`**: Shader Editor's Add menu's SWTOR submenu. Includes an Operator class, a menu layout class, and a function calling the menu plus a separator (whose actual appending to the Add menu happens in `__init__.py`).
-  
-(Note: some time ago, the character importer module received some changes in the main branch to solve some issues with second material slots (eyes and such) and to let it process NPCs (there was some oddness going on). I remember we had a hiccup regarding having the main repository up to date. Both the current Master and this branch have them)
+
+* **The new addon_pref module is at the root of the add-on's folder and has no Blender version-dependent variants**.
+* **The new features are identically implemented for each Blender version, so far**. They impact `\ops\import_gr2.py` and `\ops\import_jba.py`: new property definitions, using invoke() instead of ImportHelper to be able to match the properties with the ones from preferences, some heuristics about them, and the actual features in the mesh and animation building.
