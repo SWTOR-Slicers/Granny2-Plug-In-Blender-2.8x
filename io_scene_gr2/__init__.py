@@ -24,27 +24,31 @@ from bpy.app.handlers import depsgraph_update_post
 from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
+from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
 
 # "Manually segregated" module imports:
 # - lib3 covers from Blender 2.8.x to 3.6.x.
 # - lib4 covers Blender 4.0.x.
 # - lib41 covers Blender 4.1.x. (not yet implemented)
-
 blender_version = float(version_string[:3])
 
-from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
-
 if blender_version >= 4:
+    
     lib_version = 'lib4'
-    from .lib4.ops.export_gr2    import ExportGR2
-    from .lib4.ops.export_gr2_32 import ExportGR2_32
-    from .lib4.ops.import_cha    import ImportCHA
-    from .lib4.ops.import_clo    import ImportCLO
-    from .lib4.ops.import_gr2    import ImportGR2
-    from .lib4.ops.import_jba    import ImportJBA
-    from .lib4.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+    from .lib4.ops.export_gr2             import ExportGR2
+    from .lib4.ops.export_gr2_32          import ExportGR2_32
+    from .lib4.ops.import_cha             import ImportCHA
+    from .lib4.ops.import_clo             import ImportCLO
+    from .lib4.ops.import_gr2             import ImportGR2
+    from .lib4.ops.import_jba             import ImportJBA
+    
+    from .lib4.types.node                 import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+    
     from .lib4.ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
+    from .lib4.types.shared               import job_results
+
 else:
+    
     lib_version = 'lib3'
     from .lib3.ops.export_gr2    import ExportGR2
     from .lib3.ops.export_gr2_32 import ExportGR2_32
@@ -52,6 +56,7 @@ else:
     from .lib3.ops.import_clo    import ImportCLO
     from .lib3.ops.import_gr2    import ImportGR2
     from .lib3.ops.import_jba    import ImportJBA
+    
     from .lib3.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 
 
@@ -157,7 +162,15 @@ def register():
     from bpy.types import Object
     Object.bone_bounds = CollectionProperty(name="Bone Bounds", type=BoneBounds)
 
-
+    
+    from bpy.props import StringProperty
+    bpy.types.Scene.io_scene_gr2_last_job = StringProperty(
+        name="io_scene_gr2 Add-on's Last Activity",
+        description=".json-format info about the results of the use of this add-on\n (e.g., objects imported) that external operators can use",
+        default='',
+        )
+    
+    
     # Additions to Shader Editor's Add menu
     blender_version = float(version_string[:3])
     if blender_version >= 4:
@@ -213,6 +226,9 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in classes:
         unregister_class(cls)
+        
+    del bpy.types.Scene.io_scene_gr2_last_job
+
 
 if __name__ == '__main__':
     try:

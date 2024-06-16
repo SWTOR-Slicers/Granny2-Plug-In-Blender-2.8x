@@ -24,7 +24,7 @@ from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import path_split, readCString
 
 
-class ImportJBA(Operator, ImportHelper):
+class ImportJBA(Operator):
     """Import from SWTOR JBA file format (.jba)"""
     bl_idname = "import_animation.jba"
     bl_label = "Import SWTOR (.jba)"
@@ -47,22 +47,50 @@ class ImportJBA(Operator, ImportHelper):
         default="*.jba",
         options={'HIDDEN'},
     )
+    
     ignore_facial_bones: BoolProperty(
-        name="Import Facial Bones",
-        description="Ignore translation keyframe for facial bones",
+        name="Ignore Facial Transl.",
+        description="Ignores the data in the facial bones' translation keyframes\nand only uses their rotation keyframes",
         default=True,
     )
+
     scale_factor: FloatProperty(
         name="Scale Factor",
-        description="Scale factor of the animation (try 1.05 for character animations)",
+        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated.\n\nWhenever possible, this setting will try to match\nthe Objects Import Settings automatically\n(it still allows for setting different values)",
         default=1.0,
         soft_min=0.1,
         soft_max=2.0,
+        precision=2,
     )
+    
+    delete_180: BoolProperty(
+        name="Delete 180º rotation",
+        description="Keeps the animation data from turning the skeleton 180º by deleting\nthe keyframes assigned to the Bip01 bone and setting its rotation to zero.\n\nSWTOR animations turn characters so that they face away from the camera,\nas normally shown in the gameplay. That is not just a nuisance but a problem\nwhen adding cloth or physics simulations to capes or lekku: the instantaneous\nturn plays havok with them",
+        default=False,
+    )
+
+    def invoke(self, context, event):
+        # To be able to set the class' properties to the values in the
+        # Add-on's preferences and show them in the File Browser's options,
+        # we use an Invoke function instead of directly using ImportHelper in
+        # the class definition, to be able to put there the required code.
+        
+        prefs = context.preferences.addons["io_scene_gr2"].preferences
+        
+        self.ignore_facial_bones = prefs.jba_ignore_facial_bones
+        self.scale_factor        = prefs.jba_scale_factor
+        self.delete_180          = prefs.jba_delete_180
+
+        context.window_manager.fileselect_add(self)
+        
+        return {'RUNNING_MODAL'}
+
+
 
     def execute(self, context):
         # type: (Context) -> Set[str]
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        paths = [os.path.join(self.directory, file.name) for file in self.files if file.name.lower().endswith(self.filename_ext)]
 
         if not paths:
             paths.append(self.filepath)
@@ -272,7 +300,7 @@ def build(operator, context, filepath, jba):
     ob: Object = context.active_object
 
     if not ob or ob.type != 'ARMATURE':
-        operator.report({'INFO'}, f"Require object of type Armature to be active, not {ob.type}")
+        operator.report({'INFO'}, f"Requires object of type Armature to be active, not {ob.type}")
         return False
 
     # Create armature action
@@ -290,7 +318,8 @@ def build(operator, context, filepath, jba):
         bpy.ops.object.mode_set(mode='POSE')
 
     # Create armature keyframes
-    scale = 1000 * operator.scale_factor
+    # scale = 1000 * operator.scale_factor  # This was the original calculation, but it seems to work as an inverse, so…
+    scale = 1000 * (1 / operator.scale_factor)
     morpheme_space = Matrix(((scale, 0, 0, 0), (0, 0, -scale, 0), (0, scale, 0, 0), (0, 0, 0, 1)))
     morpheme_space_inv = morpheme_space.inverted()
 
@@ -317,7 +346,12 @@ def build(operator, context, filepath, jba):
                 frame = jba.fps * jba.length * anim_frame / jba.num_frames + 1
                 pose_bone.matrix_basis = mat_rest.inverted() @ mat_bone
                 pose_bone.keyframe_insert(data_path="location", frame=frame)
-                pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+                if not (operator.delete_180 and bone_name == "Bip01"):
+                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+
+    if operator.delete_180 and "Bip01" in ob.pose.bones:
+        # CHECK THAT THIS QUATERNION ROTATION IS VALID IN ALL CASES!!!
+        ob.pose.bones["Bip01"].rotation_quaternion = (1, 0, 0, 0)
 
     return True
 

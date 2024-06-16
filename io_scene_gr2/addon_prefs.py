@@ -29,7 +29,7 @@ class Prefs(bpy.types.AddonPreferences):
 
     gr2_scale_object: bpy.props.BoolProperty(
         name="Scale Object",
-        description="Scales imported objects, characters and armatures\nat the Mesh level.\n\nNOT RECOMMENDED FOR MODDING SWTOR OR EXPORTING\nTO OTHER APPS AND ENGINES: Check their requirements and test first.\n\nSWTOR sizes objects in decimeters, while Blender defaults to meters.\nThis mismatch, while innocuous, is an obstacle when doing physics\nsimulations, automatic weighting from bones, or other processes\nwhere Blender requires real world-like sizes to succeed",
+        description="Scales imported objects, characters and armatures\nat the Mesh level.\n\nSWTOR sizes objects in decimeters, while Blender defaults to meters.\nThis mismatch, while innocuous, is an obstacle when doing physics\nsimulations, automatic weighting from bones, or other processes\nwhere Blender requires real world-like sizes to succeed",
         default=False,
     )
 
@@ -48,7 +48,7 @@ class Prefs(bpy.types.AddonPreferences):
     
     gr2_apply_axis_conversion: bpy.props.BoolProperty(
         name="Apply Axis Conversion",
-        description="Permanently converts the imported object\nto Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nNOT RECOMMENDED FOR MODDING SWTOR.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
+        description="Permanently converts the imported object\nto Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
         default=False,
     )
 
@@ -92,8 +92,8 @@ class Prefs(bpy.types.AddonPreferences):
         col.scale_y = 0.80
         col.menu('import_mesh.gr2_presets')
         col.label()
-        col.label(text="This Menu provides sensible settings for most")
-        col.label(text="typical tasks (which can be further adjusted).")
+        col.label(text="This Menu provides sensible settings for")
+        col.label(text="most typical tasks as a starting point.")
 
         layout.separator()
 
@@ -103,7 +103,7 @@ class Prefs(bpy.types.AddonPreferences):
         boxcol.prop(self,'gr2_import_collision')
         boxcol.prop(self,'gr2_name_as_filename', text="Name Imported Objects As Filenames")
         boxcol.prop(self,'gr2_apply_axis_conversion', text="'Apply' Axis Conversion")
-        boxcol.prop(self,'gr2_scale_object', text="Scale Imported Objects And Characters")
+        boxcol.prop(self,'gr2_scale_object', text="Scale Imported Objects/Characters")
         boxcol.prop(self,'gr2_scale_factor', text="Scale factor")
         boxcol = split.box().column(align=True, heading=".JBA ANIMATIONS IMPORT SETTINGS:")
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")

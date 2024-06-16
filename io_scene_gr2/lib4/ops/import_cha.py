@@ -10,6 +10,7 @@ Run this script from "File->Import" menu and then load the desired JSON file.
 import json
 import os
 from typing import Any, Dict, List, Optional, Set, Tuple
+import time
 
 import bpy
 from bpy import app
@@ -18,6 +19,8 @@ from bpy.types import Context, Operator, OperatorFileListElement
 from bpy_extras.io_utils import ImportHelper
 
 from ..utils.string import path_format, path_split
+
+from ..types.shared import job_results  # add-on-wide global-like dict
 
 
 class ImportCHA(Operator, ImportHelper):
@@ -33,11 +36,9 @@ class ImportCHA(Operator, ImportHelper):
     bl_label = "Import SWTOR (.json)"
     bl_options = {'UNDO'}
 
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the JSON file",
-        type=OperatorFileListElement,
-    )
+
+
+    # File Browser properties
 
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
@@ -45,20 +46,52 @@ class ImportCHA(Operator, ImportHelper):
         directory: StringProperty(subtype='DIR_PATH')
 
     filename_ext = ".json"
-    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
+
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the JSON file",
+        type=OperatorFileListElement,
+    )
+
+    filter_glob: StringProperty(
+        default="*.json",
+        options={'HIDDEN'}
+    )
+
+
+
+    # Importing parameters' properties
 
     import_collision: BoolProperty(name="Import collision mesh", default=False)
 
+    job_results_rich: BoolProperty(
+        name="Rich results Info",
+        description="For easier interaction with third party code, this add-on fills 'bpy.context.scene.io_scene_gr2_last_job'\nwith info about its most recent job (imported objects's names) in .json format.\nSet to Rich, it provides additional data such as their relationships to filenames",
+        # options={'HIDDEN'},
+        default=False,
+    )
+
+
     def execute(self, context):
         # type: (Context) -> Set[str]
+        
+        # Clear job_results data before starting a job
+        job_results['objs_names'] = []
+        job_results['files_objs_names'] = {}
+        job_results['job_origin'] = self.bl_idname
+            
+            
         paths = [os.path.join(self.directory, file.name) for file in self.files]
 
         if not paths:
             paths.append(self.filepath)
 
         for path in paths:
-            if not load(self, context, path):
+            if not load(self, context, path, job_results_rich=self.job_results_rich):
                 return {'CANCELLED'}
+
+
+        bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
 
         return {'FINISHED'}
 
@@ -142,19 +175,30 @@ def read(filepath):
     return parsed_objects, skin_materials
 
 
-def build(operator, context, slots, skin_mats):
-    # type: (Operator, Context, None, None) -> bool
+def build(operator, context, slots, skin_mats, job_results_rich = False):
+    # type: (Operator, Context, None, None, False) -> bool
     '''
     Imports .gr2 object files and assigns them
     materials using this add-on's SWTOR shaders
     '''
-    from .import_gr2 import load as load_gr2
+    from .import_gr2 import load as ImportGR2_load
+
 
     for slot in slots:
+        print()
+        print()
+        print(f"{slot['slot_name'].upper()} OBJECTS:")
+        print("-" * 80)
         for model in slot["models"]:
             # Import gr2
-            load_gr2(operator, context, model)
+            ImportGR2_load(operator, context,
+                           model,
+                           job_results_rich=job_results_rich,
+                           job_results_accumulate=True,
+                           )
+            
             name = path_split(model)[:-4]
+
 
             # Set material for model
             ob = bpy.data.objects[name]
@@ -553,24 +597,31 @@ def build(operator, context, slots, skin_mats):
     return True
 
 
-def load(operator, context, filepath=""):
-    # type: (Operator, Context, str) -> bool
-    from bpy_extras.wm_utils.progress_report import ProgressReport
+def load(operator, context, filepath= "", job_results_rich=False):
+    # type: (Operator, Context, str, bool) -> bool
+    
+    start_time = time.time()
+    
+    print( "----------")
+    print(f"JSON FILE: {filepath}")
+    print( "----------")
 
-    with ProgressReport(context.window_manager) as progress:
-        progress.enter_substeps(3, f"Importing \'{filepath}\' ...")
+    slots, skin_mats = read(filepath)
 
-        progress.step("Parsing file ...", 1)
-        slots, skin_mats = read(filepath)
+    if slots:
 
-        if slots:
-            progress.step("Done, building ...", 2)
+        if bpy.ops.object.mode_set.poll():
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-            if bpy.ops.object.mode_set.poll():
-                bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        if build(operator, context, slots, skin_mats, job_results_rich):
 
-            if build(operator, context, slots, skin_mats):
-                progress.leave_substeps(f"Done, finished importing: \'{filepath}\'")
-                return True
+            elapsed_time = time.time() - start_time
+            print()
+            print()
+            print( "----------------------")
+            print(f"TOTAL PROCESSING TIME: {elapsed_time:.3f} s.")
+            print( "----------------------")
+
+            return True
 
         return False

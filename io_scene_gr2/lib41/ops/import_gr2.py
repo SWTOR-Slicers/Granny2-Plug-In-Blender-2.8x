@@ -15,7 +15,7 @@ from typing import Optional, Set
 
 import bpy
 from bpy import app
-from bpy.props import BoolProperty, CollectionProperty, StringProperty
+from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
 from bpy.types import Context, Operator, OperatorFileListElement
 from bpy_extras.io_utils import ImportHelper
 from mathutils import Color, Matrix, Vector
@@ -32,6 +32,8 @@ class ImportGR2(Operator, ImportHelper):
     bl_label = "Import SWTOR (.gr2)"
     bl_options = {'UNDO'}
 
+    # File Browser properties
+
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
@@ -44,24 +46,97 @@ class ImportGR2(Operator, ImportHelper):
         description="File path used for importing the GR2 file",
         type=OperatorFileListElement,
     )
+    
     filter_glob: StringProperty(
         default="*.gr2",
         options={'HIDDEN'},
-    )
+    )    
+
+
+    # Importing parameters' properties
+
     import_collision: BoolProperty(
         name="Import Collision Mesh",
+        description="Imports the object's collision boundary mesh if present in the file\n(it can be of use when exporting models to other apps and game engines)",
+        # default=False,
+    )
+
+    name_as_filename: BoolProperty(
+        name="Name As Filename",
+        description="Names the imported Blender objects with their filenames instead of their\ninternal 'art names' (the object's mesh data always keeps the 'art name').\n\n.gr2 objects' internal 'art names' typically match their files' names,\nbut sometimes they difer, which can break some tools and workflows.\n\nIn case of multiple mesh files (containing a main object plus secondary ones\nand / or Engine Objects such as Colliders), only the main object is renamed",
+        # default=True,
+    )
+
+    apply_axis_conversion: BoolProperty(
+        name="Axis Conversion",
+        description="Permanently converts the imported object\nto Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nNOT RECOMMENDED FOR MODDING SWTOR.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
+        # default=False,
+    )
+
+    scale_object: BoolProperty(
+        name="Scale Object",
+        description="Scales imported objects, characters and armatures\nat the Mesh level.\n\nNOT RECOMMENDED FOR MODDING SWTOR OR EXPORTING\nTO OTHER APPS AND ENGINES: Check their requirements and test first.\n\nSWTOR sizes objects in decimeters, while Blender defaults to meters.\nThis mismatch, while innocuous, is an obstacle when doing physics\nsimulations, automatic weighting from bones, or other processes\nwhere Blender requires real world-like sizes to succeed",
+        # default=False,
+    )
+
+    scale_factor: FloatProperty(
+        name="Scale factor",
+        description="Recommended values are:\n\n- 10 for simplicity (characters are superhero-like tall, over 2 m.).\n- Around 8 for accuracy (characters show more realistic heights).\n\nRemember that, if binding to a skeleton later on, the skeleton\nmust match the scale of the objects to work correctly (which\ncan be done on import, or manually afterwards)",
+        min = 1.0,
+        max = 100.0,
+        soft_min = 1.0,
+        soft_max = 10.0,
+        step = 10,
+        precision = 2,
+        # default=1.0,
+    )
+
+    # For use by calls from tools not compatible
+    # with scaling and axis conversion
+    enforce_neutral_settings: BoolProperty(
+        name="Enforce Neutral Settings",
+        description="Temporarily overrides this Add-on's settings\with those of older versions for compatibility with older tools",
+        options={'HIDDEN'},
         default=False,
     )
 
+    def invoke(self, context, event):
+        # To be able to set the class' properties to the values in the
+        # Add-on's preferences and show them in the File Browser's options,
+        # we use an Invoke function instead of directly using ImportHelper in
+        # the class definition, to be able to put there the required code.
+        
+        prefs = context.preferences.addons["io_scene_gr2"].preferences
+        
+        self.import_collision   = prefs.gr2_import_collision
+        self.name_as_filename   = prefs.gr2_name_as_filename
+        self.apply_axis_conversion = prefs.gr2_apply_axis_conversion
+        self.scale_object       = prefs.gr2_scale_object
+        self.scale_factor       = prefs.gr2_scale_factor
+
+
+        context.window_manager.fileselect_add(self)
+        
+        return {'RUNNING_MODAL'}
+
+    
     def execute(self, context):
         # type: (Context) -> Set[str]
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        paths = [os.path.join(self.directory, file.name) for file in self.files if file.name.lower().endswith(self.filename_ext)]
 
         if not paths:
             paths.append(self.filepath)
 
         for path in paths:
-            if not load(self, context, path):
+            if not load(self, context, path,
+                        import_collision         = self.import_collision,
+                        name_as_filename         = self.name_as_filename,
+                        scale_object             = self.scale_object,
+                        scale_factor             = self.scale_factor,
+                        apply_axis_conversion    = self.apply_axis_conversion,
+                        enforce_neutral_settings = self.enforce_neutral_settings,
+                        ):
                 return {'CANCELLED'}
 
         return {"FINISHED"}
@@ -318,23 +393,30 @@ def read(operator, filepath):
     return gr2
 
 
-def build(gr2, filepath="", import_collision=False):
-    # type: (Granny2, str, bool) -> None
-    """
-    """
+def build(gr2, filepath="",
+         import_collision      = None,
+         name_as_filename      = None,
+         scale_object          = None,
+         scale_factor          = None,
+         apply_axis_conversion = None,
+         ):
+    # type: (Granny2, str, bool, bool, bool, float, bool) -> None
+
     # NOTE: Create Materials
     for i, material in gr2.material_names.items():
         bpy.data.materials.new(name=material).use_nodes = True
 
     # NOTE: Create Meshes
-    
-    # As using "art names" as object names makes workflows difficult,
-    # for single mesh objects we'll use the filename instead
-    # (they typically match, but there are exceptions).
-    # A decision and solution for multiple mesh objects is needed, though.
-    use_file_name_as_object_name = len(gr2.mesh_buffer.items()) == 1
-
     for i, mesh in gr2.mesh_buffer.items():
+
+        # When using the name_as_filename option, we assume that, in the case of
+        # multiple mesh models/files (which get separated into multiple objects,
+        # as Blender doesn't support more than one mesh data block per object),
+        # the first mesh in the list is the main one. If not so, some heuristics
+        # could be added (art names are either object[xx] or game engine ones).
+        use_file_name_as_object_name = (i == 0 and name_as_filename is True)
+
+
         if "collision" in mesh.name and not import_collision:
             continue
 
@@ -369,7 +451,6 @@ def build(gr2, filepath="", import_collision=False):
                 for k, loop_index in enumerate(loop_indices):
                     v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
                     bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]  # DEPRECATED IN BLENDER 4.1
-                                        
                     bmesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
 
                     if mesh.bit_flag2 & 64:  # 0x40
@@ -425,6 +506,13 @@ def build(gr2, filepath="", import_collision=False):
         bpy.ops.object.select_all(action='DESELECT')
         ob.select_set(True)
         bpy.context.view_layer.objects.active = ob
+        
+        # Apply transformation options
+        if scale_object or apply_axis_conversion:
+            if scale_object:
+                ob.scale *= scale_factor
+            bpy.ops.object.transform_apply(location=False, rotation=apply_axis_conversion, scale=scale_object, properties=True)
+
 
     # Create Armature
     if gr2.type_flag == 2 and len(gr2.bone_buffer) > 0:
@@ -450,11 +538,42 @@ def build(gr2, filepath="", import_collision=False):
 
         bpy.context.object.name = armature.name
         bpy.context.object.matrix_local = Matrix.Rotation(PI * 0.5, 4, 'X')
+        
+        # Apply transformation options
+        if scale_object:
+            bpy.context.object.scale *= scale_factor
+
         bpy.ops.object.mode_set(mode='OBJECT')
 
+        if apply_axis_conversion:
+            bpy.ops.object.select_all(action='DESELECT')
+            ob=bpy.data.objects[armature.name]
+            ob.select_set(True)
+            bpy.context.view_layer.objects.active = ob
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=scale_object, properties=True )
 
-def load(operator, context, filepath=""):
-    # type: (Operator, Context, str) -> bool
+
+def load(operator, context, filepath="",
+         import_collision         = None,
+         name_as_filename         = None,
+         scale_object             = None,
+         scale_factor             = None,
+         apply_axis_conversion    = None,
+         enforce_neutral_settings = None,
+         ):
+    
+    """
+    This is the operator called by all other tools (either in this Add-on
+    or in other ones) for actual object importing operations. Externally,
+    it is exposed as bpy.ops.import_mesh.gr2(filepath=skeleton_filepath).
+    
+    Parameters default to None as a flag to set them
+    to the ones in the add-on's Preferences.
+    """
+    
+    prefs = bpy.context.preferences.addons["io_scene_gr2"].preferences
+
+    # type: (Operator, Context, str, bool, bool, bool, float, bool) -> bool
     from bpy_extras.wm_utils.progress_report import ProgressReport
 
     with ProgressReport(context.window_manager) as progress:
@@ -469,9 +588,40 @@ def load(operator, context, filepath=""):
             if bpy.ops.object.mode_set.poll():
                 bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-            build(mesh, filepath=filepath, import_collision=operator.import_collision)
-            progress.leave_substeps(f"Done, finished importing: \'{filepath}\'")
+            if enforce_neutral_settings:
+                build(mesh, filepath=filepath,
+                    import_collision      = False,
+                    name_as_filename      = False,
+                    scale_object          = False,
+                    scale_factor          = 1.0,
+                    apply_axis_conversion = False,
+                    )
+            else:
+                if operator.bl_idname == 'IMPORT_MESH_OT_gr2' and operator.options.is_invoke:
+                    # Called via Blender's Import Menu's Import .gr2 option:
+                    # use the possibly user-manually altered properties
+                    # exposed in the File Browser.
+                    build(mesh, filepath=filepath,
+                        import_collision      = operator.import_collision,
+                        name_as_filename      = operator.name_as_filename,
+                        scale_object          = operator.scale_object,
+                        scale_factor          = operator.scale_factor,
+                        apply_axis_conversion = operator.apply_axis_conversion,
+                        )
+                else:
+                    # Called via other Import Menu options (such as the
+                    # .json Character importer) or code not from this Add-on:
+                    # use the preferences' settings. 
+                    build(mesh, filepath=filepath,
+                        import_collision      = prefs.gr2_import_collision,
+                        name_as_filename      = prefs.gr2_name_as_filename,
+                        scale_object          = prefs.gr2_scale_object,
+                        scale_factor          = prefs.gr2_scale_factor,
+                        apply_axis_conversion = prefs.gr2_apply_axis_conversion,
+                        )
 
+            progress.leave_substeps(f"Done, finished importing: \'{filepath}\'")
+            
             return True
         else:
             return False

@@ -9,15 +9,18 @@ Run this script from "File->Import" menu and then load the desired GR2 model fil
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
 """
 
+import json  # For dict-to-stringProperty translations 
 import os
 from math import pi as PI
+from tracemalloc import start
 from typing import Optional, Set
+import time
 
 import bpy
 from bpy import app
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
 from bpy.types import Context, Operator, OperatorFileListElement
-from bpy_extras.io_utils import ImportHelper
+# from bpy_extras.io_utils import ImportHelper
 from mathutils import Color, Matrix, Vector
 
 from ..types.gr2 import Granny2
@@ -25,15 +28,31 @@ from ..utils.binary import ArrayBuffer, DataView
 from ..utils.number import decodeHalfFloat
 from ..utils.string import readString
 
+from ..types.shared import job_results  # add-on-wide global-like dict
 
-class ImportGR2(Operator, ImportHelper):
-    """Import SWTOR GR2 file format (.gr2)"""
+
+class ImportGR2(Operator):
+    """
+    Import SWTOR GR2 file format (.gr2)
+    
+    Produces a file browser for manually
+    selecting one or multiple .gr2 object
+    files, including skeleton ones.
+    """
     bl_idname = "import_mesh.gr2"
     bl_label = "Import SWTOR (.gr2)"
     bl_options = {'UNDO'}
 
+
+
     # File Browser properties
 
+    # filepath is explicitly declared because
+    # omitting ImportHelper omits it, too.
+    # invoke() handles what to do if it is
+    # filled as a param in an external call.
+    filepath: StringProperty(subtype='FILE_PATH')
+    
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
@@ -51,6 +70,7 @@ class ImportGR2(Operator, ImportHelper):
         default="*.gr2",
         options={'HIDDEN'},
     )    
+
 
 
     # Importing parameters' properties
@@ -91,8 +111,6 @@ class ImportGR2(Operator, ImportHelper):
         # default=1.0,
     )
 
-    # For use by calls from tools not compatible
-    # with scaling and axis conversion
     enforce_neutral_settings: BoolProperty(
         name="Enforce Neutral Settings",
         description="Temporarily overrides this Add-on's settings\with those of older versions for compatibility with older tools",
@@ -100,11 +118,27 @@ class ImportGR2(Operator, ImportHelper):
         default=False,
     )
 
+    job_results_rich: BoolProperty(
+        name="Rich results Info",
+        description="For easier interaction with third party code, this add-on fills 'bpy.context.scene.io_scene_gr2_last_job'\nwith info about its most recent job (imported objects's names) in .json format.\nSet to Rich, it provides additional data such as their relationships to filenames",
+        # options={'HIDDEN'},
+        default=False,
+    )
+
+    job_results_accumulate: BoolProperty(
+        name="Accumulate Jobs' Results Info between ImportGR2 calls",
+        description="By default, .gr2 import requests will clear the information about previous ones.\nThis option lets them accumulate, needed for cases such as a Character Import where\nImportGR2 is called several times in succession",
+        options={'HIDDEN'},
+        default=False,
+    )
+
+
+
     def invoke(self, context, event):
         # To be able to set the class' properties to the values in the
         # Add-on's preferences and show them in the File Browser's options,
         # we use an Invoke function instead of directly using ImportHelper in
-        # the class definition, to be able to put there the required code.
+        # the class definition, to be able to put there the required code.              
         
         prefs = context.preferences.addons["io_scene_gr2"].preferences
         
@@ -114,31 +148,58 @@ class ImportGR2(Operator, ImportHelper):
         self.scale_object       = prefs.gr2_scale_object
         self.scale_factor       = prefs.gr2_scale_factor
 
+        # Handling of filepath in case of being
+        # filled as a param in an external call.
+        if not self.filepath:
+            context.window_manager.fileselect_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            return self.execute(context)        
 
-        context.window_manager.fileselect_add(self)
-        
-        return {'RUNNING_MODAL'}
 
-    
     def execute(self, context):
         # type: (Context) -> Set[str]
+
+        if not self.job_results_accumulate:
+            job_results['objs_names'] = []
+            job_results['files_objs_names'] = {}
+
+        job_results['job_origin'] = self.bl_idname
+                    
+        if self.job_results_rich and not 'files_objs_names' in job_results:
+            job_results['files_objs_names'] = {}
+
 
         paths = [os.path.join(self.directory, file.name) for file in self.files if file.name.lower().endswith(self.filename_ext)]
 
         if not paths:
             paths.append(self.filepath)
 
+        print()
+
         for path in paths:
-            if not load(self, context, path,
+            if not load(self,
+                        context,
+                        path,
                         import_collision         = self.import_collision,
                         name_as_filename         = self.name_as_filename,
                         scale_object             = self.scale_object,
                         scale_factor             = self.scale_factor,
                         apply_axis_conversion    = self.apply_axis_conversion,
                         enforce_neutral_settings = self.enforce_neutral_settings,
+                        job_results_rich         = self.job_results_rich,
+                        job_results_accumulate   = self.job_results_accumulate,
                         ):
+                # Clear filebrowser-related properties
+                self.files.clear()
+                self.filepath = ""
                 return {'CANCELLED'}
 
+        bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
+
+        # Clear filebrowser-related properties
+        self.files.clear()
+        self.filepath = ""
         return {"FINISHED"}
 
 
@@ -226,7 +287,7 @@ def read(operator, filepath):
             mesh = Granny2.Mesh(readString(dv, pos))
             pos += 4
         
-        operator.report({'INFO'}, f"Read the header for mesh {mesh.name}... {pos}")
+        # operator.report({'INFO'}, f"Read the header for mesh {mesh.name}... {pos}")  # for diagnostics
 
         # BitFlag1
         pos += 4
@@ -392,16 +453,20 @@ def read(operator, filepath):
 
     return gr2
 
-
-def build(gr2, filepath="",
-         import_collision      = None,
-         name_as_filename      = None,
-         scale_object          = None,
-         scale_factor          = None,
-         apply_axis_conversion = None,
-         ):
+def build(gr2,
+          filepath="",
+          import_collision      = None,
+          name_as_filename      = None,
+          scale_object          = None,
+          scale_factor          = None,
+          apply_axis_conversion = None,
+          ):
     # type: (Granny2, str, bool, bool, bool, float, bool) -> None
 
+    # Data that will be used for publishing results
+    # via scene props to other add-ons
+    resulting_single_mesh_blender_objects = []
+    
     # NOTE: Create Materials
     for i, material in gr2.material_names.items():
         bpy.data.materials.new(name=material).use_nodes = True
@@ -413,7 +478,7 @@ def build(gr2, filepath="",
         # multiple mesh models/files (which get separated into multiple objects,
         # as Blender doesn't support more than one mesh data block per object),
         # the first mesh in the list is the main one. If not so, some heuristics
-        # could be added (art names are either object[xx] or game engine ones).
+        # could be added.
         use_file_name_as_object_name = (i == 0 and name_as_filename is True)
 
 
@@ -482,6 +547,9 @@ def build(gr2, filepath="",
         else:
             ob = bpy.data.objects.new(mesh.name, bmesh)
 
+        resulting_single_mesh_blender_objects.append(ob.name)
+
+
         # Create Vertex Groups
         for bone in mesh.bone_buffer.values():
             ob.vertex_groups.new(name=bone.name)
@@ -507,11 +575,17 @@ def build(gr2, filepath="",
         ob.select_set(True)
         bpy.context.view_layer.objects.active = ob
         
-        # Apply transformation options
+        # Apply transformation options and record them
+        # in custom object properties 
         if scale_object or apply_axis_conversion:
             if scale_object:
                 ob.scale *= scale_factor
+                ob["mesh_scale"] = scale_factor
+            else:
+                ob["mesh_scale"] = 1.0
             bpy.ops.object.transform_apply(location=False, rotation=apply_axis_conversion, scale=scale_object, properties=True)
+            ob["mesh_axis_conversion"] = apply_axis_conversion
+            
 
 
     # Create Armature
@@ -532,16 +606,22 @@ def build(gr2, filepath="",
                 armature_bone.parent = armature.edit_bones[bone.parent_index]
 
             matrix = Matrix([bone.root_to_bone[j*4:j*4+4] for j in range(4)])
-            print(matrix, i , bone.name)
+            # print(matrix, i , bone.name)  # for diagnostics
             matrix.transpose()
             armature_bone.transform(matrix.inverted())
 
         bpy.context.object.name = armature.name
+        resulting_single_mesh_blender_objects.append(bpy.context.object.name)
+
         bpy.context.object.matrix_local = Matrix.Rotation(PI * 0.5, 4, 'X')
         
-        # Apply transformation options
+        # Apply transformation options and record them
+        # in custom object properties 
         if scale_object:
             bpy.context.object.scale *= scale_factor
+            bpy.context.object["mesh_scale"] = scale_factor
+        else:
+            bpy.context.object["mesh_scale"] = 1.0
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -551,77 +631,105 @@ def build(gr2, filepath="",
             ob.select_set(True)
             bpy.context.view_layer.objects.active = ob
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=scale_object, properties=True )
+            ob["mesh_axis_conversion"] = True
+        else:
+            ob["mesh_axis_conversion"] = False
+
+        
+    return resulting_single_mesh_blender_objects
 
 
-def load(operator, context, filepath="",
+def load(operator,
+         context,
+         # params to pass to build():
+         filepath                 = "",
          import_collision         = None,
          name_as_filename         = None,
          scale_object             = None,
          scale_factor             = None,
          apply_axis_conversion    = None,
+         # Own params:
          enforce_neutral_settings = None,
+         job_results_rich         = False,
+         job_results_accumulate   = False,
          ):
-    
+    # type: (Operator, Context, str, bool, bool, bool, float, bool, bool, bool, bool) -> bool
     """
     This is the operator called by all other tools (either in this Add-on
     or in other ones) for actual object importing operations. Externally,
-    it is exposed as bpy.ops.import_mesh.gr2(filepath=skeleton_filepath).
+    it is exposed as bpy.ops.import_mesh.gr2().
     
     Parameters default to None as a flag to set them
     to the ones in the add-on's Preferences.
     """
-    
-    prefs = bpy.context.preferences.addons["io_scene_gr2"].preferences
 
-    # type: (Operator, Context, str, bool, bool, bool, float, bool) -> bool
-    from bpy_extras.wm_utils.progress_report import ProgressReport
+    mesh = read(operator, filepath=filepath)
+    print(f"FILE: {filepath}")
 
-    with ProgressReport(context.window_manager) as progress:
-        progress.enter_substeps(3, f"Importing \'{filepath}\' ...")
+    if mesh:
 
-        progress.step("Reading file ...", 1)
-        mesh = read(operator, filepath=filepath)
+        start_time = time.time()
+        
+        if bpy.ops.object.mode_set.poll():
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        if mesh:
-            progress.step("Done, building ...", 2)
-
-            if bpy.ops.object.mode_set.poll():
-                bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-            if enforce_neutral_settings:
-                build(mesh, filepath=filepath,
-                    import_collision      = False,
-                    name_as_filename      = False,
-                    scale_object          = False,
-                    scale_factor          = 1.0,
-                    apply_axis_conversion = False,
-                    )
-            else:
-                if operator.bl_idname == 'IMPORT_MESH_OT_gr2' and operator.options.is_invoke:
-                    # Called via Blender's Import Menu's Import .gr2 option:
-                    # use the possibly user-manually altered properties
-                    # exposed in the File Browser.
-                    build(mesh, filepath=filepath,
-                        import_collision      = operator.import_collision,
-                        name_as_filename      = operator.name_as_filename,
-                        scale_object          = operator.scale_object,
-                        scale_factor          = operator.scale_factor,
-                        apply_axis_conversion = operator.apply_axis_conversion,
-                        )
-                else:
-                    # Called via other Import Menu options (such as the
-                    # .json Character importer) or code not from this Add-on:
-                    # use the preferences' settings. 
-                    build(mesh, filepath=filepath,
-                        import_collision      = prefs.gr2_import_collision,
-                        name_as_filename      = prefs.gr2_name_as_filename,
-                        scale_object          = prefs.gr2_scale_object,
-                        scale_factor          = prefs.gr2_scale_factor,
-                        apply_axis_conversion = prefs.gr2_apply_axis_conversion,
-                        )
-
-            progress.leave_substeps(f"Done, finished importing: \'{filepath}\'")
-            
-            return True
+        if enforce_neutral_settings:
+            objects_names = build(mesh,
+                                  filepath              = filepath,
+                                  import_collision      = False,
+                                  name_as_filename      = False,
+                                  scale_object          = False,
+                                  scale_factor          = 1.0,
+                                  apply_axis_conversion = False,
+                                  )
         else:
-            return False
+            if operator.bl_idname == 'IMPORT_MESH_OT_gr2' and operator.options.is_invoke:
+                # Called via Blender's Import Menu's Import .gr2 option:
+                # use the possibly user-manually altered properties
+                # exposed in the File Browser.
+                objects_names = build(mesh,
+                                      filepath              = filepath,
+                                      import_collision      = operator.import_collision,
+                                      name_as_filename      = operator.name_as_filename,
+                                      scale_object          = operator.scale_object,
+                                      scale_factor          = operator.scale_factor,
+                                      apply_axis_conversion = operator.apply_axis_conversion,
+                                      )
+            else:
+                # Called via other Import Menu options (such as the
+                # .json Character importer) or code not from this Add-on:
+                # use the preferences' settings.
+                prefs = bpy.context.preferences.addons["io_scene_gr2"].preferences
+                objects_names = build(mesh,
+                                      filepath              = filepath,
+                                      import_collision      = prefs.gr2_import_collision,
+                                      name_as_filename      = prefs.gr2_name_as_filename,
+                                      scale_object          = prefs.gr2_scale_object,
+                                      scale_factor          = prefs.gr2_scale_factor,
+                                      apply_axis_conversion = prefs.gr2_apply_axis_conversion,
+                                      )
+
+            
+        job_results['job_origin'] = operator.bl_idname
+
+        job_results['objs_names'].extend(objects_names)
+
+        if job_results_rich:
+            if 'resources' in filepath:
+                job_results['files_objs_names'][ filepath.replace("\\", "/").partition("resources/")[2] ] = objects_names
+            else:
+                job_results['files_objs_names'][ filepath.replace("\\", "/") ] = objects_names
+
+        elapsed_time = time.time() - start_time
+        if objects_names:
+            print(f"OBJS: {objects_names}")
+            print(f"TIME: {elapsed_time:.3f} s.")
+            print()
+        else:
+            print("FAILED!!!")
+            print()
+
+        
+        return True
+    else:
+        return False
