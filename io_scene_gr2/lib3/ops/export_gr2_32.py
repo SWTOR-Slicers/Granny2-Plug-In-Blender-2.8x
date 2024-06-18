@@ -25,7 +25,7 @@ from ..utils.number import encodeHalfFloat
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ExportGR2_32(Operator, ExportHelper):
-    """Export SWTOR GR2 32B file format (.gr2)"""
+    """Export SWTOR GR2 32-Bit file format (.gr2)"""
     bl_idname = "export_mesh32b.gr2"
     bl_label = "Export SWTOR (.gr2 32B)"
     bl_options = {'PRESET'}

@@ -97,6 +97,11 @@ class Prefs(bpy.types.AddonPreferences):
 
         layout.separator()
 
+        col = layout.column()
+        col.scale_y = 0.80
+        col.label(text="BEFORE CHANGING ANY SETTING, CAREFULLY CONSIDER HOW THEY MIGHT AFFECT")
+        col.label(text="YOUR WORKFLOW!!!  Use the 'NEUTRAL' preset to return to this Add-on's default settings.")
+        
         split = layout.split(factor=0.5)
         
         boxcol = split.box().column(align=True, heading=".GR2 OBJECTS IMPORT SETTINGS:")
@@ -118,16 +123,16 @@ class GR2PREFS_MT_presets_menu(bpy.types.Menu):
     bl_idname = "import_mesh.gr2_presets"
     bl_label = "Quick Presets Menu"
     # bl_options = {'REGISTER', "UNDO"}
-    bl_description = "Easy Presets for the SW:TOR Importers/Exporters:\nthey adjust the settings to sensible values depending on our goals."
+    bl_description = "Easy Presets for the SW:TOR Importers/Exporters:\nthey adjust the settings to sensible values depending on our goals.\n\nBEFORE CHOOSING A PRESET, CAREFULLY CONSIDER\nHOW IT MIGHT AFFECT YOUR WORKFLOW"
         
     
     def draw(self, context):
         layout = self.layout
         
+        layout.operator('import_mesh.gr2_set_preset', text="NEUTRAL:  replicates the default settings of older versions of this Add-on"              ).preset = 'NEUTRAL'
         layout.operator('import_mesh.gr2_set_preset', text="BLENDER:  for creating art directly in Blender or in combination with other 3D Art apps.").preset = 'BLENDER'
         layout.operator('import_mesh.gr2_set_preset', text="PORTING:  for porting SWTOR assets to other Game Engines and VR apps."                   ).preset = 'PORTING'
         # layout.operator('import_mesh.gr2_set_preset', text="MODDING:  for modifying SWTOR assets in such a manner that they can be reinserted back." ).preset = 'MODDING'
-        layout.operator('import_mesh.gr2_set_preset', text="NEUTRAL:  replicates the default settings of older versions of this Add-on"              ).preset = 'NEUTRAL'
 
 
 class GR2PREFS_OT_set_preset(bpy.types.Operator):

@@ -26,7 +26,8 @@ from ..utils.string import path_split, readCString
 
 class ImportJBA(Operator):
     """Import from SWTOR JBA file format (.jba)"""
-    bl_idname = "import_animation.jba"
+    bl_idname = "import_animation.jba"  # DO NOT CHANGE
+    bl_description = "Import and apply an animation to the active SWTOR skeleton in the scene.\n\n• Only compatible with .jba files extracted from SWTOR 32-bit\n   (before Game Update 7.2.1)"
     bl_label = "Import SWTOR (.jba)"
     bl_options = {'UNDO'}
 

@@ -24,6 +24,7 @@ from ..utils.binary import ArrayBuffer, DataView
 class ImportCLO(Operator, ImportHelper):
     """Import SWTOR CLO file format (.clo)"""
     bl_idname = "import_cloth.clo"
+    bl_description = "Import bones to be used in dynamic simulations\nfor objects such as capes, flaps, hair, lekku, etc"
     bl_label = "Import SWTOR (.clo)"
     bl_options = {'UNDO'}
 
@@ -182,7 +183,7 @@ def read(operator, filepath):
         bone.constraints3 = constraints3
         bone.unk1 = unk1
         bone.unk2 = unk2
-        bone.is_cloth = True
+        # bone.is_cloth = True
 
     return cloth
 

@@ -39,7 +39,8 @@ class ImportGR2(Operator):
     selecting one or multiple .gr2 object
     files, including skeleton ones.
     """
-    bl_idname = "import_mesh.gr2"
+    bl_idname = "import_mesh.gr2"  # DO NOT CHANGE
+    bl_description = "Import SWTOR game objects and skeletons (armatures).\n\n• Compatible with both SWTOR 32 and 64-bit files\n   (before and after Game Update 7.2.1).\n\n• Can import selections of multiple files at once"
     bl_label = "Import SWTOR (.gr2)"
     bl_options = {'UNDO'}
 

@@ -91,30 +91,31 @@ for func in depsgraph_update_post:
 del importlib, os, sys, depsgraph_update_post
 
 
-# Import/Export functions to append to Import/Export menus in register() 
-def _import_cha(self, _context):
-    # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SW:TOR (.json)")
-
-def _import_clo(self, _context):
-    # type: (Menu, Context) -> None
-    self.layout.operator(ImportCLO.bl_idname, text="SW:TOR (.clo)")
-
+# Import/Export functions to append to Import/Export menus in register()
 def _import_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportGR2.bl_idname, text="SW:TOR (.gr2)")
+    self.layout.operator(ImportGR2.bl_idname, text="SWTOR 32/64-bit Objects / Skeletons (.gr2)")
+
+def _import_cha(self, _context):
+    # type: (Menu, Context) -> None
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters / NPCs (.json)")
 
 def _import_jba(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportJBA.bl_idname, text="SW:TOR (.jba)")
+    self.layout.operator(ImportJBA.bl_idname, text="SWTOR 32-bit Animations (.jba)")
+
+def _import_clo(self, _context):
+    # type: (Menu, Context) -> None
+    self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
+
 
 def _export_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ExportGR2.bl_idname, text="SW:TOR (.gr2)")
+    self.layout.operator(ExportGR2.bl_idname, text="SWTOR 64-bit Objects (.gr2)")
 
 def _export_gr2_32(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ExportGR2_32.bl_idname, text="SW:TOR (.gr2 32bit)")
+    self.layout.operator(ExportGR2_32.bl_idname, text="SWTOR 32-bit Objects (.gr2)")
 
 
 class BoneBounds(PropertyGroup):
