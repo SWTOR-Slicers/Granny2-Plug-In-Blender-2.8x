@@ -57,6 +57,8 @@ This Add-on comes now with a series of 'quality-of-life' settings that, for cert
 
 All that said, **the Add-on's default settings are perfectly fine** for having everything work as expected (**they match the behavior of previous versions**). Set to those, our other Add-ons (Character Assembler, Area Assembler, ZG SWTOR Tools) won't notice any difference.
 
+![alt text](images/readme_gr2_addon_020.png)
+
 ### .gr2 objects/armatures/characters import settings:
 * **Import Collision Mesh**: old option that used to be only available in the importer's file browser. 
 * **Name Imported Objects as Filenames**: typically, the imported mesh's (or main mesh's) "art name" matches the filename, but not always, which leads to issues if using the former. Ticking it solves an failure when assembling Nautolan Player Characters.
@@ -70,11 +72,41 @@ All that said, **the Add-on's default settings are perfectly fine** for having e
 * **Delete 180º Rotation**: deletes the 'bip01' bone's keyframes and changes its rotation so that animations don't turn the characters away from us.
 * **Animation Scale factor**:**The .jba animation importer's scale factor is synced to the .gr2 importer's one**, for consistency, but it can be modified manually. 
 
-### Presets menu system. Its current options are:
+### Preset settings menu:
+
+Meant as sensible starting points. The currently available presets are:
 
 * **NEUTRAL: resets the Add-on to the default settings, matching its older versions**.
 * **PORTING: this is a work in progress**. So far, we are choosing to keep the original assets' scale but convert the axis order from SWTOR's "Y is up" to Blender's "Z is up" (hoping that the usual exporters to FBX and such will like it better). **We need your feedback** here, and it wouldn't be a problem if you see that we need specific presets for different target apps (Unity-related, Unreal Engine, apps with their own engines, etc.): we can add and name as many porting presets as needed.
-* **BLENDER**: "Blender-friendliest", so to speak. This preset is meant for projects that are either going to stay inside Blender or will move to other 3D apps that are just as art-focused. Objects are scaled to equivalent real life-like sizes, axis order is converted to Blender's own, etc., just as if they would have been created in Blender through the usual means, and easy to mix and match with assets from other provenances. That said, if we happen to have a library of imported SWTOR assets already, we would need to decide whether to use these settings for new imports, keep to the old ones for consistency, or update previous assets to matching characteristics (vía Blender's Apply operators). **Testing before going all in is extremely recommended**.
+* **BLENDER**: "Blender-friendliest", so to speak. This preset is meant for projects that are either going to stay inside Blender or will move to other 3D apps that are just as art-focused. Objects are scaled to equivalent real life-like sizes, axis order is converted to Blender's own, etc., just as if they would have been created in Blender through the usual means, and are easy to mix and match with assets from other provenances. That said, if we happen to have a library of imported SWTOR assets already, we would need to decide whether to use these settings for new imports, keep to the old ones for consistency, or update previous assets to matching characteristics (vía Blender's Apply operators). **Testing before going all in is extremely recommended**.
+
+  ![alt text](images/readme_gr2_addon_030.png)
+
+## Paper-trailing.
+
+Given the potential impact of some of those settings, It would be good to include them in the affected objects somehow, in a manner similar to image metadata. So, we are adding custom properties to objects. It's something very easy to write and read. So far, we are having:
+* `mesh_axis_conversion = True or False`.
+* `mesh_scale = decimal number (float)`.
+
+They appear in the `3D Viewport > Sidebar > Item Tab > Properties Panel` ad in the `Properties Editor > Object Tab > Custom Properties panel`.
+
+![alt text](images/readme_gr2_addon_050.png)
+
+## Using other Add-ons that depend on this one.
+
+…Such as the SWTOR Area Assembler and Character Assembler, and the ZG SWTOR Tools. With the settings at their default values, none of them should feel any difference. At any other values:
+
+* **SWTOR Character Assembler Add-on**: it should assemble the characters with all objects behaving as per those settings without producing any troubles when posed or animated.
+* **SWTOR Area Assembler Add-on**: here the situation is more complicated, as having this Add-on reacting correctly to these settings is going to mean a full revision of its workings. For the time being, it'll accept the scaling factor (it had one of its own already, so, what it'll do is just copy the .gr2 Add-on's one), but not the axis order conversion because it kinda didn't need it: the way we catered for that was so facepalmy, it happened anyway.
+* **ZG SWTOR Tools**: here the situation is a bit more nuanced:
+  * The Character and Area Assemblers behave just as their standalone versions.
+  * It's the other tools where things get more complex. There are some that used some eyeballed, fixed values (the thresholds in the Merge Double Vertices tools, the distances and thicknesses in some of the Add Modifiers' Modifier settings in Displace, Solidify, and Shrinkwrap) which ought to be multiplied by the scale factor the object was imported with.
+
+    When an object has a `mesh_scale` custom property, those tools will use it. The issue is what to do when it doesn't have any. It could default to 1.0, or it could use whatever the .gr2 add-on's preferences are set to at that moment. Quite probably we'll just make those choices explicit via checkboxes.
+
+    To facilitate awareness of the session's conditions, the ZG SWTOR Tools' Status Panel has now a summary of the .gr2 Add-on settings, plus a button to quickly open its Preferences panel.
+
+    ![alt text](images/readme_gr2_addon_040.png)
 
 ## About the old, "Legacy" version of this add-on.
 
