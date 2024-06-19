@@ -122,7 +122,7 @@ class ImportGR2(Operator):
     job_results_rich: BoolProperty(
         name="Rich results Info",
         description="For easier interaction with third party code, this add-on fills 'bpy.context.scene.io_scene_gr2_last_job'\nwith info about its most recent job (imported objects's names) in .json format.\nSet to Rich, it provides additional data such as their relationships to filenames",
-        # options={'HIDDEN'},
+        options={'HIDDEN'},
         default=False,
     )
 
@@ -634,6 +634,7 @@ def build(gr2,
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=scale_object, properties=True )
             ob["mesh_axis_conversion"] = True
         else:
+            ob=bpy.data.objects[armature.name]
             ob["mesh_axis_conversion"] = False
 
         

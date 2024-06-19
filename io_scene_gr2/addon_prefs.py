@@ -85,53 +85,62 @@ class Prefs(bpy.types.AddonPreferences):
 
         col.label(text="You can set your preferred settings for this")
         col.label(text="Add-on's importers and exporters here.")
-        col.label(text="You will be able to modify them")
-        col.label(text="on the fly, too.")
+        col.label(text="(They can be modified on the fly, too).")
 
         col=split.column(align=True)
         col.scale_y = 0.80
-        col.menu('import_mesh.gr2_presets')
-        col.label()
         col.label(text="This Menu provides sensible settings for")
         col.label(text="most typical tasks as a starting point.")
+        col.menu('import_mesh.gr2_presets', text="QUICK PRESETS MENU",)
 
-        layout.separator()
 
         col = layout.column()
-        col.scale_y = 0.80
+        col.scale_y = 0.70
+        col.label()
         col.label(text="BEFORE CHANGING ANY SETTING, CAREFULLY CONSIDER HOW THEY MIGHT AFFECT")
-        col.label(text="YOUR WORKFLOW!!!  Use the 'NEUTRAL' preset to return to this Add-on's default settings.")
+        col.label(text="YOUR WORKFLOW!!!  Use the 'NEUTRAL' preset to return to the default settings.")
         
         split = layout.split(factor=0.5)
         
         boxcol = split.box().column(align=True, heading=".GR2 OBJECTS IMPORT SETTINGS:")
+        boxcol.scale_y = 0.90
         boxcol.prop(self,'gr2_import_collision')
         boxcol.prop(self,'gr2_name_as_filename', text="Name Imported Objects As Filenames")
         boxcol.prop(self,'gr2_apply_axis_conversion', text="'Apply' Axis Conversion")
         boxcol.prop(self,'gr2_scale_object', text="Scale Imported Objects/Characters")
-        boxcol.prop(self,'gr2_scale_factor', text="Scale factor")
+        slider_split = boxcol.split(factor=0.1)
+        slider_split.enabled = self.gr2_scale_object
+        slider_split.label()
+        slider_split.prop(self,'gr2_scale_factor', text="Scale factor")
+        
         boxcol = split.box().column(align=True, heading=".JBA ANIMATIONS IMPORT SETTINGS:")
+        boxcol.scale_y = 0.90
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")
         boxcol.prop(self,'jba_delete_180')
         boxcol.label()
         boxcol.label(text="(Animations And Objs' Scales Must Match)")
-        boxcol.prop(self,'jba_scale_factor', text="Animations' Scale factor")
+        slider_split = boxcol.split(factor=0.1)
+        slider_split.enabled = self.gr2_scale_object
+        slider_split.label()
+        slider_split.prop(self,'jba_scale_factor', text="Animations' Scale factor",)
 
 
 
 class GR2PREFS_MT_presets_menu(bpy.types.Menu):
     bl_idname = "import_mesh.gr2_presets"
     bl_label = "Quick Presets Menu"
-    # bl_options = {'REGISTER', "UNDO"}
-    bl_description = "Easy Presets for the SW:TOR Importers/Exporters:\nthey adjust the settings to sensible values depending on our goals.\n\nBEFORE CHOOSING A PRESET, CAREFULLY CONSIDER\nHOW IT MIGHT AFFECT YOUR WORKFLOW"
+    bl_description = "Easy Presets for the SWTOR Importers/Exporters:\nthey adjust the settings to sensible values depending on our goals.\n\nBEFORE CHOOSING A PRESET, CAREFULLY CONSIDER\nHOW IT MIGHT AFFECT YOUR WORKFLOW!"
         
     
     def draw(self, context):
         layout = self.layout
         
         layout.operator('import_mesh.gr2_set_preset', text="NEUTRAL:  replicates the default settings of older versions of this Add-on"              ).preset = 'NEUTRAL'
+
+        layout.operator('import_mesh.gr2_set_preset', text="PORTING:  for porting assets to other Game Engines and VR apps (send us feedback!)."                   ).preset = 'PORTING'
+
         layout.operator('import_mesh.gr2_set_preset', text="BLENDER:  for creating art directly in Blender or in combination with other 3D Art apps.").preset = 'BLENDER'
-        layout.operator('import_mesh.gr2_set_preset', text="PORTING:  for porting SWTOR assets to other Game Engines and VR apps."                   ).preset = 'PORTING'
+        
         # layout.operator('import_mesh.gr2_set_preset', text="MODDING:  for modifying SWTOR assets in such a manner that they can be reinserted back." ).preset = 'MODDING'
 
 
@@ -151,7 +160,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
         
         if self.preset == 'BLENDER' or self.options is None:
 
-            prefs.gr2_import_collision    = False
+            prefs.gr2_import_collision    = True
             prefs.gr2_name_as_filename    = True
             prefs.gr2_scale_object        = True
             prefs.gr2_scale_factor        = 10.0
@@ -171,7 +180,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
 
             # SWTOR animations aren't typically
             # used here. Still…
-            prefs.jba_ignore_facial_bones = False
+            prefs.jba_ignore_facial_bones = True
             prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
         
@@ -191,7 +200,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
 
         if self.preset == 'NEUTRAL':
 
-            prefs.gr2_import_collision    = False
+            prefs.gr2_import_collision    = True
             prefs.gr2_name_as_filename    = False
             prefs.gr2_scale_object        = False
             prefs.gr2_scale_factor        = 1.0

@@ -26,38 +26,21 @@ from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
 
-# "Manually segregated" module imports:
-# - lib3 covers from Blender 2.8.x to 3.6.x.
-# - lib4 covers Blender 4.0.x.
-# - lib41 covers Blender 4.1.x. (not yet implemented)
-blender_version = float(version_string[:3])
+from .ops.export_gr2             import ExportGR2
+from .ops.export_gr2_32          import ExportGR2_32
+from .ops.import_cha             import ImportCHA
+from .ops.import_clo             import ImportCLO
+from .ops.import_gr2             import ImportGR2
+from .ops.import_jba             import ImportJBA
 
-if blender_version >= 4:
-    
-    lib_version = 'lib4'
-    from .lib4.ops.export_gr2             import ExportGR2
-    from .lib4.ops.export_gr2_32          import ExportGR2_32
-    from .lib4.ops.import_cha             import ImportCHA
-    from .lib4.ops.import_clo             import ImportCLO
-    from .lib4.ops.import_gr2             import ImportGR2
-    from .lib4.ops.import_jba             import ImportJBA
-    
-    from .lib4.types.node                 import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
-    
-    from .lib4.ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
-    from .lib4.types.shared               import job_results
+from .types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 
-else:
-    
-    lib_version = 'lib3'
-    from .lib3.ops.export_gr2    import ExportGR2
-    from .lib3.ops.export_gr2_32 import ExportGR2_32
-    from .lib3.ops.import_cha    import ImportCHA
-    from .lib3.ops.import_clo    import ImportCLO
-    from .lib3.ops.import_gr2    import ImportGR2
-    from .lib3.ops.import_jba    import ImportJBA
-    
-    from .lib3.types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
+# Detect Blender version
+major, minor, _ = bpy.app.version
+blender_version = major + minor / 100
+
+if blender_version >= 4.0:
+    from .ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
 
 
 
@@ -65,9 +48,8 @@ else:
 
 # reload modules in subfolder for current Blender version
 addon_root_path = os.path.dirname(os.path.realpath(__file__))
-addon_versioned_lib_path = os.path.join(addon_root_path, lib_version)
 
-directories = [os.path.join(addon_versioned_lib_path, entry) for entry in {'ops','types','utils'}]
+directories = [os.path.join(addon_root_path, entry) for entry in {'ops','types','utils'}]
                               
 for directory in directories:
     for entry in os.listdir(directory):
@@ -134,7 +116,7 @@ classes = (
     ShaderNodeHeroEngine,
     NODE_OT_ngroup_edit,
 )
-if blender_version >= 4:
+if blender_version >= 4.0:
     classes = classes + (NODE_MT_add_swtor_shader, NODE_MT_swtor_shaders_menu)
 
 keymaps: List[KeyMap] = []
@@ -173,17 +155,8 @@ def register():
     
     
     # Additions to Shader Editor's Add menu
-    blender_version = float(version_string[:3])
-    if blender_version >= 4:
-        from .lib4.types import node
-        
-        # Appends fn with separator bar plus SWTOR menu to the Shader Editor's Add menu
-        # (swtor_shaders_submenu_element comes from .lib4.ops.add_swtor_shaders_menu).
-        # This is a conventional way to extend menus.
-        bpy.types.NODE_MT_add.append(swtor_shaders_submenu_element)
-        
-    else:
-        from .lib3.types import node
+    if blender_version < 4.0:
+        from .types import node
 
         # This was the specific way to extend shader menu categories
         # that has been deprecated in 4.x.
@@ -191,6 +164,14 @@ def register():
         # but still it works in 3.6.x ?)
         from nodeitems_utils import register_node_categories
         register_node_categories('SWTOR', node.node_categories)
+
+    else:
+        
+        from .types import node
+        
+        # Appends fn with separator bar plus SWTOR menu to the Shader Editor's Add menu
+        # This is a conventional way to extend menus.
+        bpy.types.NODE_MT_add.append(swtor_shaders_submenu_element)
 
 
     # TAB-into-Nodegroup functionality
@@ -204,11 +185,11 @@ def register():
 
 
 def unregister():
-    if blender_version >= 4:
-        bpy.types.NODE_MT_add.remove(swtor_shaders_submenu_element)
-    else:
+    if blender_version < 4.0:
         from nodeitems_utils import unregister_node_categories
         unregister_node_categories('SWTOR')
+    else:
+        bpy.types.NODE_MT_add.remove(swtor_shaders_submenu_element)
 
     # type: () -> None
     for km in keymaps:
