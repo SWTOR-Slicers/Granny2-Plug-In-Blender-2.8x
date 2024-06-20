@@ -581,11 +581,11 @@ def build(gr2,
         if scale_object or apply_axis_conversion:
             if scale_object:
                 ob.scale *= scale_factor
-                ob["mesh_scale"] = scale_factor
+                ob["gr2_scale"] = scale_factor
             else:
-                ob["mesh_scale"] = 1.0
+                ob["gr2_scale"] = 1.0
             bpy.ops.object.transform_apply(location=False, rotation=apply_axis_conversion, scale=scale_object, properties=True)
-            ob["mesh_axis_conversion"] = apply_axis_conversion
+            ob["gr2_axis_conversion"] = apply_axis_conversion
             
 
 
@@ -620,9 +620,9 @@ def build(gr2,
         # in custom object properties 
         if scale_object:
             bpy.context.object.scale *= scale_factor
-            bpy.context.object["mesh_scale"] = scale_factor
+            bpy.context.object["gr2_scale"] = scale_factor
         else:
-            bpy.context.object["mesh_scale"] = 1.0
+            bpy.context.object["gr2_scale"] = 1.0
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -632,10 +632,10 @@ def build(gr2,
             ob.select_set(True)
             bpy.context.view_layer.objects.active = ob
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=scale_object, properties=True )
-            ob["mesh_axis_conversion"] = True
+            ob["gr2_axis_conversion"] = True
         else:
             ob=bpy.data.objects[armature.name]
-            ob["mesh_axis_conversion"] = False
+            ob["gr2_axis_conversion"] = False
 
         
     return resulting_single_mesh_blender_objects

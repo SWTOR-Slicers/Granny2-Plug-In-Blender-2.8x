@@ -55,6 +55,12 @@ class ImportJBA(Operator):
         default=True,
     )
 
+    scale_animation: BoolProperty(
+        name="Scale Animation",
+        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated for good results.\n\nWhenever possible, this setting will try to match\nthe Objects' Scale Factor automatically.\nIt will still allow for setting different values manually",
+        default=False,
+    )
+
     scale_factor: FloatProperty(
         name="Scale Factor",
         description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated.\n\nWhenever possible, this setting will try to match\nthe Objects Import Settings automatically\n(it still allows for setting different values)",
@@ -79,6 +85,7 @@ class ImportJBA(Operator):
         prefs = context.preferences.addons["io_scene_gr2"].preferences
         
         self.ignore_facial_bones = prefs.jba_ignore_facial_bones
+        self.scale_animation     = prefs.jba_scale_animation
         self.scale_factor        = prefs.jba_scale_factor
         self.delete_180          = prefs.jba_delete_180
 
@@ -320,7 +327,15 @@ def build(operator, context, filepath, jba):
 
     # Create armature keyframes
     # scale = 1000 * operator.scale_factor  # This was the original calculation, but it seems to work as an inverse, so…
-    scale = 1000 * (1 / operator.scale_factor)
+    # Check if the armature object has import scale custom property data. If not, use the add-on's prefs settings.
+    if 'gr2_scale' in ob:
+        scale = 1000 * (1 / ob['gr2_scale'])
+    else:
+        if operator.scale_animation:
+            scale = 1000 * (1 / operator.scale_factor)
+        else:
+            scale = 1000
+        
     morpheme_space = Matrix(((scale, 0, 0, 0), (0, 0, -scale, 0), (0, scale, 0, 0), (0, 0, 0, 1)))
     morpheme_space_inv = morpheme_space.inverted()
 

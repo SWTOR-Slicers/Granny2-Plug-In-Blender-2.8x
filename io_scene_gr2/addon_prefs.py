@@ -57,10 +57,16 @@ class Prefs(bpy.types.AddonPreferences):
         description="Ignores the data in the facial bones' translation keyframes\nand only uses their rotation keyframes",
         default=True,
     )
+    
+    jba_scale_animation: bpy.props.BoolProperty(
+        name="Scale Animation",
+        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated for good results.\n\nWhenever possible, this setting will try to match\nthe Objects' Scale Factor automatically.\nIt will still allow for setting different values manually",
+        default=False,
+    )
 
     jba_scale_factor: bpy.props.FloatProperty(
         name="Scale Factor",
-        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated.\n\nWhenever possible, this setting will try to match\nthe Objects Import Settings automatically\n(it still allows for setting different values)",
+        description="Imported Animations' Scaling factor",
         default=1.0,
         soft_min=0.1,
         soft_max=2.0,
@@ -118,9 +124,9 @@ class Prefs(bpy.types.AddonPreferences):
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")
         boxcol.prop(self,'jba_delete_180')
         boxcol.label()
-        boxcol.label(text="(Animations And Objs' Scales Must Match)")
+        boxcol.prop(self,'jba_scale_animation', text="Scale Animation Translations")
         slider_split = boxcol.split(factor=0.1)
-        slider_split.enabled = self.gr2_scale_object
+        slider_split.enabled = self.jba_scale_animation
         slider_split.label()
         slider_split.prop(self,'jba_scale_factor', text="Animations' Scale factor",)
 
@@ -167,6 +173,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             prefs.gr2_apply_axis_conversion  = True
 
             prefs.jba_ignore_facial_bones = True
+            prefs.jba_scale_animation     = prefs.gr2_scale_object
             prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = True
 
@@ -181,6 +188,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             # SWTOR animations aren't typically
             # used here. Still…
             prefs.jba_ignore_facial_bones = True
+            prefs.jba_scale_animation     = prefs.gr2_scale_object
             prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
         
@@ -195,6 +203,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             # SWTOR animations aren't typically
             # used here. Still…
             prefs.jba_ignore_facial_bones = True
+            prefs.jba_scale_animation     = prefs.gr2_scale_object
             prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
 
@@ -207,7 +216,8 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             prefs.gr2_apply_axis_conversion  = False
 
             prefs.jba_ignore_facial_bones = False
-            prefs.jba_scale_factor        = 1.0
+            prefs.jba_scale_animation     = prefs.gr2_scale_object
+            prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
            
         return {"FINISHED"}

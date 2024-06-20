@@ -12,12 +12,20 @@
 * Streamlined console output.
 * New facilities for communicating data to other add-ons.
 
-##Description
+## Download
+
+[**Download the latest release from here**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the latest release's Assets list. **DON'T UNZIP IT!** Blender directly handles it as such .zip file. 
+
+## Installation
+
+Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)**: `Edit menu > Preferences > Add-ons > Install > Enable`. If you had a previous version of the add-on installed, disable and remove it first).
+
+## Description
+
+This add-on provides Blender with several import/export features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets.
 
 ![alt text](images/readme_gr2_addon_010.png)
 
-
-This add-on provides Blender with several import/export features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets.
 
 * **SWTOR .gr2 objects and armatures import:**  
   Imports SWTOR's specific flavor of the .gr2 ("granny") 3D model format, including rigging data (vertex groups, weights) and armatures ("skeletons"). **It can import multiple files at once**.  
@@ -35,11 +43,13 @@ Imports and applies SWTOR's .jba animation files. It has some issues but it most
 Imports SWTOR's .clo files for converting physics-based bones data (clothes, hair, Twi'lek lekku, etc.) to Blender physics simulations. **Experimental and extremely wonky, expect Kill Bill sirens!** (we are having another attempt at doing something about it, but it'll take its good time)  
   ***SWTOR 32-bit-compatible only**.
 
-* **SWTOR 64 bit .gr2 objects export:**  
-  Exports SWTOR's specific flavor of the .gr2 ("granny") 3D model format.  
-***SWTOR 64-bit-compatible**.
+* **SWTOR 32-bit .gr2 objects export:**  
+  Exports SWTOR's specific flavor of the .gr2 ("granny") 3D model format. ***SWTOR 32-bit-compatible**.
 
-  (*SWTOR switched to a 64-bit codebase in Game Update 7.2.1, changing the format of its .tor files and the assets they contain)
+* **SWTOR 32-bit .gr2 objects export:**  
+  Exports SWTOR's specific flavor of the .gr2 ("granny") 3D model format. ***SWTOR 64-bit-compatible**.
+
+(*SWTOR switched to a 64-bit codebase in Game Update 7.2.1, changing the format of its .tor files and the assets they contain)
 
 **This add-on also produces a series of Shader Nodegroups that replicate SWTOR's materials system**. They allow for using the game's texture files and materials information without requiring any previous manipulation in a third party painting app: the Shaders do all the channel massaging involved (turning "green" normal maps to "purple", etc.).
 
@@ -47,19 +57,11 @@ The shaders are assigned on the fly when importing .json character data files fo
 
 ![alt text](images/readme_gr2_addon_060.png)
 
-## Download
-
-[**Download the latest release from here**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the latest release's Assets list. **DON'T UNZIP IT!** Blender directly handles it as such .zip file. 
-
-## Installation
-
-Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)** (Edit menu > Preferences > Add-ons > Install > Enable). If you had a previous version of the add-on installed, disable and remove it first).
-
 **For directions on its usage, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
 ## Settings
 
-This Add-on comes now with a series of 'quality-of-life' settings that, for certain uses of SWTOR assets (artistic, mostly), can save us a lot of work. **All settings have tooltips explaining their functions**. They are about dealing with the fact that SWTOR game assets usually come in sizes, axis order schemes, and other details, that require massaging to be able to work with some of Blender's more advanced features (physics simulations, non-SWTOR armatures-based custom rigs, etc.) that require things such as real world-like sizes or no 'soft' transforms getting in the way.
+This Add-on comes now with a series of 'quality-of-life' settings that, for certain uses of SWTOR assets (artistic, mostly), can save us a lot of work. **All settings have tooltips explaining their functions**. They are about dealing with the fact that SWTOR game assets usually come in sizes, axis order schemes, and other details that require massaging to be able to work with some of Blender's more advanced features (physics simulations, non-SWTOR armatures-based custom rigs, etc.) which need things such as real world-like sizes or no 'soft' transforms getting in the way.
 
 All that said, **the Add-on's default settings are perfectly fine** for having everything work as expected (**they match the behavior of previous versions**). Set to those, our other Add-ons (Character Assembler, Area Assembler, ZG SWTOR Tools) won't notice any difference.
 
@@ -67,16 +69,16 @@ All that said, **the Add-on's default settings are perfectly fine** for having e
 
 ### .gr2 objects/armatures/characters import settings:
 * **Import Collision Mesh**: old option that used to be only available in the importer's file browser. 
-* **Name Imported Objects as Filenames**: typically, the imported mesh's (or main mesh's) "art name" matches the filename, but not always, which leads to issues if using the former. Ticking it solves an failure when assembling Nautolan Player Characters.
+* **Name Imported Objects as Filenames**: typically, the imported object or its main mesh's "art name" matches the filename, but not always, which leads to issues if using the former. Ticking it solves a failure when assembling Nautolan Player Characters.
 * **'Apply' Axis Conversion**: does the Z-is-Up x=90º rotation at the mesh level instead of at the object level.
 * **Scale Imported Objects/Characters**: scales all object/armature imports by a factor at the mesh level, which avoids dealing with scale inheritance (for example, between armatures and children objects) in its entirety.
-* **Scale factor**.
+* **Scale factor**: the one applied when the aforementioned option is activated. 
 
 ### .jba animations import settings:
 
-* **Ignore Facial Bones' Translation data**: old option that used to be only available in the importer's file browser.
-* **Delete 180º Rotation**: deletes the 'bip01' bone's keyframes and changes its rotation so that animations don't turn the characters away from us.
-* **Animation Scale factor**:**The .jba animation importer's scale factor is synced to the .gr2 importer's one**, for consistency, but it can be modified manually. 
+* **Ignore Facial Bones' Translation data**: old option that used to be only available in the importer's file browser. That data doesn't work well, so, typically we ignore it.
+* **Delete 180º Rotation**: deletes the 'bip01' bone's keyframes and changes its rotation so that animations don't make the characters face away from us.
+* **Animation Scale factor**:**The .jba animation importer's scale factor copies the .gr2 importer's one when it's modified**, for consistency, but we can change it manually here. 
 
 ### Preset settings menu:
 
@@ -90,9 +92,9 @@ Meant as sensible starting points. The currently available presets are:
 
 ## Paper-trailing.
 
-Given the potential impact of some of those settings, It would be good to include them in the affected objects somehow, in a manner similar to image metadata. So, we are adding custom properties to objects. It's something very easy to write and read. So far, we are having:
-* `mesh_axis_conversion = True or False`.
-* `mesh_scale = decimal number (float)`.
+Given the potential impact of some of those settings, It would be good to include them in the affected objects somehow, in a manner similar to image metadata. So, we are adding custom properties to objects, which other Add-ons and scripts (and us) can read and take into consideration. So far, we are having:
+* `gr2_axis_conversion = True or False (Bool)`.
+* `gr2_scale = a decimal number (float)`.
 
 They appear in the `3D Viewport > Sidebar > Item Tab > Properties Panel` ad in the `Properties Editor > Object Tab > Custom Properties panel`.
 
