@@ -124,7 +124,7 @@ class Prefs(bpy.types.AddonPreferences):
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")
         boxcol.prop(self,'jba_delete_180')
         boxcol.label()
-        boxcol.prop(self,'jba_scale_animation', text="Scale Animation Translations")
+        boxcol.prop(self,'jba_scale_animation', text="Scale Animations' Translations")
         slider_split = boxcol.split(factor=0.1)
         slider_split.enabled = self.jba_scale_animation
         slider_split.label()
