@@ -14,6 +14,17 @@
 * SWTOR Animations without 180º turn.
 * Streamlined console output.
 * Means to communicate data to other Add-ons and scripts.
+* **Solves an issue with TORCommunity.com NPC files  
+  that produced broken skin textures**. it's a quick fix  
+  that might break something else. Fingers crossed.
+* **Auto-imports directionMaps for anisotropic speculars in hair and fur**. 
+
+
+### If we don't touch anything, it behaves like previous versions.
+
+(And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the older behavior)
+
+**These new features can be big timesavers, but we better think how they might impact our workflow before playing with them, specially if we had many SWTOR models already collected and set in Blender projects and asset libraries.**
 
 ## Download
 
@@ -107,15 +118,16 @@ They show up in the `3D Viewport > Sidebar > Item Tab > Properties Panel` and in
 
 ![alt text](readme_images/readme_gr2_addon_050.png)
 
+
 ## Using other Add-ons that depend on this one.
 
 …Such as the SWTOR Area Assembler and Character Assembler, and the ZG SWTOR Tools. With the .gr2 Add-on's settings at default values, none of them should notice any difference. At any other values:
 
-* **SWTOR Character Assembler Add-on**: it just assembles the characters with all objects behaving as per those settings, as the .gr2 Add-on is the one doing the heavy lifting.
-* **SWTOR Area Assembler Add-on**: here the situation is more complicated, as this Add-on was purposely, *painfully* built to deal with SWTOR's axis order. *Badly*. For the time being, it'll accept the scaling factor (it has one of its own already, so, what it'll do is just copy it), but not the axis order conversion because it kinda doesn't need it: the way we catered for that was so facepalmy, it happens anyway.
+* **SWTOR Character Assembler Add-on**: it just assembles the characters importing their objects with those settings, as the .gr2 Add-on is the one doing the heavy lifting.
+* **SWTOR Area Assembler Add-on**: here the situation is more complicated, as this Add-on was purposely, *painfully* built to deal with SWTOR's axis order. What happens under the hood is that the Assembler temporarily enforces neutral importing settings but does the scaling factor on its own. It doesn't take the axis order conversion into account because it kinda doesn't have to: the way we cater to that is so facepalmy (import all the objects *naturally* sideways, then rotate all 90º), it happens anyway.
 * **ZG SWTOR Tools**: here the situation is a bit more nuanced:
   * The Character and Area Assemblers behave just as we've explained for their standalone versions.
-  * It's the other tools where things get more complex. There are some that used some fixed, sensible values (the thresholds in the Merge Double Vertices tools; the distances and thicknesses in the Displace, Solidify, and Shrinkwrap Modifiers) which ought to be multiplied by the scale factor the object was imported with.
+  * It's the other tools where things get more complex. There are some that used some eyeballed, sensible fixed values (the thresholds in the Merge Double Vertices tools; the distances and thicknesses in the Displace, Solidify, and Shrinkwrap Modifiers) which now ought to be multiplied by the scale factor the object was imported with to keep on being that sensible.
 
     When an object has a `mesh_scale` custom property, those tools will use it. The issue is what to do when it doesn't have any. It could default to 1.0, or it could use whatever the .gr2 Add-on's preferences are set to at that moment. Quite probably we'll just make those choices explicit via checkboxes.
 
@@ -129,115 +141,222 @@ The less accurate (materials-wise), but somewhat baking-friendlier **Legacy vers
 
 (It can still be downloaded from [**this link**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0), though)
 
+
+
+
 ## Using this Add-on from your own scripts and Add-ons
 
 The same way we have our other Add-ons calling this one under the hood, you can call it from your own own scripts and Add-ons and even have them receive feedback from it.
 
 ### Available Operators
 
-It exposes two of its importers as **Operators**:
-* **.gr2 importer**: imports .gr2 objects and armatures ("skeletons"):
+* **.gr2 objects importer**: imports .gr2 objects and armatures ("skeletons"):
   
   ```
-  bpy.ops.import_mesh.gr2(filepaths,
-                          import_collision,
-                          apply_axis_conversion,
-                          scale_object,
-                          scale_factor,
-                          enforce_neutral_settings,
-                          job_results_rich,
-                          job_results_accumulate,
+  bpy.ops.import_mesh.gr2(filepath = '',
+                          import_collision = False,
+                          name_as_filename = True,
+                          scale_object = False,
+                          scale_factor = 1.0,
+                          apply_axis_conversion = False,
+                          enforce_neutral_settings = False,
+                          job_results_rich = False,
+                          job_results_accumulate = False,
                           )
 
-  Args:
+  (Actual default values depend on the Add-on's
+  Preferences' settings at the moment of execution)
 
-      filepaths (str or list of str, required):
+  Keyword Arguments:
+      
+    * Required for single file imports:
 
-            filepath of object to import, or
-            list of filepaths of objects to import
-            in one go.
+        filepath (str):
+                Filepath of .gr2 file to import.
 
+    * Required for multiple files imports (it needs to be fed
+    separate files names and the directory they are in, simulating
+    the process of selecting multiple files in the File Browser
+    after choosing the importer in Blender's Import menu)
 
-      import_collision (bool, optional):
+        files (OperatorFileListElement):
+                Needs the files' names (with their extensions)
+                collected as this specific Blender collection type.
 
-            import objects' collision boxes.
-
-
-      name_as_filename (bool, optional):
-
-            name imported objects as per their filenames
-            instead of using their internal 'art names'
-            (they usually match but there are exceptions).
-            If a file contains multiple meshes, this is
-            only applied to the first one.
-
-            (The Blender object's mesh name is always
-            equal to the internal "art name")
+        directory (str):
+                the common directory to all the files
+                we want to import, as a string.
 
 
-      scale_object (bool, optional):
+        To go from a simple list of full filepath strings to the way
+        Blender wants the parameters to be set, we could do:
 
-            scale objects at the mesh level.
+        # From a example list of object filepaths to import:
+        multiple_filepaths_list = [<filepath_1>, <filepath_2>, ...]
 
+        # to an OperatorFileListElement collection of filenames:
+        files_list = [bpy.types.OperatorFileListElement(name=os.path.basename(path))
+                      for path in multiple_filepaths_list]
 
-      scale_factor (float, optional):
+        # and their common directory path:
+        files_common_dir = os.path.dirname(file_paths[0])
 
-            scaling factor for the scale_object feature.
-
-
-      apply_axis_conversion (bool, optional):
-
-            convert to Blender's 'Z-is-up' axis order
-            at the mesh level instead using
-            an object-level x=90º transformation.
-
-
-      enforce_neutral_settings (bool, optional):
-
-            temporarily disregard preferences and use
-            the default settings (the Add-on acts as
-            its older versions during the current call).
+        # The call would look like this:
+        bpy.ops.import_mesh.gr2(files=files_list, directory=files_common_dir, ...,)
 
 
-      job_results_rich (bool, optional):
+    * Optional:
 
-            include filepaths/imported objects data, too,
-            in bpy.context.scene.io_scene_gr2_last_job
-            (see next section on reporting jobs results).
+        import_collision (bool):
+                Import objects' collision boxes, if any.
 
+        name_as_filename (bool):
+                Name imported objects as per their filenames
+                instead of using their internal 'art names'
+                (they usually match but there are exceptions).
+                If a file contains multiple meshes, this is
+                only applied to the first one.
 
-      job_results_accumulate (bool, optional):
+                (The Blender object's mesh name is always
+                equal to the internal "art name")
 
-            Accumulate info from multiple Operator calls
-            in bpy.context.scene.io_scene_gr2_last_job
-            (see next section on reporting jobs results).
+        scale_object (bool):
+                Scale objects at the mesh level.
+
+        scale_factor (float):
+                Scaling factor for the scale_object feature.
+
+        apply_axis_conversion (bool):
+                Convert to Blender's 'Z-is-up' axis order
+                at the mesh level instead of using
+                an object-level x=90º transformation.
+
+        enforce_neutral_settings (bool):
+                Temporarily disregard preferences and use
+                the default settings (the Add-on acts as
+                its older versions during the current call).
+
+        job_results_rich (bool):
+                Include filepaths/imported objects data, too,
+                in bpy.context.scene.io_scene_gr2_last_job
+                (see next section on reporting jobs results).
+
+        job_results_accumulate (bool):
+                Accumulate info from multiple Operator calls
+                in bpy.context.scene.io_scene_gr2_last_job
+                (see next section on reporting jobs results).
   ```
 
-* **.json (animations) importer**: imports `paths.json` files describing the Player Character and non-creature-type NPCs' objects and textures needed to auto-assemble them. These files are exported by **[TORCommunity.com's Character Designer](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Using-TORCommunity-Character-Designer)** tool and by that site's **[database of NPCs' 3D Viewers](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Using-TORCommunity-NPCs-Database)**. Note that this Operator won't do the gathering of assets into the requisite directories: they have to be pre-populated before its use. That makes it maybe not very practical for now.
+
+* **.json importer**: imports `paths.json` files describing the Player Character and non-creature-type NPCs' objects and textures needed to auto-assemble them. These files are exported by **[TORCommunity.com's Character Designer](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Using-TORCommunity-Character-Designer)** tool and by that site's **[database of NPCs' 3D Viewers](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Using-TORCommunity-NPCs-Database)**. Note that this Operator won't do the gathering of assets into the requisite directories: they have to be pre-populated before its use. That makes it maybe not very practical for now.
 
   ```
-  bpy.ops.import_mesh.gr2_json(filepath,
-                              job_results_rich,
-                              )
+  bpy.ops.import_mesh.gr2_json(filepath = '',
+                               import_collision = False,
+                               name_as_filename = True,
+                               scale_object = False,
+                               scale_factor = 1.0,
+                               apply_axis_conversion = False,
+                               enforce_neutral_settings = False,
+                               job_results_rich = False,
+                               job_results_accumulate = True,
+                               )
+  
+  (Actual default values depend on the Add-on's
+  Preferences' settings at the moment of execution)
 
-  Args:
+  Keyword Arguments:
+      
+    * Required:
 
-      filepath (str, required):
+        filepath (str):
+                Filepath of .gr2 file to import.
 
-          filepath of the paths.json file to parse.
+    * Optional (these optional KWargs are .gr2 import ones, to
+      allow overriding the Add-on's Preferences' settings and
+      the way they affect the actual importing of the
+      character's objects):
 
+        import_collision (bool):
+                Import objects' collision boxes, if any.
 
-      job_results_rich (bool, optional):
-          
-          include filepaths/imported objects data, too,
-          in bpy.context.scene.io_scene_gr2_last_job
-          (see job info reporting section).
+        name_as_filename (bool):
+                Name imported objects as per their filenames
+                instead of using their internal 'art names'
+                (they usually match but there are exceptions).
+                If a file contains multiple meshes, this is
+                only applied to the first one. Setting it to
+                True solves some issues with Nautolan PCs.
+
+                (The Blender object's mesh name is always
+                equal to the internal "art name")
+
+        scale_object (bool):
+                Scale objects at the mesh level.
+
+        scale_factor (float):
+                Scaling factor for the scale_object feature.
+
+        apply_axis_conversion (bool):
+                Convert to Blender's 'Z-is-up' axis order
+                at the mesh level instead of using
+                an object-level x=90º transformation.
+
+        enforce_neutral_settings (bool):
+                Temporarily disregard preferences and use
+                the default settings (the Add-on acts as
+                its older versions during the current call).
+
+        job_results_rich (bool):
+                Include filepaths/imported objects data, too,
+                in bpy.context.scene.io_scene_gr2_last_job
+                (see next section on reporting jobs results).
+
+        job_results_accumulate (bool):
+                Accumulate info from multiple Operator calls
+                in bpy.context.scene.io_scene_gr2_last_job
+                (see next section on reporting jobs results).
+                RECOMMENDED True FOR CHARACTER ASSEMBLING
+
   ```
 
-  At the moment, the Operator offers no control over the objects importing process' settings: it uses whatever was set during the working session. That'll probably be improved in a following revision. 
+* **.jba animations importer**: imports 32-bit .jba animation files. It requires an Active armature object (a SWTOR "skeleton" object) as a target.
+  
+  ```
+  bpy.ops.import_animation.jba(filepath,
+                               ignore_facial_bones,
+                               scale_animation,
+                               scale_factor,
+                               delete_180,
+                               )
+  Required Args:
+
+        filepath (str, required):
+                  Filepath to animation file to import.
+
+  Optional Args:
+
+        ignore_facial_bones (bool, optional):
+                  Ignore the facial bones' translation data
+                  and only use their rotation values.
+
+        scale_animation (bool, optional):
+                  Scale animation's translation data.
+                  The operator will use the armature object's 'scale_factor'
+                  custom property, if any. If none, it'll use the Preferences
+                  settings for scaling imported objects unless this argument
+                  is in use.
+
+        scale_factor (float, optional):
+                  Scaling factor for the scale_animation feature.
+
+        delete_180 (bool, optional):
+                  Keeps the animation data from turning the root
+                  of the skeleton 180º away from the viewer.
+  ```
 
 
-#### Custom Scene Property for reporting jobs' results
+#### Custom Scene Property with feedback about the calls' results
 
 As Operators can only report success or failure, and importing a single SWTOR .gr2 object file can produce multiple Blender objects (because .gr2 files can contain multiple meshes but Blender only supports single mesh objects), it's interesting to have some means to report results. Typically, we use Blender's custom scene properties for that, but the available property types for data collections or anything more complex are rather cumbersome.
 
@@ -247,7 +366,7 @@ So, the .gr2 Add-on "publishes" the results of its jobs via the following custom
 
 `bpy.context.scene.io_scene_gr2_job_results`
 
-which contains the following Python dict (before being converted to .json format):
+which contains the following Python dict data (before being converted to .json format):
 
 
 ```
@@ -259,9 +378,9 @@ job_results = {'job_origin'      : "<calling operator's bl_idname>",
                                     },
                }
 ```
-(files_objs_names is only filled if the `job_results_rich` parameter is True)
+(files_objs_names is only filled if the `job_results_rich` parameter is True, to avoid adding more processing time to potentially very lengthy jobs like the Area Assembler's)
 
-To get it back as a dict it would be as simple as:
+To get it back as a Python dict it is as simple as:
 ```
 import bpy
 import json
@@ -269,7 +388,7 @@ import json
 job_results = json.loads(bpy.context.scene.io_scene_gr2_last_job)
 ```
 
-The objects' names are their current in-Blender names, meaning that if Blender gives them .xxx suffixes (.001, .002, etc.) to avoid name collisions, that's what we get in order to avoid any confusion.
+The objects' names are their current in-Blender `bpy.data.objects` keys, meaning that if Blender gives them .xxx suffixes (.001, .002, etc.) to avoid name collisions, that's what we get in order to avoid any confusion.
 
 If files_objs_names is filled (by setting `job_results_rich` to True):
 - filepaths are normalized to Unix-style forward slashes. SWTOR's internal conventions regarding paths are
@@ -280,24 +399,26 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
 
 
+
+
 # Current state of the project:
 
 ## The Blender 4.1 showstopper:
-* **Several deprecations in bmesh break the `io_scene_gr2\ops\import_gr2.py` object importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). **They are marked with a "DEPRECATED" comment in the code**. These are the three lines and what seems to be relevant to them in Blender's 4.1 changelog.
+* **Several deprecations in bmesh break the `io_scene_gr2\ops\import_gr2.py` object importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). **They are marked with a "DEPRECATED" comment in the code** so that they can be quickly located via text search. These are the three lines and what seems to be relevant to them in Blender's 4.1 changelog.
 
-  * **`Line 507 bmesh.create_normals_split()`**  
+  * **`bmesh.create_normals_split()`**  
   
     "**create_normals_split**, calc_normals_split, and free_normals_split **are removed, and are replaced by the simpler Mesh.corner_normals collection property**. Since it gives access to the normals cache, it is automatically updated when relevant data changes."
     
     ---
 
-  * **`Line 519 bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]`**
+  * **`bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]`**
   
     "**MeshLoop.normal is now a read-only property. Custom normals should be created by normals_split_custom_set or normals_split_custom_set_from_vertices**."
     
     ---
 
-  * **`Line 537 bmesh.use_auto_smooth = True`**
+  * **`bmesh.use_auto_smooth = True`**
   
     "use_auto_smooth is removed. **Face corner normals are now used automatically if there are mixed smooth vs. not smooth tags. Meshes now always use custom normals if they exist**.  
 
@@ -308,3 +429,8 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 ## Other than that:
 * .jba Animation Import (**32 bit-only**) works correctly, **BUT: there seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
 * .clo Physics Import (**32 bit-only**) doesn't work as intended, but the seeds of a simpler physics-driven bones importer is there if we work on it.
+
+
+
+
+

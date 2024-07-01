@@ -157,6 +157,7 @@ def update_directionMap(self, _context):
         self.directionMap.alpha_mode = 'CHANNEL_PACKED'
         self.directionMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['directionMap'].image = self.directionMap
+        self.node_tree.nodes['directionMap'].mute = False
     else:
         self.node_tree.nodes['directionMap'].image = None
         self.node_tree.nodes['directionMap'].mute = True

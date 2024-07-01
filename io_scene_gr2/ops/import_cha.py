@@ -8,22 +8,27 @@ Run this script from "File->Import" menu and then load the desired JSON file.
 """
 
 import json
+import xml.etree.ElementTree as ET  # for parsing .mat files looking for directionMaps
 import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 import time
 
 import bpy
 from bpy import app
-from bpy.props import BoolProperty, CollectionProperty, StringProperty
+from bpy.props import BoolProperty, FloatProperty, CollectionProperty, StringProperty
 from bpy.types import Context, Operator, OperatorFileListElement
 from bpy_extras.io_utils import ImportHelper
+
+
+from .import_gr2 import load as ImportGR2_load  # .gr2 importing function used by this module 
+
 
 from ..utils.string import path_format, path_split
 
 from ..types.shared import job_results  # add-on-wide global-like dict
 
 
-class ImportCHA(Operator, ImportHelper):
+class ImportCHA(Operator):
     """
     Import from JSON file format (.json)
     
@@ -40,7 +45,20 @@ class ImportCHA(Operator, ImportHelper):
 
 
     # File Browser properties
-
+    
+    # This class used to be based on ImportHelper
+    # but we now use invoke() to be able to use
+    # the Add-on's Preferences settings when
+    # called from the Import menu and launching
+    # a File Browser.
+    
+    # filepath is explicitly declared because
+    # omitting ImportHelper omits it, too.
+    # invoke() handles what to do if it is
+    # filled as a param in an external call.
+    
+    filepath: StringProperty(subtype='FILE_PATH')
+    
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
@@ -61,21 +79,107 @@ class ImportCHA(Operator, ImportHelper):
 
 
 
-    # Importing parameters' properties
+    # Importing parameters' properties.
+    # THEY AREN'T SPECIFIC TO THE CHARACTER ASSEMBLER BUT
+    # TO THE .GR2 OBJECTS IMPORTER WORKING UNDER THE HOOD.
+    #
+    # When being called from the Import menu, invoke()
+    # will copy the Add-on's prefs settings to them.
+    #
+    # When called from external code, filled arguments
+    # will override current prefs settings.
 
-    import_collision: BoolProperty(name="Import collision mesh", default=False)
+    import_collision: BoolProperty(
+        name="Import Collision Mesh",
+        description="Imports objects' collision boundary mesh if present in the files\n(it can be of use when exporting models to other apps and game engines)",
+        default=False,
+    )
+
+    name_as_filename: BoolProperty(
+        name="Name As Filename",
+        description="Names the imported Blender objects with their filenames instead of their\ninternal 'art names' (the object's mesh data always keeps the 'art name').\n\n.gr2 objects' internal 'art names' typically match their files' names,\nbut sometimes they difer, which can break some tools and workflows.\n\nIn case of multiple mesh files (containing a main object plus secondary ones\nand / or Engine Objects such as Colliders), only the main object is renamed",
+        default=True,
+    )
+
+    apply_axis_conversion: BoolProperty(
+        name="Axis Conversion",
+        description="Permanently converts the Character's imported object to Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
+        default=False,
+    )
+
+    scale_object: BoolProperty(
+        name="Scale Object",
+        description="Scales Characters' objects and armatures\nat the Mesh level.\n\nSWTOR sizes objects in decimeters, while Blender defaults to meters.\nThis mismatch, while innocuous, is an obstacle when doing physics\nsimulations, automatic weighting from bones, or other processes\nwhere Blender requires real world-like sizes to succeed",
+        default=False,
+    )
+
+    scale_factor: FloatProperty(
+        name="Scale factor",
+        description="Recommended values are:\n\n- 10 for simplicity (characters are superhero-like tall, over 2 m.).\n- Around 8 for accuracy (characters show more realistic heights).\n\nRemember that, if binding to a skeleton later on, the skeleton\nmust match the scale of the objects to work correctly (which\ncan be done on import, or manually afterwards)",
+        min = 1.0,
+        max = 100.0,
+        soft_min = 1.0,
+        soft_max = 10.0,
+        step = 10,
+        precision = 2,
+        default=1.0,
+    )
+
+    enforce_neutral_settings: BoolProperty(
+        name="Enforce Neutral Settings",
+        description="Temporarily overrides the settings of the .gr2 Importer that\nthis Character Importer uses with those of older versions\nfor compatibility with similarly imported assets",
+        options={'HIDDEN'},
+        default=False,
+    )
 
     job_results_rich: BoolProperty(
         name="Rich results Info",
         description="For easier interaction with third party code, this add-on fills 'bpy.context.scene.io_scene_gr2_last_job'\nwith info about its most recent job (imported objects's names) in .json format.\nSet to Rich, it provides additional data such as their relationships to filenames",
-        # options={'HIDDEN'},
+        options={'HIDDEN'},
         default=False,
     )
+
+    job_results_accumulate: BoolProperty(
+        name="Accumulate Jobs' Results Info between ImportGR2 calls",
+        description="By default, .gr2 import requests will clear the information about previous ones.\nThis option lets them accumulate, needed for cases such as a Character Import where\nImportGR2 is called several times in succession",
+        options={'HIDDEN'},
+        default=True,
+    )
+
+
+
+    def invoke(self, context, event):
+        # To be able to set the class' properties to the values in the
+        # Add-on's preferences and show them in the File Browser's options,
+        # we use an Invoke function instead of directly using ImportHelper in
+        # the class definition, to be able to put there the required code.              
+        
+        prefs = context.preferences.addons["io_scene_gr2"].preferences
+        
+        self.import_collision           = prefs.gr2_import_collision
+        self.name_as_filename           = prefs.gr2_name_as_filename
+        self.apply_axis_conversion      = prefs.gr2_apply_axis_conversion
+        self.scale_object               = prefs.gr2_scale_object
+        self.scale_factor               = prefs.gr2_scale_factor
+        self.enforce_neutral_settings   = False
+        self.job_results_rich           = False
+        self.job_results_accumulate     = True
+
+
+        # Handling of filepath in case of being
+        # filled as a param in an external call.
+        if not self.filepath:
+            context.window_manager.fileselect_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            return self.execute(context)        
 
 
     def execute(self, context):
         # type: (Context) -> Set[str]
-        
+
+        bpy.context.window.cursor_set("WAIT")
+
         # Clear job_results data before starting a job
         job_results['objs_names'] = []
         job_results['files_objs_names'] = {}
@@ -87,12 +191,22 @@ class ImportCHA(Operator, ImportHelper):
         if not paths:
             paths.append(self.filepath)
 
+        # Clear filebrowser-related properties now
+        # that they have been read and have no more
+        # use so that they don't persist if the class
+        # breaks before finishing its execution
+        # (it makes debugging difficult).
+        self.files.clear()
+        self.filepath = ""
+
         for path in paths:
-            if not load(self, context, path, job_results_rich=self.job_results_rich):
+            if not load(self, context, path):
                 return {'CANCELLED'}
 
 
         bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
+
+        bpy.context.window.cursor_set("DEFAULT")
 
         return {'FINISHED'}
 
@@ -146,6 +260,31 @@ def read(filepath):
                 mat_info = entry["materialInfo"]
                 dds_dict = entry["materialInfo"]["ddsPaths"]
 
+                # As paths.json lacks directionMap data, read it from the .mat file
+                # that was gathered in the relevant materials' subfolders and add it
+                # to the dds_dict when the materialInfo's derived is Creature or
+                # HairC.
+                if mat_info["otherValues"]["derived"] in ['Creature', 'HairC']:
+                    mat_path = entry["materialInfo"]["matPath"]
+                    mat_path = path_format( filepath, f"/materials/{slot_name}/{os.path.basename(mat_path)}" )
+
+                    try:
+                        mat_file = open(mat_path)
+                    except FileNotFoundError:
+                        print(f".mat file {mat_path} couldn't be opened to read directionMap data")
+                    else:
+                        with mat_file:
+                            xml_tree = ET.parse(mat_file)
+                            xml_root = xml_tree.getroot()
+                            # (DirectionMap's PascalCase comes from the .mat file)
+                            DirectionMap = xml_root.find("./input/[semantic='DirectionMap']")
+                            if DirectionMap != None:
+                                texturemap_path = DirectionMap.find("value").text + ".dds"
+                                texturemap_path = texturemap_path.replace("\\", "/")
+                                if texturemap_path[0:1] != "/":
+                                    texturemap_path = f"/{texturemap_path}" 
+                                dds_dict['directionMap'] = texturemap_path
+
                 for key in mat_info["ddsPaths"]:
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
                     if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
@@ -171,18 +310,19 @@ def read(filepath):
 
                 parsed_objects.append(slot)
             except Exception:
-                print("AN ERROR HAS OCCURED.")  # TODO: Improve this error handling!
+                print("AN ERROR HAS OCCURRED.")  # TODO: Improve this error handling!
 
     return parsed_objects, skin_materials
 
 
-def build(operator, context, slots, skin_mats, job_results_rich = False):
+def build(operator, context, slots, skin_mats,
+          job_results_rich = False):
     # type: (Operator, Context, None, None, False) -> bool
     '''
     Imports .gr2 object files and assigns them
     materials using this add-on's SWTOR shaders
     '''
-    from .import_gr2 import load as ImportGR2_load
+
 
 
     for slot in slots:
@@ -191,12 +331,11 @@ def build(operator, context, slots, skin_mats, job_results_rich = False):
         print(f"{slot['slot_name'].upper()} OBJECTS:")
         print("-" * 80)
         for model in slot["models"]:
-            # Import gr2
-            ImportGR2_load(operator, context,
-                           model,
-                           job_results_rich=job_results_rich,
-                           job_results_accumulate=True,
-                           )
+            # Import gr2. The .gr2 import module will
+            # read parameters from this module's class'
+            # properties via the operator param (it
+            # carries the class' self.)
+            ImportGR2_load(operator, context, model)
             
             name = path_split(model)[:-4]
 
@@ -216,9 +355,18 @@ def build(operator, context, slots, skin_mats, job_results_rich = False):
                 try:
                     new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
                 except KeyError:
-                    if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
-                        if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
-                            derived = "SkinB"
+                    # This part fails for TORCommunity.com's NPC exports because
+                    # the last server restore didn't have the correction to
+                    # include the materialSkinIndex.
+                    #
+                    # if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
+                    #     if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
+                    #         derived = "SkinB"
+                    #
+                    # So, this quick and dirty correction presupposes that any second slot
+                    # that falls into this condition is a skin one.
+                    if i == 1 and slot_name != "head":
+                        derived = "SkinB"
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
                     new_mat.use_nodes = True
@@ -272,6 +420,12 @@ def build(operator, context, slots, skin_mats, job_results_rich = False):
                             node.paletteMaskMap = imgs[img]
                         else:
                             node.paletteMaskMap = imgs.load(mat_info["ddsPaths"]["paletteMaskMap"])
+
+                        img = path_split(mat_info["ddsPaths"]["directionMap"])
+                        if img in imgs:
+                            node.directionMap = imgs[img]
+                        else:
+                            node.directionMap = imgs.load(mat_info["ddsPaths"]["directionMap"])
 
                         # try:
                         #     node.directionMap = imgs[path_split(mat_info["ddsPaths"]['directionMap'])]
@@ -454,6 +608,12 @@ def build(operator, context, slots, skin_mats, job_results_rich = False):
                         else:
                             node.paletteMaskMap = imgs.load(mat_info["ddsPaths"]["paletteMaskMap"])
 
+                        img = path_split(mat_info["ddsPaths"]["directionMap"])
+                        if img in imgs:
+                            node.directionMap = imgs[img]
+                        else:
+                            node.directionMap = imgs.load(mat_info["ddsPaths"]["directionMap"])
+
                         # img = path_split(mat_info["ddsPaths"]["directionMap"])
                         # if img in imgs:
                         #     node.directionMap = imgs[img]
@@ -598,8 +758,8 @@ def build(operator, context, slots, skin_mats, job_results_rich = False):
     return True
 
 
-def load(operator, context, filepath= "", job_results_rich=False):
-    # type: (Operator, Context, str, bool) -> bool
+def load(operator, context, filepath=""):
+    # type: (Operator, Context, str) -> bool
     
     start_time = time.time()
     
@@ -614,7 +774,7 @@ def load(operator, context, filepath= "", job_results_rich=False):
         if bpy.ops.object.mode_set.poll():
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        if build(operator, context, slots, skin_mats, job_results_rich):
+        if build(operator, context, slots, skin_mats):
 
             elapsed_time = time.time() - start_time
             print()

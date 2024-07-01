@@ -7,6 +7,16 @@ Usage:
 Run this script from "File->Import" menu and then load the desired GR2 model file.
 
 https://github.com/SWTOR-Slicers/WikiPedia/wiki/GR2-File-Structure
+(32-bit version. 64-bit version is implemented in the Add-on but not documented)
+
+About the Add-on's structure and entry points:
+
+class ImportJBA
+    invoke()       <- Called by File->Import menu option
+    Execute()      <- Called by other Add-ons and scripts.
+        Load()     <- Called by other modules in this Add-on.
+            Read()
+            Build()
 """
 
 import json  # For dict-to-stringProperty translations 
@@ -31,6 +41,18 @@ from ..utils.string import readString
 from ..types.shared import job_results  # add-on-wide global-like dict
 
 
+# Some bones lists for cosmetic differentiation
+hook_bones = ['Camera',
+              'NamePlate',
+              'attach_nameplate_fallback',
+              'socket_saber_right',
+              'socket_saber_left',
+              'socket_pistol_right',
+              'socket_pistol_left',
+              ]
+
+
+
 class ImportGR2(Operator):
     """
     Import SWTOR GR2 file format (.gr2)
@@ -48,10 +70,17 @@ class ImportGR2(Operator):
 
     # File Browser properties
 
+    # This class used to be based on ImportHelper
+    # but we now use invoke() to be able to use
+    # the Add-on's Preferences settings when
+    # called from the Import menu and launching
+    # a File Browser.
+    
     # filepath is explicitly declared because
     # omitting ImportHelper omits it, too.
     # invoke() handles what to do if it is
     # filled as a param in an external call.
+    
     filepath: StringProperty(subtype='FILE_PATH')
     
     if app.version < (2, 82, 0):
@@ -70,7 +99,7 @@ class ImportGR2(Operator):
     filter_glob: StringProperty(
         default="*.gr2",
         options={'HIDDEN'},
-    )    
+    )
 
 
 
@@ -79,7 +108,7 @@ class ImportGR2(Operator):
     import_collision: BoolProperty(
         name="Import Collision Mesh",
         description="Imports the object's collision boundary mesh if present in the file\n(it can be of use when exporting models to other apps and game engines)",
-        # default=False,
+        default=False,
     )
 
     name_as_filename: BoolProperty(
@@ -91,13 +120,13 @@ class ImportGR2(Operator):
     apply_axis_conversion: BoolProperty(
         name="Axis Conversion",
         description="Permanently converts the imported object\nto Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nNOT RECOMMENDED FOR MODDING SWTOR.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
-        # default=False,
+        default=False,
     )
 
     scale_object: BoolProperty(
         name="Scale Object",
         description="Scales imported objects, characters and armatures\nat the Mesh level.\n\nNOT RECOMMENDED FOR MODDING SWTOR OR EXPORTING\nTO OTHER APPS AND ENGINES: Check their requirements and test first.\n\nSWTOR sizes objects in decimeters, while Blender defaults to meters.\nThis mismatch, while innocuous, is an obstacle when doing physics\nsimulations, automatic weighting from bones, or other processes\nwhere Blender requires real world-like sizes to succeed",
-        # default=False,
+        default=False,
     )
 
     scale_factor: FloatProperty(
@@ -109,7 +138,7 @@ class ImportGR2(Operator):
         soft_max = 10.0,
         step = 10,
         precision = 2,
-        # default=1.0,
+        default=1.0,
     )
 
     enforce_neutral_settings: BoolProperty(
@@ -143,11 +172,13 @@ class ImportGR2(Operator):
         
         prefs = context.preferences.addons["io_scene_gr2"].preferences
         
-        self.import_collision   = prefs.gr2_import_collision
-        self.name_as_filename   = prefs.gr2_name_as_filename
-        self.apply_axis_conversion = prefs.gr2_apply_axis_conversion
-        self.scale_object       = prefs.gr2_scale_object
-        self.scale_factor       = prefs.gr2_scale_factor
+        self.import_collision       = prefs.gr2_import_collision
+        self.name_as_filename       = prefs.gr2_name_as_filename
+        self.apply_axis_conversion  = prefs.gr2_apply_axis_conversion
+        self.scale_object           = prefs.gr2_scale_object
+        self.scale_factor           = prefs.gr2_scale_factor
+        self.job_results_rich       = False
+        self.job_results_accumulate = False
 
         # Handling of filepath in case of being
         # filled as a param in an external call.
@@ -176,31 +207,22 @@ class ImportGR2(Operator):
         if not paths:
             paths.append(self.filepath)
 
+        # Clear filebrowser-related properties now
+        # that they have been read and have no more
+        # use so that they don't persist if the class
+        # breaks before finishing its execution
+        # (it makes debugging difficult, otherwise).
+        self.files.clear()
+        self.filepath = ""
+
         print()
 
         for path in paths:
-            if not load(self,
-                        context,
-                        path,
-                        import_collision         = self.import_collision,
-                        name_as_filename         = self.name_as_filename,
-                        scale_object             = self.scale_object,
-                        scale_factor             = self.scale_factor,
-                        apply_axis_conversion    = self.apply_axis_conversion,
-                        enforce_neutral_settings = self.enforce_neutral_settings,
-                        job_results_rich         = self.job_results_rich,
-                        job_results_accumulate   = self.job_results_accumulate,
-                        ):
-                # Clear filebrowser-related properties
-                self.files.clear()
-                self.filepath = ""
+            if not load(self, context, path):
                 return {'CANCELLED'}
 
         bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
 
-        # Clear filebrowser-related properties
-        self.files.clear()
-        self.filepath = ""
         return {"FINISHED"}
 
 
@@ -581,11 +603,11 @@ def build(gr2,
         if scale_object or apply_axis_conversion:
             if scale_object:
                 ob.scale *= scale_factor
-                ob["gr2_scale"] = scale_factor
-            else:
-                ob["gr2_scale"] = 1.0
+                
             bpy.ops.object.transform_apply(location=False, rotation=apply_axis_conversion, scale=scale_object, properties=True)
-            ob["gr2_axis_conversion"] = apply_axis_conversion
+            
+        ob["gr2_scale"] = scale_factor
+        ob["gr2_axis_conversion"] = apply_axis_conversion
             
 
 
@@ -596,10 +618,12 @@ def build(gr2,
         armature.name = filepath.split(os.sep)[-1][:-4]
         armature.display_type = 'STICK'
 
+        # Bones creation
         for bone in gr2.bone_buffer.values():
             new_bone = armature.edit_bones.new(bone.name)
             new_bone.tail = [0, 0.00001, 0]
 
+        # Bones hierarchy organization
         for i, bone in gr2.bone_buffer.items():
             armature_bone = armature.edit_bones[i]
 
@@ -641,33 +665,23 @@ def build(gr2,
     return resulting_single_mesh_blender_objects
 
 
-def load(operator,
-         context,
-         # params to pass to build():
-         filepath                 = "",
-         import_collision         = None,
-         name_as_filename         = None,
-         scale_object             = None,
-         scale_factor             = None,
-         apply_axis_conversion    = None,
-         # Own params:
-         enforce_neutral_settings = None,
-         job_results_rich         = False,
-         job_results_accumulate   = False,
-         ):
-    # type: (Operator, Context, str, bool, bool, bool, float, bool, bool, bool, bool) -> bool
+def load(operator, context, filepath = ""):
+    # type: (Operator, Context, str) -> bool
     """
     This is the operator called by all other tools (either in this Add-on
     or in other ones) for actual object importing operations. Externally,
     it is exposed as bpy.ops.import_mesh.gr2().
     
-    Parameters default to None as a flag to set them
-    to the ones in the add-on's Preferences.
+    The operator param is being passed the calling class' self.
     """
 
+    # .gr2 data parsing and mesh assembling section
     mesh = read(operator, filepath=filepath)
+    
     print(f"FILE: {filepath}")
 
+
+    # Blender object from mesh section
     if mesh:
 
         start_time = time.time()
@@ -675,7 +689,7 @@ def load(operator,
         if bpy.ops.object.mode_set.poll():
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        if enforce_neutral_settings:
+        if operator.enforce_neutral_settings:
             objects_names = build(mesh,
                                   filepath              = filepath,
                                   import_collision      = False,
@@ -689,6 +703,7 @@ def load(operator,
                 # Called via Blender's Import Menu's Import .gr2 option:
                 # use the possibly user-manually altered properties
                 # exposed in the File Browser.
+                # (operator was passed self.)
                 objects_names = build(mesh,
                                       filepath              = filepath,
                                       import_collision      = operator.import_collision,
@@ -711,12 +726,14 @@ def load(operator,
                                       apply_axis_conversion = prefs.gr2_apply_axis_conversion,
                                       )
 
-            
+        
+        # job_results-filling section
+        
         job_results['job_origin'] = operator.bl_idname
 
         job_results['objs_names'].extend(objects_names)
 
-        if job_results_rich:
+        if operator.job_results_rich:
             if 'resources' in filepath:
                 job_results['files_objs_names'][ filepath.replace("\\", "/").partition("resources/")[2] ] = objects_names
             else:

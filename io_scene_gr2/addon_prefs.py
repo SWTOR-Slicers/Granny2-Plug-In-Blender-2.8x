@@ -15,6 +15,8 @@ class Prefs(bpy.types.AddonPreferences):
 
     # Preferences properties --------------------
 
+    # .gr2 import ones:
+    
     gr2_import_collision: bpy.props.BoolProperty(
         name="Import Collision Mesh",
         description="Imports the object's collision boundary mesh if present in the file\n(it can be of use when exporting models to other apps and game engines)",
@@ -52,26 +54,15 @@ class Prefs(bpy.types.AddonPreferences):
         default=False,
     )
 
+
+    # .jba import ones:
+
     jba_ignore_facial_bones: bpy.props.BoolProperty(
         name="Ignore Facial Transl.",
         description="Ignores the data in the facial bones' translation keyframes\nand only uses their rotation keyframes",
         default=True,
     )
-    
-    jba_scale_animation: bpy.props.BoolProperty(
-        name="Scale Animation",
-        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated for good results.\n\nWhenever possible, this setting will try to match\nthe Objects' Scale Factor automatically.\nIt will still allow for setting different values manually",
-        default=False,
-    )
-
-    jba_scale_factor: bpy.props.FloatProperty(
-        name="Scale Factor",
-        description="Imported Animations' Scaling factor",
-        default=1.0,
-        soft_min=0.1,
-        soft_max=2.0,
-    )
-    
+        
     jba_delete_180: bpy.props.BoolProperty(
         name="Delete 180º rotation",
         description="Keeps the animation data from turning the skeleton 180º by deleting\nthe keyframes assigned to the Bip01 bone and setting its rotation to zero.\n\nSWTOR animations turn characters so that they face away from the camera,\nas normally shown in the gameplay. That is not just a nuisance but a problem\nwhen adding cloth or physics simulations to capes or lekku: the instantaneous\nturn plays havok with them",
@@ -102,13 +93,14 @@ class Prefs(bpy.types.AddonPreferences):
 
         col = layout.column()
         col.scale_y = 0.70
-        col.label()
         col.label(text="BEFORE CHANGING ANY SETTING, CAREFULLY CONSIDER HOW THEY MIGHT AFFECT")
         col.label(text="YOUR WORKFLOW!!!  Use the 'NEUTRAL' preset to return to the default settings.")
         
         split = layout.split(factor=0.5)
+        split_left = split
+        split_right = split
         
-        boxcol = split.box().column(align=True, heading=".GR2 OBJECTS IMPORT SETTINGS:")
+        boxcol = split_left.box().column(align=True, heading=".GR2 OBJECTS IMPORT SETTINGS:")
         boxcol.scale_y = 0.90
         boxcol.prop(self,'gr2_import_collision')
         boxcol.prop(self,'gr2_name_as_filename', text="Name Imported Objects As Filenames")
@@ -119,17 +111,13 @@ class Prefs(bpy.types.AddonPreferences):
         slider_split.label()
         slider_split.prop(self,'gr2_scale_factor', text="Scale factor")
         
-        boxcol = split.box().column(align=True, heading=".JBA ANIMATIONS IMPORT SETTINGS:")
+        boxcol = split_right.box().column(align=True, heading=".JBA ANIMATIONS IMPORT SETTINGS:")
         boxcol.scale_y = 0.90
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")
         boxcol.prop(self,'jba_delete_180')
         boxcol.label()
-        boxcol.prop(self,'jba_scale_animation', text="Scale Animations' Translations")
-        slider_split = boxcol.split(factor=0.1)
-        slider_split.enabled = self.jba_scale_animation
-        slider_split.label()
-        slider_split.prop(self,'jba_scale_factor', text="Animations' Scale factor",)
-
+        boxcol.label(text="The Animation and Character Importers")
+        boxcol.label(text="use all the applicable .gr2 Object settings.")
 
 
 class GR2PREFS_MT_presets_menu(bpy.types.Menu):
@@ -166,20 +154,18 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
         
         if self.preset == 'BLENDER' or self.options is None:
 
-            prefs.gr2_import_collision    = True
+            prefs.gr2_import_collision    = False
             prefs.gr2_name_as_filename    = True
             prefs.gr2_scale_object        = True
             prefs.gr2_scale_factor        = 10.0
             prefs.gr2_apply_axis_conversion  = True
 
             prefs.jba_ignore_facial_bones = True
-            prefs.jba_scale_animation     = prefs.gr2_scale_object
-            prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = True
 
         if self.preset == 'PORTING':
 
-            prefs.gr2_import_collision    = True
+            prefs.gr2_import_collision    = False
             prefs.gr2_name_as_filename    = True
             prefs.gr2_scale_object        = False
             prefs.gr2_scale_factor        = 1.0
@@ -188,8 +174,6 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             # SWTOR animations aren't typically
             # used here. Still…
             prefs.jba_ignore_facial_bones = True
-            prefs.jba_scale_animation     = prefs.gr2_scale_object
-            prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
         
         if self.preset == 'MODDING':
@@ -203,21 +187,17 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             # SWTOR animations aren't typically
             # used here. Still…
             prefs.jba_ignore_facial_bones = True
-            prefs.jba_scale_animation     = prefs.gr2_scale_object
-            prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
 
         if self.preset == 'NEUTRAL':
 
-            prefs.gr2_import_collision    = True
+            prefs.gr2_import_collision    = False
             prefs.gr2_name_as_filename    = False
             prefs.gr2_scale_object        = False
             prefs.gr2_scale_factor        = 1.0
             prefs.gr2_apply_axis_conversion  = False
 
             prefs.jba_ignore_facial_bones = False
-            prefs.jba_scale_animation     = prefs.gr2_scale_object
-            prefs.jba_scale_factor        = prefs.gr2_scale_factor
             prefs.jba_delete_180          = False
            
         return {"FINISHED"}

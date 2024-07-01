@@ -31,12 +31,22 @@ class ImportJBA(Operator):
     bl_label = "Import SWTOR (.jba)"
     bl_options = {'UNDO'}
 
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the JBA file",
-        type=OperatorFileListElement,
-    )
 
+    # File Browser properties
+    
+    # This class used to be based on ImportHelper
+    # but we now use invoke() to be able to use
+    # the Add-on's Preferences settings when
+    # called from the Import menu and launching
+    # a File Browser.
+    
+    # filepath is explicitly declared because
+    # omitting ImportHelper omits it, too.
+    # invoke() handles what to do if it is
+    # filled as a param in an external call.
+    
+    filepath: StringProperty(subtype='FILE_PATH')
+    
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
@@ -44,15 +54,29 @@ class ImportJBA(Operator):
 
     filename_ext = ".jba"
 
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the JBA file",
+        type=OperatorFileListElement,
+    )
+
     filter_glob: StringProperty(
         default="*.jba",
         options={'HIDDEN'},
     )
     
+    # Animation importing-related properties
+    
     ignore_facial_bones: BoolProperty(
         name="Ignore Facial Transl.",
         description="Ignores the data in the facial bones' translation keyframes\nand only uses their rotation keyframes",
         default=True,
+    )
+
+    delete_180: BoolProperty(
+        name="Delete 180º rotation",
+        description="Keeps the animation data from turning the skeleton 180º by deleting\nthe keyframes assigned to the Bip01 bone and setting its rotation to zero.\n\nSWTOR animations turn characters so that they face away from the camera,\nas normally shown in the gameplay. That is not just a nuisance but a problem\nwhen adding cloth or physics simulations to capes or lekku: the instantaneous\nturn plays havok with them",
+        default=False,
     )
 
     scale_animation: BoolProperty(
@@ -70,11 +94,6 @@ class ImportJBA(Operator):
         precision=2,
     )
     
-    delete_180: BoolProperty(
-        name="Delete 180º rotation",
-        description="Keeps the animation data from turning the skeleton 180º by deleting\nthe keyframes assigned to the Bip01 bone and setting its rotation to zero.\n\nSWTOR animations turn characters so that they face away from the camera,\nas normally shown in the gameplay. That is not just a nuisance but a problem\nwhen adding cloth or physics simulations to capes or lekku: the instantaneous\nturn plays havok with them",
-        default=False,
-    )
 
     def invoke(self, context, event):
         # To be able to set the class' properties to the values in the
@@ -85,14 +104,18 @@ class ImportJBA(Operator):
         prefs = context.preferences.addons["io_scene_gr2"].preferences
         
         self.ignore_facial_bones = prefs.jba_ignore_facial_bones
-        self.scale_animation     = prefs.jba_scale_animation
-        self.scale_factor        = prefs.jba_scale_factor
         self.delete_180          = prefs.jba_delete_180
+        self.scale_animation     = prefs.gr2_scale_object
+        self.scale_factor        = prefs.gr2_scale_factor
 
-        context.window_manager.fileselect_add(self)
-        
-        return {'RUNNING_MODAL'}
 
+        # Handling of filepath in case of being
+        # filled as a param in an external call.
+        if not self.filepath:
+            context.window_manager.fileselect_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            return self.execute(context)        
 
 
     def execute(self, context):
@@ -102,6 +125,14 @@ class ImportJBA(Operator):
 
         if not paths:
             paths.append(self.filepath)
+            
+        # Clear filebrowser-related properties now
+        # that they have been read and have no more
+        # use so that they don't persist if the class
+        # breaks before finishing its execution
+        # (it makes debugging difficult).
+        self.files.clear()
+        self.filepath = ""
 
         for path in paths:
             if not load(self, context, path):
@@ -326,15 +357,23 @@ def build(operator, context, filepath, jba):
         bpy.ops.object.mode_set(mode='POSE')
 
     # Create armature keyframes
-    # scale = 1000 * operator.scale_factor  # This was the original calculation, but it seems to work as an inverse, so…
-    # Check if the armature object has import scale custom property data. If not, use the add-on's prefs settings.
+    # scale = 1000 * operator.scale_factor  # This was the original code's calculation, but it seems it needs to be
+    # scale = 1000 * (1/operator.scale_factor) to work correctly, so…
+    
+    # Check if the armature object has import scale custom property data.
+    # If not, use scale_animation and scale_factor or the add-on's prefs
+    # settings for the .gr2 import.
     if 'gr2_scale' in ob:
         scale = 1000 * (1 / ob['gr2_scale'])
     else:
         if operator.scale_animation:
             scale = 1000 * (1 / operator.scale_factor)
         else:
-            scale = 1000
+            prefs = context.preferences.addons["io_scene_gr2"].preferences
+            if prefs.gr2_scale_object:
+                scale = 1000 * (1 / prefs.gr2_scale_factor)
+            else:
+                scale = 1000
         
     morpheme_space = Matrix(((scale, 0, 0, 0), (0, 0, -scale, 0), (0, scale, 0, 0), (0, 0, 0, 1)))
     morpheme_space_inv = morpheme_space.inverted()
