@@ -197,7 +197,7 @@ class GR2PREFS_OT_set_preset(bpy.types.Operator):
             prefs.gr2_scale_factor        = 1.0
             prefs.gr2_apply_axis_conversion  = False
 
-            prefs.jba_ignore_facial_bones = False
+            prefs.jba_ignore_facial_bones = True
             prefs.jba_delete_180          = False
            
         return {"FINISHED"}

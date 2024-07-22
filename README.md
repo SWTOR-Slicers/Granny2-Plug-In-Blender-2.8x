@@ -14,15 +14,13 @@
 * Optional SWTOR Animations importing without 180º turn.
 * Streamlined console output.
 * Means to communicate with other Add-ons and scripts.
-* **Solves an issue with TORCommunity.com NPC files  
-  that produced broken skin textures**. it's a quick fix  
-  that might break something else. Fingers crossed.
-* **Auto-imports directionMaps for anisotropic speculars in hair and fur**. 
+* **Solves an issue with TORCommunity.com NPC files that produced broken skin textures**. it's a quick fix that might break something else. Fingers crossed.
+* **Character Importer applies directionMaps for anisotropic speculars in hair and fur**. 
 
 
 ### If left alone, it behaves like previous versions: no need to adjust anything!
 
-(And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the older behavior)
+(And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior)
 
 **These new features can be big timesavers, but we better think how they might impact our workflow before playing with them, specially if we had many SWTOR models already collected and set in Blender projects and asset libraries.**
 
@@ -38,7 +36,7 @@ Install it in your Blender app **[through the usual means](https://docs.blender.
 
 ## Description
 
-This add-on provides Blender with several import/export and materials features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets.
+This add-on provides Blender with several import/export and materials features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets (typically extracted from the game's files via the **[Slicers GUI](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Installing-Slicers-GUI-and-extracting-SWTOR-game-assets)** app).
 
 ![alt text](readme_images/gr2_addon_010.png)
 
@@ -76,33 +74,51 @@ The shaders are assigned on the fly when importing .json character data files fo
 
 ## Settings
 
-**This Add-on comes now with a series of 'quality-of-life' settings** that, for certain uses of SWTOR assets (artistic, mostly), can save us a lot of work. **All settings have tooltips explaining their functions**. They are about dealing with the fact that SWTOR game assets usually come in sizes, axis order schemes, and other details that require changes to be able to work with some of Blender's more advanced features: physics simulations, non-SWTOR armatures-based custom rigs, etc., which need things such as real world-like sizes or no 'soft' transforms getting in the way.
+**This Add-on comes now with a series of 'quality-of-life' settings** that, for certain uses of SWTOR assets (artistic, mostly), can save us a lot of work.
 
-All that said, **the Add-on's default settings are perfectly fine** for having everything work as expected (**they match the behavior of previous versions**). Set to those, our other Add-ons (Character Assembler, Area Assembler, ZG SWTOR Tools) won't notice any difference.
+ **THE ADD-ON'S DEFAULT SETTINGS ARE PERFECTLY FINE** for having everything work as expected (**they match the behavior of previous versions**). Set to those, our other Add-ons (Character Assembler, Area Assembler, ZG SWTOR Tools) won't notice any difference.
+
+**All settings have tooltips explaining their functions**. They are about dealing with the fact that SWTOR game assets usually come in sizes, axis order schemes, and other details that require changes to be able to work with some of Blender's more advanced features: physics simulations, non-SWTOR armatures-based custom rigs, etc., which need things such as real world-like sizes or no 'soft' transforms getting in the way.
+
+
 
 ![alt text](readme_images/gr2_addon_020.png)
 
-**(All these settings can be changed on the fly for any specific import, as they show up in all importers' File Browsers)**
+**(All these settings can be changed on the fly for any specific import, as they show up in the importers' File Browsers)**
 
 ![alt text](readme_images/gr2_addon_035.png)
 
+### About SWTOR's 3D models and Blender.
+
+**SWTOR uses decimeters as its distance unit** instead of meters (that solves some precision issues typical in the videogames world). **It also uses a "y-is-up" coordinate system**.
+
+**Blender favors meters or feet as its scenes' distance units, instead** (to the point that some processes, such as cloth simulations and automatic weighting from bones, will break or fail if the objects involved don't have reasonable real world sizes in those units, at least temporarily while executing those processes). Also, and in this its a bit of a rarity in the art-oriented 3D apps world, and **it uses a "z-is-up" coordinate system**.
+
+**So, when one imports SWTOR objects with the .gr2 importer set to neutral settings, they show up a tenth of the size we might expect them to have. Also, they all happen to have a rotation of 90º in the x-axis despite standing upright**. Without it, they would appear tumbled backwards.
+
+This is not much of an issue. Everything appears natural, if tiny (we might have to adjust the View settings' Clip Start to 0.01 to avoid clipping through the models when we get close). We can also scale them up, temporarily or long term, to get them up to real world sizes (a x10 factor usually suffices).
+
+But the moment we want to do advanced or complicated things (constraining extra armatures to SWTOR's ones, mixing assets from outside the game world…), **we *might* want to do some "Apply Transformations" (with special settings available in Blender's Undo Box) to get all those issues permanently sorted out (at the object's mesh level instead of at merely the object level) so that the models work as if they had been created in Blender**.
+
+It's something that we might never need, or we might be needing all the time, hence the following settings:
+
 ### .gr2 objects/armatures/characters import settings:
-* **Import Collision Mesh**: old option that used to be only available in the importer's file browser. 
-* **Name Imported Objects as Filenames**: typically, the imported object or its main mesh's internal "art name" matches the filename, but not always, which leads to issues if using the former. Ticking it solves, for example, a name mismatch in Nautolan heads' tentacles strap object that crashes their assembling.  
+* **Import Collision Mesh**: old option that used to only be available in the importer's file browser. Imports a box surrounding the object that the game uses to keep players from walking through the object. It might be of interest when porting SWTOR objects to other 3D engines.
+* **Name Imported Objects as Filenames**: typically, the imported object's (or, if the file holds several meshes, its main mesh's) internal "art name" matches the filename, but not always, which leads to issues if using the former. Ticking this checkbox solves, for example, a name mismatch in Nautolan heads' tentacles straps that crashes their assembling.
   
   The resulted Blender object's mesh's name is always the internal "art name", which is a way to become aware of such mismatches.
 * **'Apply' Axis Conversion**: does the Z-is-Up x=90º rotation at the mesh level instead of at the object level, which spares us dealing with rotation inheritance issues.
 * **Scale Imported Objects/Characters**: scales all object/armature imports by a factor at the mesh level, which spares us dealing with scale inheritance issues.
 * **Scale factor**: the one applied when the aforementioned option is activated.
 
-The .gr2 importer annotates the axis and scale data in the imported objects so that other tools can be aware of those and act accordingly, such as when importing characters or applying animations.
+The .gr2 importer annotates the imported objects with the axis and scale data so that other tools can be aware of those and act accordingly, such as when importing characters or applying animations.
 
 ### .jba animations import settings:
 
-* **Ignore Facial Bones' Translation data**: old option that used to be only available in the importer's file browser. That data doesn't work well, so, typically we ignore it.
+* **Ignore Facial Bones' Translation data**: old option that used to be only available in the importer's file browser. That data doesn't work well and makes a mess of the characters' face, so, typically we tick it.
 * **Delete 180º Rotation**: deletes the 'bip01' bone's keyframes and changes its rotation so that animations don't make the characters face away from us.
 
-The .jba importer uses the skeleton object to animate's annotated axis and scale settings to scale the animation's translation data accordingly. If unavailable (because of, for example, being older than this add-on's update), it'll use the .gr2 importer' scale and axis settings instead.
+The .jba importer uses the skeleton object's annotated axis and scale settings to scale the animation's translation data accordingly. If unavailable (because of, for example, being older than this add-on's update), it'll use the .gr2 importer' current scale and axis settings instead.
 
 ### .json character import settings:
 
@@ -110,21 +126,24 @@ There are none, as they simply follow the .gr2 import ones.
 
 ### Preset settings menu:
 
-Meant as sensible values starting points. The menu's options, by themselves, aren't meant to stick in the menu, as any further manual adjustment would make that misleading: they just change the settings below them.
+Meant as sensible values starting points. The menu's chosen option, by itself, isn't meant to stay visible once chosen, as any further manual adjustment would make that misleading: it just changes the settings below them, which are what really sticks.
+
+![alt text](readme_images/gr2_addon_030.png)
 
 The currently available presets are:
 
-* **NEUTRAL: rreadme_images/gr2_addon_030.pnggs, matching its older versions**.
+* **NEUTRAL: matches previous versions of the Add-on**. If things get confusing, use this one to get back to the settings' baseline.
 * **PORTING: this is a work in progress**. So far, we are choosing to keep the original assets' scale but convert the axis order from SWTOR's "Y is up" to Blender's "Z is up" (hoping that the usual exporters to FBX and such will like it better). **We need your feedback here**, and if you see that we need specific presets for different target apps (Unity-related, Unreal Engine, apps with their own engines, etc.) we can add and name as many porting presets as needed.
-* **BLENDER**: "Blender-friendliest", so to speak. This preset is meant for projects that are either going to stay inside Blender or will move to other 3D apps that are just as art-focused and have similar expectations: objects are scaled to equivalent real life-like sizes, axis order is converted to Blender's own, etc., just as if they would have been entirely created in Blender through the usual means, easy to mix and match with assets from other provenances. That said, if we happen to have a library of imported SWTOR assets already, we would need to decide whether to use these settings for new imports, keep ourselves to the old ones for consistency, or update previous assets to matching characteristics (vía Blender's Apply operators or the ZG SWTOR Tools variant). **Testing before going all in is extremely recommended**.
+* **BLENDER**: "Blender-friendliest", so to speak. This preset is meant for projects that are either going to stay inside Blender or will move to other 3D apps that are just as art-focused and have similar expectations: objects are scaled to equivalent real life-like sizes, axis order is converted to Blender's own, etc., just as if they would have been entirely created in Blender through the usual means, easy to mix and match with assets from other provenances.
+  
+  That said, if we happen to have a library of imported SWTOR assets already, we would need to decide whether to use these settings for new imports, keep ourselves to the old ones for consistency, or update previous assets to matching characteristics (vía Blender's Apply operators or the ZG SWTOR Tools variant). **Testing before going all in is extremely recommended**.
 
-  ![alt text](readme_images/gr2_addon_030.png)
 
 ## Paper-trailing.
 
-Given the potential impact of some of those settings, it's convenient to annotate them in the affected objects, in a manner similar to photography metadata. So, we are adding custom properties to objects, which other Add-ons and scripts (and us) can read and take into consideration, even change them manually if some processes make that advisable. So far, we are having:
-* `gr2_axis_conversion = True or False (Bool)`.
-* `gr2_scalereadme_images/gr2_addon_050.png 1.0 (neutral) or 10.0 (real life-ish)`.
+Given the potential impact of some of those settings, it's convenient to annotate the affected objects with them, in a manner similar to photography metadata. So, we are adding custom properties to objects, which other Add-ons and scripts (and us) can read and take into consideration, even change them manually if some processes make that advisable. So far, we are having:
+* `gr2_axis_conversion = True or False (True = yes, False = no)`.
+* `gr2_scale = 1.0 (neutral), 10.0 (real life-ish), etc.`
 
 They show up in the **`3D Viewport > Sidebar > Item Tab > Properties Panel`** and in the **`Properties Editor > Object Tab > Custom Properties panel`**.
 
@@ -136,7 +155,7 @@ They show up in the **`3D Viewport > Sidebar > Item Tab > Properties Panel`** an
 …Such as the **SWTOR Area Assembler** and **Character Assembler**, and the **ZG SWTOR Tools**. With the .gr2 Add-on's settings at default values, none of them should notice any difference. At any other values:
 
 * **SWTOR Character Assembler Add-on**: it just assembles the characters importing their objects with those settings, as the .gr2 Add-on is the one doing the heavy lifting.
-* **SWTOR Area Assembler Add-on**: here the situation is more complicated, as this Add-on was purposely, *painfully* built to deal with SWTOR's axis order issues. What happens under the hood is that the Assembler temporarily enforces neutral importing settings but does the scaling factor on its own. It doesn't take the axis order conversion into account because it kinda doesn't have to: the way we cater to that is so facepalmy (import all the objects *naturally* sideways, then rotate all 90º), it happens anyway.
+* **SWTOR Area Assembler Add-on**: here the situation is more complicated, as this Add-on was purposely, *painfully* built to deal with SWTOR's axis order issues. What happens under the hood is that the Assembler temporarily enforces neutral importing settings but does the scaling factor on its own. It doesn't take the axis order conversion into account because it kinda doesn't have to: the way we cater to that is so facepalmy (import all the objects *naturally sideways*, then rotate all 90º), it happens anyway.
 * **ZG SWTOR Tools**: here the situation is a bit more nuanced:
   * The Character and Area Assemblers behave just as we've explained for their standalone versions.
   * It's the other tools where things get more complex. There are some that used some eyeballed, sensible fixed values (the thresholds in the Merge Double Vertices tools; the distances and thicknesses in the Displace, Solidify, and Shrinkwrap Modifiers) which now should be multiplied by the scale factor the object was imported with to keep on being that sensible. So:
@@ -147,9 +166,9 @@ They show up in the **`3D Viewport > Sidebar > Item Tab > Properties Panel`** an
 
       ![alt text](readme_images/gr2_addon_040.png)
 
-## About the old, "Legacy" version of this add-on.
+## About the older, "Legacy Materials" version of this add-on.
 
-The less accurate (materials-wise), but somewhat baking-friendlier **Legacy version** of the .gr2 Add-on **is not compatible with the 64 bit version of SWTOR's assets**. Its shaders and materials still are, though, and they happen to work with Blender's baking workflow better (speculars bake correctly without manual intervention). Given that, **weadded modern-to-legacy material conversion tools to some of our other Add-ons**, without needing to install this one.
+The less accurate (materials-wise), but somewhat baking-friendlier **Legacy version** of the .gr2 Add-on **is not compatible with the 64 bit version of SWTOR's assets**. Its shaders and materials still are, though, and they happen to work with Blender's baking workflow better (speculars bake correctly without manual intervention). Given that, **we added modern-to-legacy material conversion tools to some of our other Add-ons**, without needing to install this one.
 
 (It can still be downloaded from [**this link**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/tag/v.3.0), though)
 
@@ -162,7 +181,7 @@ The same way we have our other Add-ons call this one under the hood, you can cal
 
 ### Available Operators
 
-* **.gr2 objects importer**: imports .gr2 objects and armatures ("skeletons", which are .gr2 objects too):
+* **.gr2 objects importer**: imports .gr2 objects and armatures ("skeletons", which are .gr2 objects too). Can import multiple files at once:
   
   ```
   bpy.ops.import_mesh.gr2(filepath = '',
@@ -338,35 +357,43 @@ The same way we have our other Add-ons call this one under the hood, you can cal
   
   ```
   bpy.ops.import_animation.jba(filepath,
-                               ignore_facial_bones,
-                               scale_animation,
-                               scale_factor,
-                               delete_180,
+                               ignore_facial_bones = True,
+                               scale_animation = False,
+                               scale_factor = False,
+                               delete_180 = False,
                                )
-  Required Args:
 
-        filepath (str, required):
-                  Filepath to animation file to import.
+  (Actual default values depend on the Add-on's
+  Preferences' settings at the moment of execution)
 
-  Optional Args:
+  Keyword Arguments:
 
-        ignore_facial_bones (bool, optional):
-                  Ignore the facial bones' translation data
-                  and only use their rotation values.
+    Required Args:
 
-        scale_animation (bool, optional):
-                  Scale animation's translation data.
-                  The operator will use the armature object's 'gr2_scale'
-                  custom property, if any. If none, it'll use the Preferences
-                  settings for scaling imported objects unless this argument
-                  contradicts it.
+          filepath (str, required):
+                    Filepath to animation file to import.
 
-        scale_factor (float, optional):
-                  Scaling factor for the scale_animation feature.
+    Optional Args:
 
-        delete_180 (bool, optional):
-                  Keeps the animation data from turning the root
-                  of the skeleton 180º away from the viewer.
+          ignore_facial_bones (bool, optional):
+                    Ignore the facial bones' translation data
+                    and only use their rotation values.
+                    RECOMMENDED: True (the importer handles
+                    that data very badly).
+
+          scale_animation (bool, optional):
+                    Scale animation's translation data.
+                    The operator will use the armature object's 'gr2_scale'
+                    custom property, if any. If none, it'll use the Preferences
+                    settings for scaling imported objects unless this argument
+                    contradicts it.
+
+          scale_factor (float, optional):
+                    Scaling factor for the scale_animation feature.
+
+          delete_180 (bool, optional):
+                    Keeps the animation data from turning the root
+                    of the skeleton 180º away from the viewer.
   ```
 
 
@@ -386,15 +413,15 @@ which contains the following Python dict data (before being converted to .json f
 ```
 job_results = {'job_origin'      : "<calling operator's bl_idname>",
                'objs_names'      : [<obj1>, <obj2>, ...],
-               'files_objs_names': {<filepath a>: [<list of object names>],
-                                    <filepath b>: [<list of object names>],
+               'files_objs_names': {<filepath a>: [<<obj1a>, <obj2a>, ...],
+                                    <filepath b>: [<obj1b>, <obj2b>, ...],
                                                       ...
                                     },
                }
 ```
 (files_objs_names is only filled if the `job_results_rich` parameter is True, to avoid adding more processing time to potentially very lengthy jobs like the Area Assembler's)
 
-To get it back as a Python dict it is as simple as:
+To get it back as a Python dict is as simple as:
 ```
 import bpy
 import json
@@ -437,7 +464,7 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
     **auto_smooth_angle is removed. Replaced by a modifier (or operator) controlling the "sharp_edge" attribute**. This means the mesh itself (without an object) doesn't know anything about automatically smoothing by angle anymore."
 
-  (Commenting these lines out lets objects import (without normals and smoothing) with no more exceptions, so nothing else breaks, seemingly)
+  (Commenting these lines out lets objects import without normals and smoothing, with no more exceptions, so nothing else breaks, seemingly)
 
 ## Other than that:
 * .jba Animation Import (**32 bit-only**) works correctly, **BUT: there seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
