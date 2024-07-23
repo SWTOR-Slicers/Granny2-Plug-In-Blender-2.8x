@@ -1,11 +1,38 @@
 ### WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.
 
-### IMPORTANT NOTICE: [the latest version of this importer add-on](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest) can import objects, characters, and skeletons from both the old 32-bit version of the game and the current 64-bit one (Game Update 7.2.1 and newer).<br><br>Updating its animation import to support 64-bit files is going to be *quite difficult*. You can use the animation files from a 32 bit game assets extraction instead (you can grab them from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)).
+#### IMPORTANT NOTICE: [the latest version of this importer add-on](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest) can import objects, characters, and skeletons from both the old 32-bit version of the game and the current 64-bit one (Game Update 7.2.1 and newer).<br><br>Updating its animation import to support 64-bit files is going to be *quite difficult*. You can use the animation files from a 32 bit game assets extraction instead (you can grab them from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)).
 
-**For more information on this Add-on's usage and the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
+**For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
 
 # SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0
+
+**A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
+
+---
+
+- [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-40)
+    - [New version with new features:](#new-version-with-new-features)
+  - [Download](#download)
+  - [Installation](#installation)
+  - [Description](#description)
+    - [Import/export tools:](#importexport-tools)
+    - [Materials Tools:](#materials-tools)
+  - [Settings](#settings)
+    - [About SWTOR's 3D models and Blender.](#about-swtors-3d-models-and-blender)
+    - [.gr2 objects/armatures/characters import settings:](#gr2-objectsarmaturescharacters-import-settings)
+    - [.jba animations import settings:](#jba-animations-import-settings)
+    - [.json character import settings:](#json-character-import-settings)
+    - [Preset settings menu:](#preset-settings-menu)
+  - [Paper-trailing.](#paper-trailing)
+  - [Using other Add-ons that depend on this one.](#using-other-add-ons-that-depend-on-this-one)
+  - [About the older, "Legacy Materials" version of this add-on.](#about-the-older-legacy-materials-version-of-this-add-on)
+  - [Using this Add-on from your own scripts and Add-ons](#using-this-add-on-from-your-own-scripts-and-add-ons)
+[Available Operators.](#available-operators)
+    - [Custom Scene Property with feedback about the calls' results.](#custom-scene-property-with-feedback-about-the-calls-results)
+[Current state of the project.](#current-state-of-the-project)
+  - [The Blender 4.1 showstopper.](#the-blender-41-showstopper)
+[Other than that.](#other-than-that)
 
 ### New version with new features:
 * **Blender 4.0.x compatibility (NOT 4.1.x yet**).
@@ -18,9 +45,7 @@
 * **Character Importer applies directionMaps for anisotropic speculars in hair and fur**. 
 
 
-### If left alone, it behaves like previous versions: no need to adjust anything!
-
-(And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior)
+**IF LEFT ALONE, IT BEHAVES LIKE PREVIOUS VERSIONS: NO NEED TO ADJUST ANYTHING!**. And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior.
 
 **These new features can be big timesavers, but we better think how they might impact our workflow before playing with them, specially if we had many SWTOR models already collected and set in Blender projects and asset libraries.**
 
@@ -38,7 +63,7 @@ Install it in your Blender app **[through the usual means](https://docs.blender.
 
 This add-on provides Blender with several import/export and materials features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets (typically extracted from the game's files via the **[Slicers GUI](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Installing-Slicers-GUI-and-extracting-SWTOR-game-assets)** app).
 
-![alt text](readme_images/gr2_addon_010.png)
+![alt text](images/gr2_addon_010.png)
 
 ### Import/export tools:
 * **SWTOR .gr2 objects and armatures import:**  
@@ -65,12 +90,14 @@ The Add-on allows us to export objects back to their original format (sadly, thi
 * **SWTOR 64-bit .gr2 objects export:**  
   Exports SWTOR's specific flavor of the .gr2 ("granny") 3D model format. **SWTOR 64-bit-compatible**.
 
+**THIS ADD-ON ISN'T COMPATIBLE WITH .gr2 FILES FROM OTHER GAMES**. SWTOR's version of the "Granny" format was too heavily customized by BioWare.
+
 ### Materials Tools:
 **This Add-on also produces a series of Shader Nodegroups that replicate SWTOR's materials system**. They allow for using the game's texture files and materials information without requiring any previous manipulation in a third party painting app: the Shaders do all the channel massaging involved (turning "green" normal maps to "purple", etc.). Also, they use custom-built panel interfaces to make their use easy on the novice.
 
 The shaders are assigned on the fly when importing .json character data files for auto-assembling, and are also available through Blender's Shader Editor's Add menu. Other Add-ons of ours further automate their use.
 
-![alt text](readme_images/gr2_addon_060.png)
+![alt text](images/gr2_addon_060.png)
 
 ## Settings
 
@@ -82,25 +109,25 @@ The shaders are assigned on the fly when importing .json character data files fo
 
 
 
-![alt text](readme_images/gr2_addon_020.png)
+![alt text](images/gr2_addon_020.png)
 
 **(All these settings can be changed on the fly for any specific import, as they show up in the importers' File Browsers)**
 
-![alt text](readme_images/gr2_addon_035.png)
+![alt text](images/gr2_addon_035.png)
 
 ### About SWTOR's 3D models and Blender.
 
 **SWTOR uses decimeters as its distance unit** instead of meters (that solves some precision issues typical in the videogames world). **It also uses a "y-is-up" coordinate system**.
 
-**Blender favors meters or feet as its scenes' distance units, instead** (to the point that some processes, such as cloth simulations and automatic weighting from bones, will break or fail if the objects involved don't have reasonable real world sizes in those units, at least temporarily while executing those processes). Also, and in this its a bit of a rarity in the art-oriented 3D apps world, and **it uses a "z-is-up" coordinate system**.
+  **Blender favors meters or feet as its scenes' distance units, instead**, to the point that some processes, such as cloth simulations and automatic weighting from bones, will break or fail if the objects involved don't have reasonable real world sizes in those units (at least temporarily while executing those processes). Also, and this is a bit of a rarity in the animation-oriented 3D apps world, **it uses a "z-is-up" coordinate system**.
 
 **So, when one imports SWTOR objects with the .gr2 importer set to neutral settings, they show up a tenth of the size we might expect them to have. Also, they all happen to have a rotation of 90º in the x-axis despite standing upright**. Without it, they would appear tumbled backwards.
 
-This is not much of an issue. Everything appears natural, if tiny (we might have to adjust the View settings' Clip Start to 0.01 to avoid clipping through the models when we get close). We can also scale them up, temporarily or long term, to get them up to real world sizes (a x10 factor usually suffices).
+This is not much of an issue. Everything appears natural, if tiny (we might have to adjust the View settings' Clip Start to 0.01 to avoid clipping through the models when we get really close to faces). We can also scale them up, temporarily or long term, to get them up to real world sizes (a x10 factor usually suffices).
 
-But the moment we want to do advanced or complicated things (constraining extra armatures to SWTOR's ones, mixing assets from outside the game world…), **we *might* want to do some "Apply Transformations" (with special settings available in Blender's Undo Box) to get all those issues permanently sorted out (at the object's mesh level instead of at merely the object level) so that the models work as if they had been created in Blender**.
+But the moment we want to do advanced or complicated things (constraining extra armatures to SWTOR ones' bones, mixing assets from outside the game world…), **we *might* want to do some "Apply Transformations" (with special settings available in Blender's Undo Box) to get all those issues permanently sorted out (at the object's mesh level instead of at merely the object level) so that the models work as if they had been created in Blender**.
 
-It's something that we might never need, or we might be needing all the time, hence the following settings:
+**It's something that we might never need**, or we might be needing all the time, hence the following settings:
 
 ### .gr2 objects/armatures/characters import settings:
 * **Import Collision Mesh**: old option that used to only be available in the importer's file browser. Imports a box surrounding the object that the game uses to keep players from walking through the object. It might be of interest when porting SWTOR objects to other 3D engines.
@@ -128,7 +155,7 @@ There are none, as they simply follow the .gr2 import ones.
 
 Meant as sensible values starting points. The menu's chosen option, by itself, isn't meant to stay visible once chosen, as any further manual adjustment would make that misleading: it just changes the settings below them, which are what really sticks.
 
-![alt text](readme_images/gr2_addon_030.png)
+![alt text](images/gr2_addon_030.png)
 
 The currently available presets are:
 
@@ -147,7 +174,7 @@ Given the potential impact of some of those settings, it's convenient to annotat
 
 They show up in the **`3D Viewport > Sidebar > Item Tab > Properties Panel`** and in the **`Properties Editor > Object Tab > Custom Properties panel`**.
 
-![alt text](readme_images/gr2_addon_050.png)
+![alt text](images/gr2_addon_050.png)
 
 
 ## Using other Add-ons that depend on this one.
@@ -164,7 +191,7 @@ They show up in the **`3D Viewport > Sidebar > Item Tab > Properties Panel`** an
 
     * If unavailable, they'll use the .gr2 importer settings as reference. To facilitate awareness of the session's conditions, the ZG SWTOR Tools' Status Panel has now a mini-.gr2 Add-on settings section that lets us change them directly (it's just like changing them in the add-on's preferences), plus a button to quickly open its full Preferences panel.
 
-      ![alt text](readme_images/gr2_addon_040.png)
+      ![alt text](images/gr2_addon_040.png)
 
 ## About the older, "Legacy Materials" version of this add-on.
 
@@ -179,7 +206,7 @@ The less accurate (materials-wise), but somewhat baking-friendlier **Legacy vers
 
 The same way we have our other Add-ons call this one under the hood, you can call it from your own own scripts and Add-ons and even have them receive feedback from it.
 
-### Available Operators
+### Available Operators.
 
 * **.gr2 objects importer**: imports .gr2 objects and armatures ("skeletons", which are .gr2 objects too). Can import multiple files at once:
   
@@ -397,7 +424,7 @@ The same way we have our other Add-ons call this one under the hood, you can cal
   ```
 
 
-#### Custom Scene Property with feedback about the calls' results
+### Custom Scene Property with feedback about the calls' results.
 
 As Operators can only report success or failure, and importing a single SWTOR .gr2 object file can produce multiple Blender objects (because .gr2 files can contain multiple meshes but Blender only supports single mesh objects), it's interesting to have some means to report results. Typically, we use Blender's custom scene properties for that, but the available property types for data collections or anything more complex are rather cumbersome.
 
@@ -441,9 +468,9 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
 
 
-# Current state of the project:
+# Current state of the project.
 
-## The Blender 4.1 showstopper:
+## The Blender 4.1 showstopper.
 * **Several deprecations in bmesh break the `io_scene_gr2\ops\import_gr2.py` object importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). **They are marked with a "DEPRECATED" comment in the code** so that they can be quickly located via text search. These are the three lines and what seems to be relevant to them in Blender's 4.1 changelog.
 
   * **`bmesh.create_normals_split()`**  
@@ -466,7 +493,7 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
   (Commenting these lines out lets objects import without normals and smoothing, with no more exceptions, so nothing else breaks, seemingly)
 
-## Other than that:
+## Other than that.
 * .jba Animation Import (**32 bit-only**) works correctly, **BUT: there seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
 * .clo Physics Import (**32 bit-only**) doesn't work as intended, but the seeds of a simpler physics-driven bones importer is there if we work on it.
 
