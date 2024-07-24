@@ -4,6 +4,11 @@ import bpy
 from bpy.types import NodeTree
 
 
+# Detect Blender version
+major, minor, _ = bpy.app.version
+blender_version = major + minor / 100
+
+
 def adjust_lightness():
     # type: () -> NodeTree
     """
@@ -14,10 +19,16 @@ def adjust_lightness():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='AdjustLightness', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketFloat', name='L')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketFloat', name='L')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    else:
+        node_tree.interface.new_socket('L', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('L', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -99,25 +110,46 @@ def chosen_palette():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ChosenPalette', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Contrast')
-    node_tree.inputs.new(type='NodeSocketColor', name='Palette1 Specular')
-    node_tree.inputs.new(type='NodeSocketColor', name='Palette1 Metallic Specular')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Contrast')
-    node_tree.inputs.new(type='NodeSocketColor', name='Palette2 Specular')
-    node_tree.inputs.new(type='NodeSocketColor', name='Palette2 Metallic Specular')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.outputs.new(type='NodeSocketColor', name='Specular')
-    node_tree.outputs.new(type='NodeSocketColor', name='Metallic Specular')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette1 Contrast')
+        node_tree.inputs.new(type='NodeSocketColor', name='Palette1 Specular')
+        node_tree.inputs.new(type='NodeSocketColor', name='Palette1 Metallic Specular')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Palette2 Contrast')
+        node_tree.inputs.new(type='NodeSocketColor', name='Palette2 Specular')
+        node_tree.inputs.new(type='NodeSocketColor', name='Palette2 Metallic Specular')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.outputs.new(type='NodeSocketColor', name='Specular')
+        node_tree.outputs.new(type='NodeSocketColor', name='Metallic Specular')
+    else:
+        node_tree.interface.new_socket('_m PaletteMaskMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Palette1 Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette1 Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette1 Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette1 Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette1 Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Palette1 Metallic Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Palette2 Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette2 Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette2 Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette2 Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Palette2 Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Palette2 Metallic Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Hue', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Specular', in_out='OUTPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Metallic Specular', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -484,11 +516,18 @@ def combine_normals():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='CombineNormals', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketVector', name='TexNormal')
-    node_tree.inputs.new(type='NodeSocketVector', name='AgeNormal')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Scar Strength')
-    node_tree.inputs['Scar Strength'].default_value = 1.0
-    node_tree.outputs.new(type='NodeSocketVector', name='Normal')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketVector', name='TexNormal')
+        node_tree.inputs.new(type='NodeSocketVector', name='AgeNormal')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Scar Strength')
+        node_tree.inputs['Scar Strength'].default_value = 1.0
+        node_tree.outputs.new(type='NodeSocketVector', name='Normal')
+    else:
+        node_tree.interface.new_socket('TexNormal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('AgeNormal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('Scar Strength', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['Scar Strength'].default_value = 1.0
+        node_tree.interface.new_socket('Normal', in_out='OUTPUT', socket_type='NodeSocketVector')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -567,10 +606,16 @@ def convert_hsl_to_rgb():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ConvertHSLToRGB', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketFloat', name='H')
-    node_tree.inputs.new(type='NodeSocketFloat', name='S')
-    node_tree.inputs.new(type='NodeSocketFloat', name='L')
-    node_tree.outputs.new(type='NodeSocketColor', name='RGB')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketFloat', name='H')
+        node_tree.inputs.new(type='NodeSocketFloat', name='S')
+        node_tree.inputs.new(type='NodeSocketFloat', name='L')
+        node_tree.outputs.new(type='NodeSocketColor', name='RGB')
+    else:
+        node_tree.interface.new_socket('H', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('L', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('RGB', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -696,11 +741,18 @@ def expand_hsl():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ExpandHSL', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
-    node_tree.outputs.new(type='NodeSocketFloat', name='H')
-    node_tree.outputs.new(type='NodeSocketFloat', name='S')
-    node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
+        node_tree.outputs.new(type='NodeSocketFloat', name='H')
+        node_tree.outputs.new(type='NodeSocketFloat', name='S')
+        node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    else:
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('H', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('L', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -799,12 +851,20 @@ def extract_age_normal_and_scar_from_swizzled_texture():
     node_tree = bpy.data.node_groups.new(
         name='ExtractAgeNormalAndScarFromSwizzledTexture',
         type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='AgeMap Color')
-    node_tree.inputs['AgeMap Color'].default_value = [0.0, 0.5, 1.0, 1.0]
-    node_tree.inputs.new(type='NodeSocketFloat', name='AgeMap Alpha')
-    node_tree.inputs['AgeMap Alpha'].default_value = 0.5
-    node_tree.outputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Scar Mask')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='AgeMap Color')
+        node_tree.inputs['AgeMap Color'].default_value = [0.0, 0.5, 1.0, 1.0]
+        node_tree.inputs.new(type='NodeSocketFloat', name='AgeMap Alpha')
+        node_tree.inputs['AgeMap Alpha'].default_value = 0.5
+        node_tree.outputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Scar Mask')
+    else:
+        node_tree.interface.new_socket('AgeMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.items_tree['AgeMap Color'].default_value = [0.0, 0.5, 1.0, 1.0]
+        node_tree.interface.new_socket('AgeMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['AgeMap Alpha'].default_value = 0.5
+        node_tree.interface.new_socket('Normal', in_out='OUTPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('Scar Mask', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -860,16 +920,28 @@ def get_flush_color():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='GetFlushColor', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='Diffuse Color')
-    node_tree.inputs['Diffuse Color'].default_value = [0.0, 0.0, 0.0, 1.0]
-    node_tree.inputs.new(type='NodeSocketFloat', name='Flesh Brightness')
-    node_tree.inputs['Flesh Brightness'].default_value = 0.0
-    node_tree.inputs['Flesh Brightness'].max_value = 1.0
-    node_tree.inputs['Flesh Brightness'].min_value = 0.0
-    node_tree.inputs.new(type='NodeSocketColor', name='Flush Tone')
-    node_tree.inputs['Flush Tone'].default_value = [0.0, 0.0, 0.0, 1.0]
-    node_tree.inputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.outputs.new(type='NodeSocketColor', name='Flush Color')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='Diffuse Color')
+        node_tree.inputs['Diffuse Color'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.inputs.new(type='NodeSocketFloat', name='Flesh Brightness')
+        node_tree.inputs['Flesh Brightness'].default_value = 0.0
+        node_tree.inputs['Flesh Brightness'].max_value = 1.0
+        node_tree.inputs['Flesh Brightness'].min_value = 0.0
+        node_tree.inputs.new(type='NodeSocketColor', name='Flush Tone')
+        node_tree.inputs['Flush Tone'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.inputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.outputs.new(type='NodeSocketColor', name='Flush Color')
+    else:
+        node_tree.interface.new_socket('Diffuse Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.items_tree['Diffuse Color'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.interface.new_socket('Flesh Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['Flesh Brightness'].default_value = 0.0
+        node_tree.interface.items_tree['Flesh Brightness'].max_value = 1.0
+        node_tree.interface.items_tree['Flesh Brightness'].min_value = 0.0
+        node_tree.interface.new_socket('Flush Tone', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.items_tree['Flush Tone'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.interface.new_socket('Normal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('Flush Color', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -963,15 +1035,26 @@ def get_phong_specular():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='GetPhongSpecular', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='Specular Color')
-    node_tree.inputs['Specular Color'].default_value = [0.0, 0.0, 0.0, 1.0]
-    node_tree.inputs.new(type='NodeSocketFloat', name='Specular Alpha')
-    node_tree.inputs['Specular Alpha'].default_value = 0.0
-    node_tree.inputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.inputs.new(type='NodeSocketVector', name='-Normal')
-    node_tree.inputs.new(type='NodeSocketFloat', name='MaxSpecPower')
-    node_tree.inputs['MaxSpecPower'].default_value = 64.0 * 0.5
-    node_tree.outputs.new(type='NodeSocketColor', name='Specular')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='Specular Color')
+        node_tree.inputs['Specular Color'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.inputs.new(type='NodeSocketFloat', name='Specular Alpha')
+        node_tree.inputs['Specular Alpha'].default_value = 0.0
+        node_tree.inputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.inputs.new(type='NodeSocketVector', name='-Normal')
+        node_tree.inputs.new(type='NodeSocketFloat', name='MaxSpecPower')
+        node_tree.inputs['MaxSpecPower'].default_value = 64.0 * 0.5
+        node_tree.outputs.new(type='NodeSocketColor', name='Specular')
+    else:
+        node_tree.interface.new_socket('Specular Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.items_tree['Specular Color'].default_value = [0.0, 0.0, 0.0, 1.0]
+        node_tree.interface.new_socket('Specular Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['Specular Alpha'].default_value = 0.0
+        node_tree.interface.new_socket('Normal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('-Normal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('MaxSpecPower', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['MaxSpecPower'].default_value = 64.0 * 0.5
+        node_tree.interface.new_socket('Specular', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     geometry_1 = node_tree.nodes.new(type='ShaderNodeNewGeometry')
@@ -1113,8 +1196,12 @@ def get_specular_lookup():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='GetSpecularLookup', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.outputs.new(type='NodeSocketVector', name='Vector')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.outputs.new(type='NodeSocketVector', name='Vector')
+    else:
+        node_tree.interface.new_socket('Normal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('Vector', in_out='OUTPUT', socket_type='NodeSocketVector')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -1168,19 +1255,34 @@ def hue_pixel():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='HuePixel', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_d DiffuseMap Color')
-    node_tree.inputs.new(type='NodeSocketColor', name='_s GlossMap Color')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
-    node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.inputs.new(type='NodeSocketColor', name='Metallic Specular')
-    node_tree.inputs.new(type='NodeSocketColor', name='Specular')
-    node_tree.outputs.new(type='NodeSocketColor', name='Diffuse Color')
-    node_tree.outputs.new(type='NodeSocketColor', name='Specular Color')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_d DiffuseMap Color')
+        node_tree.inputs.new(type='NodeSocketColor', name='_s GlossMap Color')
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
+        node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.inputs.new(type='NodeSocketColor', name='Metallic Specular')
+        node_tree.inputs.new(type='NodeSocketColor', name='Specular')
+        node_tree.outputs.new(type='NodeSocketColor', name='Diffuse Color')
+        node_tree.outputs.new(type='NodeSocketColor', name='Specular Color')
+    else:
+        node_tree.interface.new_socket('_d DiffuseMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_s GlossMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('_m PaletteMaskMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Metallic Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Diffuse Color', in_out='OUTPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Specular Color', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -1482,19 +1584,34 @@ def hue_skin_pixel():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='HueSkinPixel', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_d DiffuseMap Color')
-    node_tree.inputs.new(type='NodeSocketColor', name='_s GlossMap Color')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
-    node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.inputs.new(type='NodeSocketColor', name='Specular')
-    node_tree.inputs.new(type='NodeSocketColor', name='Metallic Specular')
-    node_tree.outputs.new(type='NodeSocketColor', name='Diffuse Color')
-    node_tree.outputs.new(type='NodeSocketColor', name='Specular Color')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_d DiffuseMap Color')
+        node_tree.inputs.new(type='NodeSocketColor', name='_s GlossMap Color')
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
+        node_tree.inputs.new(type='NodeSocketColor', name='_m PaletteMaskMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.inputs.new(type='NodeSocketColor', name='Specular')
+        node_tree.inputs.new(type='NodeSocketColor', name='Metallic Specular')
+        node_tree.outputs.new(type='NodeSocketColor', name='Diffuse Color')
+        node_tree.outputs.new(type='NodeSocketColor', name='Specular Color')
+    else:
+        node_tree.interface.new_socket('_d DiffuseMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_s GlossMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('_m PaletteMaskMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Metallic Specular', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Diffuse Color', in_out='OUTPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Specular Color', in_out='OUTPUT', socket_type='NodeSocketColor')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -1797,8 +1914,12 @@ def negative_normal():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='NegativeNormal', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.outputs.new(type='NodeSocketVector', name='-Normal')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.outputs.new(type='NodeSocketVector', name='-Normal')
+    else:
+        node_tree.interface.new_socket('Normal', in_out='INPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('-Normal', in_out='OUTPUT', socket_type='NodeSocketVector')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -1853,9 +1974,14 @@ def manipulate_ao():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ManipulateAO', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.outputs.new(type='NodeSocketFloat', name='AO')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.outputs.new(type='NodeSocketFloat', name='AO')
+    else:
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('AO', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -1947,15 +2073,26 @@ def manipulate_hsl():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ManipulateHSL', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.outputs.new(type='NodeSocketFloat', name='H')
-    node_tree.outputs.new(type='NodeSocketFloat', name='S')
-    node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.outputs.new(type='NodeSocketFloat', name='H')
+        node_tree.outputs.new(type='NodeSocketFloat', name='S')
+        node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    else:
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('H', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('L', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -2058,15 +2195,26 @@ def manipulate_skin_hsl():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='ManipulateSkinHSL', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
-    node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
-    node_tree.outputs.new(type='NodeSocketFloat', name='H')
-    node_tree.outputs.new(type='NodeSocketFloat', name='S')
-    node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_h PaletteMap Color')
+        node_tree.inputs.new(type='NodeSocketFloat', name='_h PaletteMap Alpha')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Brightness')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Contrast')
+        node_tree.outputs.new(type='NodeSocketFloat', name='H')
+        node_tree.outputs.new(type='NodeSocketFloat', name='S')
+        node_tree.outputs.new(type='NodeSocketFloat', name='L')
+    else:
+        node_tree.interface.new_socket('_h PaletteMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.new_socket('_h PaletteMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Brightness', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Contrast', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('H', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('L', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -2163,13 +2311,22 @@ def normal_and_alpha_from_swizzled_texture():
     node_tree = bpy.data.node_groups.new(
         name='NormalAndAlphaFromSwizzledTexture',
         type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketColor', name='_n RotationMap Color')
-    node_tree.inputs['_n RotationMap Color'].default_value = [0.0, 0.5, 0.0, 1.0]
-    node_tree.inputs.new(type='NodeSocketFloat', name='_n RotationMap Alpha')
-    node_tree.inputs['_n RotationMap Alpha'].default_value = 0.5
-    node_tree.outputs.new(type='NodeSocketVector', name='Normal')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Alpha')
-    node_tree.outputs.new(type='NodeSocketFloat', name='Emission Strength')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketColor', name='_n RotationMap Color')
+        node_tree.inputs['_n RotationMap Color'].default_value = [0.0, 0.5, 0.0, 1.0]
+        node_tree.inputs.new(type='NodeSocketFloat', name='_n RotationMap Alpha')
+        node_tree.inputs['_n RotationMap Alpha'].default_value = 0.5
+        node_tree.outputs.new(type='NodeSocketVector', name='Normal')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Alpha')
+        node_tree.outputs.new(type='NodeSocketFloat', name='Emission Strength')
+    else:
+        node_tree.interface.new_socket('_n RotationMap Color', in_out='INPUT', socket_type='NodeSocketColor')
+        node_tree.interface.items_tree['_n RotationMap Color'].default_value = [0.0, 0.5, 0.0, 1.0]
+        node_tree.interface.new_socket('_n RotationMap Alpha', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.items_tree['_n RotationMap Alpha'].default_value = 0.5
+        node_tree.interface.new_socket('Normal', in_out='OUTPUT', socket_type='NodeSocketVector')
+        node_tree.interface.new_socket('Alpha', in_out='OUTPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Emission Strength', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -2340,9 +2497,14 @@ def offset_hue():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='OffsetHue', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketFloat', name='H')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
-    node_tree.outputs.new(type='NodeSocketFloat', name='H')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketFloat', name='H')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Hue')
+        node_tree.outputs.new(type='NodeSocketFloat', name='H')
+    else:
+        node_tree.interface.new_socket('H', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Hue', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('H', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -2379,9 +2541,14 @@ def offset_saturation():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='OffsetSaturation', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketFloat', name='S')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.outputs.new(type='NodeSocketFloat', name='S')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketFloat', name='S')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.outputs.new(type='NodeSocketFloat', name='S')
+    else:
+        node_tree.interface.new_socket('S', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')
@@ -2430,9 +2597,14 @@ def offset_skin_saturation():
 
     # Make new node tree and add input/output sockets
     node_tree = bpy.data.node_groups.new(name='OffsetSkinSaturation', type='ShaderNodeTree')
-    node_tree.inputs.new(type='NodeSocketFloat', name='S')
-    node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
-    node_tree.outputs.new(type='NodeSocketFloat', name='S')
+    if blender_version < 4.0:
+        node_tree.inputs.new(type='NodeSocketFloat', name='S')
+        node_tree.inputs.new(type='NodeSocketFloat', name='Saturation')
+        node_tree.outputs.new(type='NodeSocketFloat', name='S')
+    else:
+        node_tree.interface.new_socket('S', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('Saturation', in_out='INPUT', socket_type='NodeSocketFloat')
+        node_tree.interface.new_socket('S', in_out='OUTPUT', socket_type='NodeSocketFloat')
 
     # Add and place nodes
     group_input_1 = node_tree.nodes.new(type='NodeGroupInput')

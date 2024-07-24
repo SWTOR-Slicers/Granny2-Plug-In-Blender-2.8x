@@ -1,6 +1,32 @@
 # <pep8 compliant>
 
+import bpy
 from bpy.types import ShaderNodeTree
+
+
+# Detect Blender version
+major, minor, _ = bpy.app.version
+blender_version = major + minor / 100
+
+
+def add_output_socket_if_needed(node_tree):
+    # type: (ShaderNodeTree) -> None
+    '''
+    Checks for the existence of node_tree outputs by different means
+    depending on Blender version, and adds one if there is none
+    '''
+    if blender_version < 4.0:
+        if len(node_tree.outputs) == 0:
+            node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    else:
+        has_output_sockets = False
+        for item in node_tree.interface.items_tree:
+            if item.item_type == 'SOCKET':
+                if item.in_out == 'OUTPUT':
+                    has_output_sockets = True
+                    break
+        if has_output_sockets == False:
+            node_tree.interface.new_socket('Shader', in_out='OUTPUT', socket_type='NodeSocketShader')
 
 
 def creature(node_tree):
@@ -13,8 +39,7 @@ def creature(node_tree):
     )
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     diffuseMap = node_tree.nodes.new(type='ShaderNodeTexImage')
@@ -351,8 +376,7 @@ def eye(node_tree):
     )
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     diffuseMap = node_tree.nodes.new(type='ShaderNodeTexImage')
@@ -401,15 +425,24 @@ def eye(node_tree):
     vMath3.operation = 'ADD'
 
     principled = node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
-    principled.inputs['Clearcoat'].default_value = 1.0
-    principled.inputs['IOR'].default_value = 1.41
-    principled.inputs['Roughness'].default_value = 1.0
-    principled.inputs['Specular'].default_value = 0.0
-    principled.location = (520.0, 300.0)
-    for socket in principled.inputs:
-        if socket.name not in ['Base Color', 'Clearcoat', 'IOR', 'Normal', 'Clearcoat Normal']:
-            socket.hide = True
-
+    if blender_version < 4.0:
+        principled.inputs['Clearcoat'].default_value = 1.0
+        principled.inputs['IOR'].default_value = 1.41
+        principled.inputs['Roughness'].default_value = 1.0
+        principled.inputs['Specular'].default_value = 0.0
+        principled.location = (520.0, 300.0)
+        for socket in principled.inputs:
+            if socket.name not in ['Base Color', 'Clearcoat', 'IOR', 'Normal', 'Clearcoat Normal']:
+                socket.hide = True
+    else:
+        principled.inputs['Coat Weight'].default_value = 0.25 # Per Blender 3.6 to 4.0 conversions
+        principled.inputs['IOR'].default_value = 1.41
+        principled.inputs['Roughness'].default_value = 1.0
+        principled.inputs['Specular IOR Level'].default_value = 0.0
+        principled.location = (520.0, 300.0)
+        for socket in principled.inputs:
+            if socket.name not in ['Base Color', 'Coat Weight', 'IOR', 'Normal', 'Coat Normal']:
+                socket.hide = True
     addShader = node_tree.nodes.new(type='ShaderNodeAddShader')
     addShader.location = (860.0, 300.0)
 
@@ -592,7 +625,10 @@ def eye(node_tree):
     node_tree.links.new(nr17.outputs[0], phongSpec.inputs['Normal'])
     node_tree.links.new(nr16.outputs[0], nr18.inputs[0])
     node_tree.links.new(nr18.outputs[0], principled.inputs['Normal'])
-    node_tree.links.new(nr18.outputs[0], principled.inputs['Clearcoat Normal'])
+    if blender_version < 4.0:
+        node_tree.links.new(nr18.outputs[0], principled.inputs['Clearcoat Normal'])
+    else:
+        node_tree.links.new(nr18.outputs[0], principled.inputs['Coat Normal'])
     node_tree.links.new(tangentN.outputs['Alpha'], nr32.inputs[0])
     node_tree.links.new(nr32.outputs[0], nr33.inputs[0])
     node_tree.links.new(nr33.outputs[0], nr34.inputs[0])
@@ -615,8 +651,7 @@ def garment(node_tree):
     )
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     diffuseMap = node_tree.nodes.new(type='ShaderNodeTexImage')
@@ -849,8 +884,7 @@ def hairc(node_tree):
     )
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     diffuseMap = node_tree.nodes.new(type='ShaderNodeTexImage')
@@ -1113,8 +1147,7 @@ def skinb(node_tree):
     )
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     glossMap = node_tree.nodes.new(type='ShaderNodeTexImage')
@@ -1497,8 +1530,7 @@ def uber(node_tree):
     from .node_group import normal_and_alpha_from_swizzled_texture
 
     # Add output socket to node tree
-    if len(node_tree.outputs) < 1:
-        node_tree.outputs.new(type='NodeSocketShader', name='Shader')
+    add_output_socket_if_needed(node_tree)
 
     # Add and place nodes
     geom1 = node_tree.nodes.new(type='ShaderNodeNewGeometry')

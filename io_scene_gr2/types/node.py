@@ -31,7 +31,7 @@ def update_ageMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.ageMap:
         self.ageMap.alpha_mode = 'CHANNEL_PACKED'
-        self.ageMap.colorspace_settings.name = "Raw"
+        self.ageMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes["ageMap"].image = self.ageMap
         self.node_tree.nodes["ageMap"].mute = False
     else:
@@ -58,7 +58,7 @@ def update_complexionMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.complexionMap:
         self.complexionMap.alpha_mode = 'CHANNEL_PACKED'
-        self.complexionMap.colorspace_settings.name = 'Raw'
+        self.complexionMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['complexionMap'].image = self.complexionMap
         self.node_tree.nodes['complexionMap'].mute = False
     else:
@@ -145,7 +145,7 @@ def update_diffuseMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.diffuseMap:
         self.diffuseMap.alpha_mode = 'CHANNEL_PACKED'
-        self.diffuseMap.colorspace_settings.name = 'Raw'
+        self.diffuseMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_d'].image = self.diffuseMap
     else:
         self.node_tree.nodes['_d'].image = None
@@ -155,8 +155,9 @@ def update_directionMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.directionMap:
         self.directionMap.alpha_mode = 'CHANNEL_PACKED'
-        self.directionMap.colorspace_settings.name = 'Raw'
+        self.directionMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['directionMap'].image = self.directionMap
+        self.node_tree.nodes['directionMap'].mute = False
     else:
         self.node_tree.nodes['directionMap'].image = None
         self.node_tree.nodes['directionMap'].mute = True
@@ -166,7 +167,7 @@ def update_facepaintMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.facepaintMap:
         self.facepaintMap.alpha_mode = 'CHANNEL_PACKED'
-        self.facepaintMap.colorspace_settings.name = 'Raw'
+        self.facepaintMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['facepaintMap'].image = self.facepaintMap
         self.node_tree.nodes['facepaintMap'].mute = False
     else:
@@ -193,7 +194,7 @@ def update_glossMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.glossMap:
         self.glossMap.alpha_mode = 'CHANNEL_PACKED'
-        self.glossMap.colorspace_settings.name = 'Raw'
+        self.glossMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_s'].image = self.glossMap
     else:
         self.node_tree.nodes['_s'].image = None
@@ -237,7 +238,7 @@ def update_paletteMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.paletteMap:
         self.paletteMap.alpha_mode = 'CHANNEL_PACKED'
-        self.paletteMap.colorspace_settings.name = 'Raw'
+        self.paletteMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_h'].image = self.paletteMap
         self.node_tree.nodes['_h'].mute = False
     else:
@@ -249,7 +250,7 @@ def update_paletteMaskMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.paletteMaskMap:
         self.paletteMaskMap.alpha_mode = 'CHANNEL_PACKED'
-        self.paletteMaskMap.colorspace_settings.name = 'Raw'
+        self.paletteMaskMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_m'].image = self.paletteMaskMap
         self.node_tree.nodes['_m'].mute = False
     else:
@@ -261,7 +262,7 @@ def update_rotationMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.rotationMap:
         self.rotationMap.alpha_mode = 'CHANNEL_PACKED'
-        self.rotationMap.colorspace_settings.name = 'Raw'
+        self.rotationMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_n'].image = self.rotationMap
     else:
         self.node_tree.nodes['_n'].image = None

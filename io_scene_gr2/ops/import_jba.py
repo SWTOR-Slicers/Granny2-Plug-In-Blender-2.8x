@@ -24,18 +24,29 @@ from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import path_split, readCString
 
 
-class ImportJBA(Operator, ImportHelper):
+class ImportJBA(Operator):
     """Import from SWTOR JBA file format (.jba)"""
-    bl_idname = "import_animation.jba"
+    bl_idname = "import_animation.jba"  # DO NOT CHANGE
+    bl_description = "Import and apply an animation to the active SWTOR skeleton in the scene.\n\n• Only compatible with .jba files extracted from SWTOR 32-bit\n   (before Game Update 7.2.1)"
     bl_label = "Import SWTOR (.jba)"
     bl_options = {'UNDO'}
 
-    files: CollectionProperty(
-        name="File Path",
-        description="File path used for importing the JBA file",
-        type=OperatorFileListElement,
-    )
 
+    # File Browser properties
+    
+    # This class used to be based on ImportHelper
+    # but we now use invoke() to be able to use
+    # the Add-on's Preferences settings when
+    # called from the Import menu and launching
+    # a File Browser.
+    
+    # filepath is explicitly declared because
+    # omitting ImportHelper omits it, too.
+    # invoke() handles what to do if it is
+    # filled as a param in an external call.
+    
+    filepath: StringProperty(subtype='FILE_PATH')
+    
     if app.version < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
@@ -43,29 +54,85 @@ class ImportJBA(Operator, ImportHelper):
 
     filename_ext = ".jba"
 
+    files: CollectionProperty(
+        name="File Path",
+        description="File path used for importing the JBA file",
+        type=OperatorFileListElement,
+    )
+
     filter_glob: StringProperty(
         default="*.jba",
         options={'HIDDEN'},
     )
+    
+    # Animation importing-related properties
+    
     ignore_facial_bones: BoolProperty(
-        name="Import Facial Bones",
-        description="Ignore translation keyframe for facial bones",
+        name="Ignore Facial Transl.",
+        description="Ignores the data in the facial bones' translation keyframes\nand only uses their rotation keyframes",
         default=True,
     )
+
+    delete_180: BoolProperty(
+        name="Delete 180º rotation",
+        description="Keeps the animation data from turning the skeleton 180º by deleting\nthe keyframes assigned to the Bip01 bone and setting its rotation to zero.\n\nSWTOR animations turn characters so that they face away from the camera,\nas normally shown in the gameplay. That is not just a nuisance but a problem\nwhen adding cloth or physics simulations to capes or lekku: the instantaneous\nturn plays havok with them",
+        default=False,
+    )
+
+    scale_animation: BoolProperty(
+        name="Scale Animation",
+        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated for good results.\n\nWhenever possible, this setting will try to match\nthe Objects' Scale Factor automatically.\nIt will still allow for setting different values manually",
+        default=False,
+    )
+
     scale_factor: FloatProperty(
         name="Scale Factor",
-        description="Scale factor of the animation (try 1.05 for character animations)",
+        description="Scales the bones' translation data by a factor.\nIt must match the scale of the skeleton\nand objects to be animated.\n\nWhenever possible, this setting will try to match\nthe Objects Import Settings automatically\n(it still allows for setting different values)",
         default=1.0,
         soft_min=0.1,
         soft_max=2.0,
+        precision=2,
     )
+    
+
+    def invoke(self, context, event):
+        # To be able to set the class' properties to the values in the
+        # Add-on's preferences and show them in the File Browser's options,
+        # we use an Invoke function instead of directly using ImportHelper in
+        # the class definition, to be able to put there the required code.
+        
+        prefs = context.preferences.addons["io_scene_gr2"].preferences
+        
+        self.ignore_facial_bones = prefs.jba_ignore_facial_bones
+        self.delete_180          = prefs.jba_delete_180
+        self.scale_animation     = prefs.gr2_scale_object
+        self.scale_factor        = prefs.gr2_scale_factor
+
+
+        # Handling of filepath in case of being
+        # filled as a param in an external call.
+        if not self.filepath:
+            context.window_manager.fileselect_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            return self.execute(context)        
+
 
     def execute(self, context):
         # type: (Context) -> Set[str]
-        paths = [os.path.join(self.directory, file.name) for file in self.files]
+
+        paths = [os.path.join(self.directory, file.name) for file in self.files if file.name.lower().endswith(self.filename_ext)]
 
         if not paths:
             paths.append(self.filepath)
+            
+        # Clear filebrowser-related properties now
+        # that they have been read and have no more
+        # use so that they don't persist if the class
+        # breaks before finishing its execution
+        # (it makes debugging difficult).
+        self.files.clear()
+        self.filepath = ""
 
         for path in paths:
             if not load(self, context, path):
@@ -272,7 +339,7 @@ def build(operator, context, filepath, jba):
     ob: Object = context.active_object
 
     if not ob or ob.type != 'ARMATURE':
-        operator.report({'INFO'}, f"Require object of type Armature to be active, not {ob.type}")
+        operator.report({'INFO'}, f"Requires object of type Armature to be active, not {ob.type}")
         return False
 
     # Create armature action
@@ -290,7 +357,24 @@ def build(operator, context, filepath, jba):
         bpy.ops.object.mode_set(mode='POSE')
 
     # Create armature keyframes
-    scale = 1000 * operator.scale_factor
+    # scale = 1000 * operator.scale_factor  # This was the original code's calculation, but it seems it needs to be
+    # scale = 1000 * (1/operator.scale_factor) to work correctly, so…
+    
+    # Check if the armature object has import scale custom property data.
+    # If not, use scale_animation and scale_factor or the add-on's prefs
+    # settings for the .gr2 import.
+    if 'gr2_scale' in ob:
+        scale = 1000 * (1 / ob['gr2_scale'])
+    else:
+        if operator.scale_animation:
+            scale = 1000 * (1 / operator.scale_factor)
+        else:
+            prefs = context.preferences.addons["io_scene_gr2"].preferences
+            if prefs.gr2_scale_object:
+                scale = 1000 * (1 / prefs.gr2_scale_factor)
+            else:
+                scale = 1000
+        
     morpheme_space = Matrix(((scale, 0, 0, 0), (0, 0, -scale, 0), (0, scale, 0, 0), (0, 0, 0, 1)))
     morpheme_space_inv = morpheme_space.inverted()
 
@@ -317,7 +401,12 @@ def build(operator, context, filepath, jba):
                 frame = jba.fps * jba.length * anim_frame / jba.num_frames + 1
                 pose_bone.matrix_basis = mat_rest.inverted() @ mat_bone
                 pose_bone.keyframe_insert(data_path="location", frame=frame)
-                pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+                if not (operator.delete_180 and bone_name == "Bip01"):
+                    pose_bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+
+    if operator.delete_180 and "Bip01" in ob.pose.bones:
+        # CHECK THAT THIS QUATERNION ROTATION IS VALID IN ALL CASES!!!
+        ob.pose.bones["Bip01"].rotation_quaternion = (1, 0, 0, 0)
 
     return True
 
