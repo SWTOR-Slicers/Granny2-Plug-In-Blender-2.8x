@@ -1,19 +1,17 @@
-### WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.
-
-#### IMPORTANT NOTICE: [the latest version of this importer add-on](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest) can import objects, characters, and skeletons from both the old 32-bit version of the game and the current 64-bit one (Game Update 7.2.1 and newer).<br><br>Updating its animation import to support 64-bit files is going to be *quite difficult*. You can use the animation files from a 32 bit game assets extraction instead (you can grab them from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)).
-
-**For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
-
-
 # SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0
 
 **A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
+
+### WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.
+
+**For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
+
 
 ---
 
 - [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-40)
     - [New version with new features:](#new-version-with-new-features)
-  - [Download](#download)
+  - **[Download](#download)**
   - [Installation](#installation)
   - [Description](#description)
     - [Import/export tools:](#importexport-tools)
@@ -51,8 +49,7 @@
 
 ## Download
 
-[**Download the latest release from here**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the assets list.  
-**DON'T UNZIP IT!** Blender directly handles it as such .zip file. 
+[**DOWNLOAD THE LATEST RELEASE FROM HERE**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the assets list. **DON'T UNZIP IT!** Blender directly handles it as such .zip file. 
 
 ## Installation
 
