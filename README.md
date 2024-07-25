@@ -10,8 +10,9 @@
 ---
 
 - [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-40)
+    - [WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.](#warning-not-yet-compatible-with-blender-41x-and-higher-we-are-working-on-that)
     - [New version with new features:](#new-version-with-new-features)
-  - **[Download](#download)**
+  - [Download](#download)
   - [Installation](#installation)
   - [Description](#description)
     - [Import/export tools:](#importexport-tools)
@@ -26,11 +27,11 @@
   - [Using other Add-ons that depend on this one.](#using-other-add-ons-that-depend-on-this-one)
   - [About the older, "Legacy Materials" version of this add-on.](#about-the-older-legacy-materials-version-of-this-add-on)
   - [Using this Add-on from your own scripts and Add-ons](#using-this-add-on-from-your-own-scripts-and-add-ons)
-[Available Operators.](#available-operators)
+    - [Available Operators.](#available-operators)
     - [Custom Scene Property with feedback about the calls' results.](#custom-scene-property-with-feedback-about-the-calls-results)
-[Current state of the project.](#current-state-of-the-project)
+- [Current state of the project.](#current-state-of-the-project)
   - [The Blender 4.1 showstopper.](#the-blender-41-showstopper)
-[Other than that.](#other-than-that)
+  - [Other than that.](#other-than-that)
 
 ### New version with new features:
 * **Blender 4.0.x compatibility (NOT 4.1.x yet**).
