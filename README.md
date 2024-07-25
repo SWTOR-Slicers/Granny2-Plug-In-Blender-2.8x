@@ -494,8 +494,3 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 ## Other than that.
 * .jba Animation Import (**32 bit-only**) works correctly, **BUT: there seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
 * .clo Physics Import (**32 bit-only**) doesn't work as intended, but the seeds of a simpler physics-driven bones importer is there if we work on it.
-
-
-
-
-
