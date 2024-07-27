@@ -530,7 +530,7 @@ def build(gr2,
             # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
             #       we can only set custom loop normals *after* calling it.
             if BLENDER_VERSION < (4, 1, 0):
-                bmesh.create_normals_split()  # DEPRECATED IN BLENDER 4.1
+                bmesh.create_normals_split()  # DEPRECATED IN BLENDER 4.1. Might be no longer necessary.
             bmesh.uv_layers.new(do_init=False)
             if mesh.bit_flag2 & 64:  # 0x40
                 bmesh.uv_layers.new(do_init=False)
@@ -572,7 +572,7 @@ def build(gr2,
             bmesh.polygons.foreach_set("use_smooth", [True] * len(bmesh.polygons))
             bmesh.normals_split_custom_set(tuple(zip(*(iter(custom_loop_normals),) * 3)))
             if BLENDER_VERSION < (4, 1, 0):
-                bmesh.use_auto_smooth = True  # DEPRECATED IN BLENDER 4.1
+                bmesh.use_auto_smooth = True  # DEPRECATED IN BLENDER 4.1. Might be unnecessary to replace with Modifier.
 
         # Create Blender Object
         if use_file_name_as_object_name:
