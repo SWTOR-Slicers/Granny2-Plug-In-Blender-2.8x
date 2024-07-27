@@ -41,6 +41,9 @@ from ..utils.string import readString
 from ..types.shared import job_results  # add-on-wide global-like dict
 
 
+BLENDER_VERSION = app.version
+
+
 # Some bones lists for cosmetic differentiation
 hook_bones = ['Camera',
               'NamePlate',
@@ -83,7 +86,7 @@ class ImportGR2(Operator):
     
     filepath: StringProperty(subtype='FILE_PATH')
     
-    if app.version < (2, 82, 0):
+    if BLENDER_VERSION < (2, 82, 0):
         directory = StringProperty(subtype='DIR_PATH')
     else:
         directory: StringProperty(subtype='DIR_PATH')
@@ -526,7 +529,8 @@ def build(gr2,
         if mesh.bit_flag2 & 2:   # 0x02
             # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
             #       we can only set custom loop normals *after* calling it.
-            bmesh.create_normals_split()  # DEPRECATED IN BLENDER 4.1
+            if BLENDER_VERSION < (4, 1, 0):
+                bmesh.create_normals_split()  # DEPRECATED IN BLENDER 4.1
             bmesh.uv_layers.new(do_init=False)
             if mesh.bit_flag2 & 64:  # 0x40
                 bmesh.uv_layers.new(do_init=False)
@@ -538,7 +542,18 @@ def build(gr2,
 
                 for k, loop_index in enumerate(loop_indices):
                     v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
-                    bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]  # DEPRECATED IN BLENDER 4.1
+                    
+                    if BLENDER_VERSION < (4, 1, 0):
+                        bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]  # DEPRECATED IN BLENDER 4.1
+                    else:
+                        # As bmesh.loops[loop_index].normal is read-only in 4.1
+                        # it is suggested to use:
+                        # normals_split_custom_set()
+                        # or
+                        # normals_split_custom_set_from_vertices()
+                        # instead.
+                        pass
+                    
                     bmesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
 
                     if mesh.bit_flag2 & 64:  # 0x40
@@ -556,7 +571,8 @@ def build(gr2,
             bmesh.loops.foreach_get("normal", custom_loop_normals)
             bmesh.polygons.foreach_set("use_smooth", [True] * len(bmesh.polygons))
             bmesh.normals_split_custom_set(tuple(zip(*(iter(custom_loop_normals),) * 3)))
-            bmesh.use_auto_smooth = True  # DEPRECATED IN BLENDER 4.1
+            if BLENDER_VERSION < (4, 1, 0):
+                bmesh.use_auto_smooth = True  # DEPRECATED IN BLENDER 4.1
 
         # Create Blender Object
         if use_file_name_as_object_name:
