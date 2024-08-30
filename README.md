@@ -57,6 +57,8 @@
 Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)**: `Edit menu > Preferences > Add-ons > Install > Enable`.  
 **If you had a previous version of the add-on installed, disable and remove it first**.
 
+**If Blender is set to a language different to English, set it to English for now**. We've noticed that Blender translates to other languages elements that other apps typically wouldn't, such as shader nodes' names, which breaks some of our Add-ons. There are ways to solve that, but we have yet to implement and test them.
+
 ## Description
 
 This add-on provides Blender with several import/export and materials features for **Star Wars: The Old Republic** (**SWTOR**) 3D assets (typically extracted from the game's files via the **[Slicers GUI](https://github.com/SWTOR-Slicers/WikiPedia/wiki/Installing-Slicers-GUI-and-extracting-SWTOR-game-assets)** app).
