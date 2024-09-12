@@ -55,7 +55,6 @@ hook_bones = ['Camera',
               ]
 
 
-
 class ImportGR2(Operator):
     """
     Import SWTOR GR2 file format (.gr2)
@@ -511,68 +510,133 @@ def build(gr2,
         if "collision" in mesh.name and not import_collision:
             continue
 
-        bmesh = bpy.data.meshes.new(mesh.name)
-        bmesh.from_pydata([vert.position for vert in mesh.vertex_buffer.values()],
+        blend_mesh = bpy.data.meshes.new(mesh.name)
+        blend_mesh.from_pydata([vert.position for vert in mesh.vertex_buffer.values()],
                           [],
                           [index for index in mesh.indices_buffer.values()])
-
+        
         if mesh.bit_flag2 & 32:  # 0x20
             # Link Materials
             material_indices = []
             for j, piece in mesh.piece_header_buffer.items():
                 material = gr2.material_names[j if piece.material_index == 4294967295 else piece.material_index]
-                bmesh.materials.append(bpy.data.materials[material])
+                blend_mesh.materials.append(bpy.data.materials[material])
 
                 for _ in range(piece.num_polygons):
                     material_indices.append(j)
 
-        if mesh.bit_flag2 & 2:   # 0x02
-            # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
-            #       we can only set custom loop normals *after* calling it.
-            if BLENDER_VERSION < (4, 1, 0):
-                bmesh.create_normals_split()  # DEPRECATED IN BLENDER 4.1. Might be no longer necessary.
-            bmesh.uv_layers.new(do_init=False)
-            if mesh.bit_flag2 & 64:  # 0x40
-                bmesh.uv_layers.new(do_init=False)
-            if mesh.bit_flag2 & 128:  # 0x80
-                bmesh.uv_layers.new(do_init=False)
 
-            for j, polygon in enumerate(bmesh.polygons):
-                loop_indices = polygon.loop_indices
-
-                for k, loop_index in enumerate(loop_indices):
-                    v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
+        if BLENDER_VERSION < (4, 1, 0):
+            
+            if mesh.bit_flag2 & 2:   # 0x02
+                # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
+                #       we can only set custom loop normals *after* calling it.
+                blend_mesh.create_normals_split()  # (DEPRECATED IN BLENDER 4.1)
                     
-                    if BLENDER_VERSION < (4, 1, 0):
-                        bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]  # DEPRECATED IN BLENDER 4.1
-                    else:
-                        # As bmesh.loops[loop_index].normal is read-only in 4.1
-                        # it is suggested to use:
-                        # normals_split_custom_set()
-                        # or
-                        # normals_split_custom_set_from_vertices()
-                        # instead.
-                        pass
-                    
-                    bmesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
+                # UV stuff
+                blend_mesh.uv_layers.new(do_init=False)
+                if mesh.bit_flag2 & 64:  # 0x40
+                    blend_mesh.uv_layers.new(do_init=False)
+                if mesh.bit_flag2 & 128:  # 0x80
+                    blend_mesh.uv_layers.new(do_init=False)
 
-                    if mesh.bit_flag2 & 64:  # 0x40
-                        bmesh.uv_layers[1].data[loop_index].uv = [v.uv_layer1.x, 1 - v.uv_layer1.y]
 
-                    if mesh.bit_flag2 & 128:  # 0x80
-                        bmesh.uv_layers[2].data[loop_index].uv = [v.uv_layer2.x, 1 - v.uv_layer2.y]
+                for j, polygon in enumerate(blend_mesh.polygons):
+                    loop_indices = polygon.loop_indices
 
-                polygon.material_index = material_indices[j]
+                    for k, loop_index in enumerate(loop_indices):
+                        v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
+                        
+                        # We store the temp normals in each loop's normal attribute directly.
+                        # This, also, normalizes the normal vectors "for free".
+                        # (DEPRECATED IN BLENDER 4.1 where blend_mesh.loops[loop_index].normal is read-only)
+                        blend_mesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]
+                        
+                        # UV stuff
+                        blend_mesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
+                        if mesh.bit_flag2 & 64:  # 0x40
+                            blend_mesh.uv_layers[1].data[loop_index].uv = [v.uv_layer1.x, 1 - v.uv_layer1.y]
+                        if mesh.bit_flag2 & 128:  # 0x80
+                            blend_mesh.uv_layers[2].data[loop_index].uv = [v.uv_layer2.x, 1 - v.uv_layer2.y]
 
-            bmesh.validate(clean_customdata=False)
+                    # Material stuff
+                    polygon.material_index = material_indices[j]
 
-            # Mesh Normals
-            custom_loop_normals = [0.0] * (len(bmesh.loops) * 3)
-            bmesh.loops.foreach_get("normal", custom_loop_normals)
-            bmesh.polygons.foreach_set("use_smooth", [True] * len(bmesh.polygons))
-            bmesh.normals_split_custom_set(tuple(zip(*(iter(custom_loop_normals),) * 3)))
-            if BLENDER_VERSION < (4, 1, 0):
-                bmesh.use_auto_smooth = True  # DEPRECATED IN BLENDER 4.1. Might be unnecessary to replace with Modifier.
+                blend_mesh.validate(clean_customdata=False, verbose=True)
+
+                print("-" * 20)
+
+                # Retrieve the "validated" temp normals
+                custom_loop_normals = [0.0] * (len(blend_mesh.loops) * 3)                
+                blend_mesh.loops.foreach_get("normal", custom_loop_normals)
+                
+                # Apply them as split normals to the mesh
+                blend_mesh.polygons.foreach_set("use_smooth", [True] * len(blend_mesh.polygons))                
+                blend_mesh.normals_split_custom_set(
+                    tuple(zip(*(iter(custom_loop_normals),) * 3))
+                    )
+                blend_mesh.use_auto_smooth = True  # (DEPRECATED IN BLENDER 4.1)
+
+        else:
+            
+            if mesh.bit_flag2 & 2:   # 0x02
+                # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
+                #       we can only set custom loop normals *after* calling it.
+                
+                # We use a custom attribute to store them because we can't use
+                # the "normal" attribute: blend_mesh.loops[loop_index].normal is
+                # read-only in 4.1 and higher.
+                temp_custom_normals = blend_mesh.attributes.new(
+                    name="temp_custom_normals",
+                    type='FLOAT_VECTOR',
+                    domain='CORNER'
+                    ).data
+                                    
+                # UV stuff
+                blend_mesh.uv_layers.new(do_init=False)
+                if mesh.bit_flag2 & 64:  # 0x40
+                    blend_mesh.uv_layers.new(do_init=False)
+                if mesh.bit_flag2 & 128:  # 0x80
+                    blend_mesh.uv_layers.new(do_init=False)
+
+
+                for j, polygon in enumerate(blend_mesh.polygons):
+                    loop_indices = polygon.loop_indices
+
+                    for k, loop_index in enumerate(loop_indices):
+                        v = mesh.vertex_buffer[mesh.indices_buffer[j][k]]
+                        
+                        # We normalize the vectors because storing them in custom attributes
+                        # doesn't normalize them for free the way mesh.loops[loop_index].normal used to.
+                        # As we are using for the normals data the mathutils' Vector type,
+                        # we use its normalized() method (instead of normalize() which might be slower?).
+                        temp_custom_normals[loop_index].vector = v.normals.xyz.normalized()
+                                                
+                        # UV stuff
+                        blend_mesh.uv_layers[0].data[loop_index].uv = [v.uv_layer0.x, 1 - v.uv_layer0.y]
+                        if mesh.bit_flag2 & 64:  # 0x40
+                            blend_mesh.uv_layers[1].data[loop_index].uv = [v.uv_layer1.x, 1 - v.uv_layer1.y]
+                        if mesh.bit_flag2 & 128:  # 0x80
+                            blend_mesh.uv_layers[2].data[loop_index].uv = [v.uv_layer2.x, 1 - v.uv_layer2.y]
+
+                    # Material stuff
+                    polygon.material_index = material_indices[j]
+
+
+                blend_mesh.validate(clean_customdata=False)
+
+
+                # Retrieve the "validated" temp normals
+                custom_loop_normals = [0.0] * (len(blend_mesh.loops) * 3)
+                temp_custom_normals.foreach_get("vector", custom_loop_normals)
+                
+                # Apply them as split normals to the mesh
+                blend_mesh.polygons.foreach_set("use_smooth", [True] * len(blend_mesh.polygons))
+                blend_mesh.normals_split_custom_set(
+                    tuple(zip(*(iter(custom_loop_normals),) * 3))
+                    )
+
+
 
         # Create Blender Object
         if use_file_name_as_object_name:
@@ -582,9 +646,9 @@ def build(gr2,
             else:
                 dir_sep = "/"
             file_name = filepath.split(dir_sep)[-1][:-4]
-            ob = bpy.data.objects.new(file_name, bmesh)
+            ob = bpy.data.objects.new(file_name, blend_mesh)
         else:
-            ob = bpy.data.objects.new(mesh.name, bmesh)
+            ob = bpy.data.objects.new(mesh.name, blend_mesh)
 
         resulting_single_mesh_blender_objects.append(ob.name)
 
