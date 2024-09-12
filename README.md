@@ -80,7 +80,7 @@ Imports and applies SWTOR's .jba animation files. It has some issues but it most
   
 * **SWTOR .clo physics data import (non-functional at the moment):**  
 Imports SWTOR's .clo files for converting physics-based bones data (clothes, hair, Twi'lek lekku, etc.) to Blender physics simulations. **Experimental and extremely wonky, expect Kill Bill sirens!** (we are having another attempt at doing something about it, but it'll take its good time)  
-  **SWTOR 32-bit-compatible only**.
+  **SWTOR 32-bit-compatible only. The old 32-bit .jba files can be downloaded from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)**.
 
 The Add-on allows us to export objects back to their original format (sadly, this is of very little use at the moment, as **our game modding tools aren't compatible with SWTOR 64-bit and we don't expect any progress in the medium term**).
 
@@ -472,8 +472,3 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
   * **Some animations' bone translation data comes up exaggerated, leading to too elongated limbs**. There is a ZG SWTOR Tools that eliminates it and leaves only the rotations, although that might require some touching up to avoid self-intersections (which is a small cost for simple poses).
 
 * .clo Physics Import (**32 bit-only**) doesn't work as intended, but the seeds of a simpler physics-driven bones importer is there if we work on it.
-
-
-
-
-
