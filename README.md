@@ -1,8 +1,8 @@
-# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0
+# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2
 
 **A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
 
-### WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.
+### WE ARE FINALLY BLENDER 4.1/4.2-COMPATIBLE!!! 🙂
 
 **For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
@@ -34,8 +34,8 @@
   - [Other than that.](#other-than-that)
 
 ### New version with new features:
-* **Blender 4.0.x compatibility (NOT 4.1.x yet**).
-* Preferences with presets for preferred settings.
+* **Up to Blender 4.2 compatibility**.
+* **New Preferences system with presets for preferred settings**.
 * Optional scale and axis order conversion at the mesh level.
 * Optional SWTOR Animations importing without 180º turn.
 * Streamlined console output.
@@ -44,7 +44,7 @@
 * **Character Importer applies directionMaps for anisotropic speculars in hair and fur**. 
 
 
-**IF LEFT ALONE, IT BEHAVES LIKE PREVIOUS VERSIONS: NO NEED TO ADJUST ANYTHING!**. And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior.
+**IF THE NEW PREFERENCES SETTINGS ARE LEFT ALONE, IT BEHAVES LIKE PREVIOUS VERSIONS: NO NEED TO ADJUST ANYTHING!**. And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior.
 
 **These new features can be big timesavers, but we better think how they might impact our workflow before playing with them, specially if we had many SWTOR models already collected and set in Blender projects and asset libraries.**
 
@@ -56,6 +56,8 @@
 
 Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)**: `Edit menu > Preferences > Add-ons > Install > Enable`.  
 **If you had a previous version of the add-on installed, disable and remove it first**.
+
+**If Blender is set to a language different to English, set it to English for now**. We've noticed that Blender translates to other languages elements that other apps typically wouldn't, such as shader nodes' names, which breaks some of our Add-ons. There are ways to solve that, but we have yet to implement and test them.
 
 ## Description
 
@@ -74,7 +76,7 @@ This add-on provides Blender with several import/export and materials features f
 
 * ***SWTOR .jba animations import:**  
 Imports and applies SWTOR's .jba animation files. It has some issues but it mostly works.  
-  **SWTOR 32-bit-compatible only**.
+  **SWTOR 32-bit-compatible only. The old 32-bit .jba files can be downloaded from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)**.
   
 * **SWTOR .clo physics data import (non-functional at the moment):**  
 Imports SWTOR's .clo files for converting physics-based bones data (clothes, hair, Twi'lek lekku, etc.) to Blender physics simulations. **Experimental and extremely wonky, expect Kill Bill sirens!** (we are having another attempt at doing something about it, but it'll take its good time)  
@@ -462,36 +464,8 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
 
 
-
-
-
-
 # Current state of the project.
 
-## The Blender 4.1 showstopper.
-* **Several deprecations in bmesh break the `io_scene_gr2\ops\import_gr2.py` object importer module** (See [4.1's list of API changes](https://developer.blender.org/docs/release_notes/4.1/python_api/)). **They are marked with a "DEPRECATED" comment in the code** so that they can be quickly located via text search. These are the three lines and what seems to be relevant to them in Blender's 4.1 changelog.
-
-  * **`bmesh.create_normals_split()`**  
-  
-    "**create_normals_split**, calc_normals_split, and free_normals_split **are removed, and are replaced by the simpler Mesh.corner_normals collection property**. Since it gives access to the normals cache, it is automatically updated when relevant data changes."
-    
-    ---
-
-  * **`bmesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]`**
-  
-    "**MeshLoop.normal is now a read-only property. Custom normals should be created by normals_split_custom_set or normals_split_custom_set_from_vertices**."
-    
-    ---
-
-  * **`bmesh.use_auto_smooth = True`**
-  
-    "use_auto_smooth is removed. **Face corner normals are now used automatically if there are mixed smooth vs. not smooth tags. Meshes now always use custom normals if they exist**.  
-
-    **auto_smooth_angle is removed. Replaced by a modifier (or operator) controlling the "sharp_edge" attribute**. This means the mesh itself (without an object) doesn't know anything about automatically smoothing by angle anymore."
-
-  (Commenting these lines out lets objects import without normals and smoothing, with no more exceptions, so nothing else breaks, seemingly)
-
-## Other than that.
 * .jba Animation Import (**32 bit-only**) works correctly, mostly. It's issues are:
   * **`ad_`-prefixed additive animations don't work**.
   * **There seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
