@@ -9,10 +9,10 @@
 
 ---
 
-- [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.0](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-40)
-    - [WARNING: not yet compatible with Blender 4.1.x and higher. We are working on that.](#warning-not-yet-compatible-with-blender-41x-and-higher-we-are-working-on-that)
+- [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-42)
+    - [WE ARE FINALLY BLENDER 4.1/4.2-COMPATIBLE!!! 🙂](#we-are-finally-blender-4142-compatible-)
     - [New version with new features:](#new-version-with-new-features)
-  - **[Download](#download)**
+  - [Download](#download)
   - [Installation](#installation)
   - [Description](#description)
     - [Import/export tools:](#importexport-tools)
@@ -30,8 +30,6 @@
     - [Available Operators.](#available-operators)
     - [Custom Scene Property with feedback about the calls' results.](#custom-scene-property-with-feedback-about-the-calls-results)
 - [Current state of the project.](#current-state-of-the-project)
-  - [The Blender 4.1 showstopper.](#the-blender-41-showstopper)
-  - [Other than that.](#other-than-that)
 
 ### New version with new features:
 * **Up to Blender 4.2 compatibility**.
