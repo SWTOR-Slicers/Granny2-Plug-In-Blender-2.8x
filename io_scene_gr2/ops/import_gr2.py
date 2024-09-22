@@ -582,22 +582,25 @@ def build(gr2,
             if mesh.bit_flag2 & 2:   # 0x02
                 # NOTE: We store 'temp' normals in loops, since validate() may alter final mesh,
                 #       we can only set custom loop normals *after* calling it.
-                
                 # We use a custom attribute to store them because we can't use
                 # the "normal" attribute: blend_mesh.loops[loop_index].normal is
                 # read-only in 4.1 and higher.
-                temp_custom_normals = blend_mesh.attributes.new(
-                    name="temp_custom_normals",
-                    type='FLOAT_VECTOR',
-                    domain='CORNER'
-                    ).data
-                                    
+                                                    
                 # UV stuff
                 blend_mesh.uv_layers.new(do_init=False)
                 if mesh.bit_flag2 & 64:  # 0x40
                     blend_mesh.uv_layers.new(do_init=False)
                 if mesh.bit_flag2 & 128:  # 0x80
                     blend_mesh.uv_layers.new(do_init=False)
+
+                # For some reason, the creation of extra UV map layers for
+                # multiUvExtraction objects blitzes the temp normals custom attribute,
+                # so, we are creating it AFTER the creation of UV layers.
+                temp_custom_normals = blend_mesh.attributes.new(
+                    name="temp_custom_normals",
+                    type='FLOAT_VECTOR',
+                    domain='CORNER'
+                    ).data
 
 
                 for j, polygon in enumerate(blend_mesh.polygons):
@@ -610,6 +613,9 @@ def build(gr2,
                         # doesn't normalize them for free the way mesh.loops[loop_index].normal used to.
                         # As we are using for the normals data the mathutils' Vector type,
                         # we use its normalized() method (instead of normalize() which might be slower?).
+                        # blend_mesh.loops[loop_index].normal = [v.normals.x, v.normals.y, v.normals.z]
+
+                        # temp_custom_normals[loop_index].vector = v.normals.xyz.normalized()
                         temp_custom_normals[loop_index].vector = v.normals.xyz.normalized()
                                                 
                         # UV stuff
