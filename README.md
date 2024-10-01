@@ -381,10 +381,10 @@ The same way we have our other Add-ons call this one under the hood, you can cal
 * **.jba animations importer**: imports 32-bit .jba animation files. It requires an Active armature object (a SWTOR "skeleton" object) as a target.
   
   ```
-  bpy.ops.import_animation.jba(filepath,
+  bpy.ops.import_animation.jba(filepath = '',
                                ignore_facial_bones = True,
                                scale_animation = False,
-                               scale_factor = False,
+                               scale_factor = Float,
                                delete_180 = False,
                                )
 
