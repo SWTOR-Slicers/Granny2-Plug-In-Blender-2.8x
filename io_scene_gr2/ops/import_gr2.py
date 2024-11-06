@@ -44,7 +44,7 @@ from ..types.shared import job_results  # add-on-wide global-like dict
 BLENDER_VERSION = app.version
 
 
-# Some bones lists for cosmetic differentiation
+# Some bones lists for cosmetic differentiation (not yet implemented)
 hook_bones = ['Camera',
               'NamePlate',
               'attach_nameplate_fallback',

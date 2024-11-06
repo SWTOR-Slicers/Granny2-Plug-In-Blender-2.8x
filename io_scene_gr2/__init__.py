@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 3),
+    "version": (4, 0, 4),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -25,6 +25,8 @@ from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
+
+import json
 
 from .ops.export_gr2             import ExportGR2
 from .ops.export_gr2_32          import ExportGR2_32
@@ -147,6 +149,31 @@ def register():
 
     
     from bpy.props import StringProperty
+    
+    
+    # ------------------------------------------------------------------
+    # Define some custom Material properties for helping diagnose issues.
+    bpy.types.Material.swtor_material = bpy.props.StringProperty(
+        name="SWTOR material's .mat filename",
+        description="Name (without '.mat' extension) of the material file this Blender material\was originated from",
+        default='',
+        )
+    bpy.types.Material.swtor_derived = bpy.props.StringProperty(
+        name="SWTOR material's Shader type",
+        description="Name of the <derived> element in the .mat file related to this material",
+        default='',
+        )
+    # This one will record whole dicts of information as strings of .json data.
+    # We don't get the advantages of custom properties' UIs and data handling,
+    # but it gives lots of flexibility and expandability, data-wise.
+    bpy.types.Material.swtor_json_data = bpy.props.StringProperty(
+        name="SWTOR data in .json text format",
+        description="Diverse data related to this material and the object using it\nencoded as .json data text (use json.loads to convert to dict)",
+        default='',
+        )
+
+
+
     bpy.types.Scene.io_scene_gr2_last_job = StringProperty(
         name="io_scene_gr2 Add-on's Last Activity",
         description=".json-format info about the results of the use of this add-on\n (e.g., objects imported) that external operators can use",

@@ -355,18 +355,18 @@ def build(operator, context, slots, skin_mats,
                 try:
                     new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
                 except KeyError:
-                    # This part fails for TORCommunity.com's NPC exports because
-                    # the last server restore didn't have the correction to
-                    # include the materialSkinIndex.
-                    #
-                    # if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
-                    #     if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
-                    #         derived = "SkinB"
-                    #
-                    # So, this quick and dirty correction presupposes that any second slot
-                    # that falls into this condition is a skin one.
-                    if i == 1 and slot_name != "head":
-                        derived = "SkinB"
+                    if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
+                        if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
+                            derived = "SkinB"
+                    else:
+                        # This part fails for TORCommunity.com's NPC exports because
+                        # the last server restore didn't have the correction to
+                        # include the materialSkinIndex flag.
+
+                        # So, this quick and dirty correction presupposes that any second slot
+                        # that falls into this condition is a skin one.
+                        if i == 1 and slot_name != "head":
+                            derived = "SkinB"
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
                     new_mat.use_nodes = True
@@ -753,7 +753,12 @@ def build(operator, context, slots, skin_mats,
                         else:
                             node.glossMap = imgs.load(mat_info["ddsPaths"]["glossMap"])
 
+                    new_mat['swtor_derived'] = derived
+                    new_mat['swtor_material'] = slot['mat_info']['matPath'].replace("/art/shaders/materials/", "").replace(".mat", "")
+                    
                 mat_slot.material = new_mat
+                
+                
 
     return True
 
