@@ -52,8 +52,9 @@
 
 ## Installation
 
-Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)**: `Edit menu > Preferences > Add-ons > Install > Enable`.  
-**If you had a previous version of the add-on installed, disable and remove it first**.
+**(If you had a previous version of the add-on installed, disable and remove it first)**
+
+Install it in your Blender app **[through the usual means](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)**: `Edit menu > Preferences > Add-ons > Install > Enable`. If on Blender 4.2 or higher, you can just drag'n'drop it from your desktop to any part of Blender's windows, no need to use Blender's File Browsers.  
 
 **If Blender is set to a language different to English, set it to English for now**. We've noticed that Blender translates to other languages elements that other apps typically wouldn't, such as shader nodes' names, which breaks some of our Add-ons. There are ways to solve that, but we have yet to implement and test them.
 
@@ -421,6 +422,11 @@ The same way we have our other Add-ons call this one under the hood, you can cal
                     of the skeleton 180º away from the viewer.
   ```
 
+**These Operators, as all Blender ones, return their success or failure as
+`{'FINISHED'}` or `{'CANCELLED'}`**. To capture it, one could do:  
+`result = bpy.ops.import_mesh.gr2(…)`
+
+
 
 ### Custom Scene Property with feedback about the calls' results.
 
@@ -442,6 +448,7 @@ job_results = {'job_origin'      : "<calling operator's bl_idname>",
                                     <filepath b>: [<obj1b>, <obj2b>, ...],
                                                       ...
                                     },
+               'anims_names'     : [<action1>, <action2>, ...],
                }
 ```
 (files_objs_names is only filled if the `job_results_rich` parameter is True, to avoid adding more processing time to potentially very lengthy jobs like the Area Assembler's)
@@ -460,13 +467,18 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 - filepaths are normalized to Unix-style forward slashes. SWTOR's internal conventions regarding paths are such a horror show that we might as well follow Python's).
 - If the files belong to an assets extraction's 'resources' folder, their paths are made relative to it by starting at its 'art' subdirectory (without an initial forward slash).
 
+`anims_names`, at this moment, only reports the name of a successfully imported animation (or "action", in Blender's animation data parlance) by the SWTOR .jba animation import option. There are thoughts about making that importer be able to import and apply multiple animations at once.
+
 
 
 # Current state of the project.
 
-* .jba Animation Import (**32 bit-only**) works correctly, mostly. It's issues are:
-  * **`ad_`-prefixed additive animations don't work**.
-  * **There seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
-  * **Some animations' bone translation data comes up exaggerated, leading to too elongated limbs**. There is a ZG SWTOR Tools that eliminates it and leaves only the rotations, although that might require some touching up to avoid self-intersections (which is a small cost for simple poses).
+* .jba Animation Import (**32 bit-only**) works correctly, mostly. Its issues are:
+  * **'Facial bones' keyframes work very badly or not at all**. Their importing is disabled by default.
+  * **`ad_`-prefixed additive animations don't work at all**. They turn the characters into puddles of flesh.
+   * **It's not clear, but there seems to be a bug that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances, but not in other full turn ones. It might be just a faulty animation (Twi'lek are kinda cursed a species in several ways 😅😓: UV issues, neck seams, materials discontinuities…)
+   * **Many animations' bone translation data comes up exaggerated, leading to too elongated limbs**. There is a **ZG SWTOR Tools Add-on** tool that deletes the translations and leaves only the rotations, although applying it might require some touching up to avoid limbs intersecting the rest of the body  (which is a small cost for simple poses).
+   * We are looking at allowing for selecting multiple animation files and concatenating them.
+   * Needing an Active armature object when called from code is a bother. We'll see about adding a target object parameter to simplify scripting batch animation imports.
 
-* .clo Physics Import (**32 bit-only**) doesn't work as intended, but the seeds of a simpler physics-driven bones importer is there if we work on it.
+* .clo Physics Import (**32 bit-only**) doesn't work as intended (it tries to apply Blender's cloth simulations to the relevant polygons but it fails to set the correct pinning), but the seeds of a simpler physics-driven bones importer is there if we work on it.
