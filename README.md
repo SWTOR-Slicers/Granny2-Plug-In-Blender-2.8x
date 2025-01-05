@@ -1,8 +1,9 @@
 # SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2
 
+## (Blender 4.3 breaks our SWTOR materials-processing tools! Stay on 4.2 or earlier)
+
 **A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
 
-### WE ARE FINALLY BLENDER 4.1/4.2-COMPATIBLE!!! 🙂
 
 **For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
