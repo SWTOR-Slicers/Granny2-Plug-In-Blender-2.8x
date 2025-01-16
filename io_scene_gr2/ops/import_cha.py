@@ -28,6 +28,13 @@ from ..utils.string import path_format, path_split
 from ..types.shared import job_results  # add-on-wide global-like dict
 
 
+
+# Detect Blender version
+major, minor, _ = bpy.app.version
+blender_version = major + minor / 100
+
+
+
 class ImportCHA(Operator):
     """
     Import from JSON file format (.json)
@@ -101,6 +108,12 @@ class ImportCHA(Operator):
         default=True,
     )
 
+    use_modernization: BoolProperty(
+        name="Use Modernized Assets",
+        description="Uses the texture maps stored in a character's folder's 'materials_modernization' subfolder\ninstead of the ones in the plain 'materials' one",
+        default=False,
+    )
+
     apply_axis_conversion: BoolProperty(
         name="Axis Conversion",
         description="Permanently converts the Character's imported object to Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
@@ -158,6 +171,7 @@ class ImportCHA(Operator):
         
         self.import_collision           = prefs.gr2_import_collision
         self.name_as_filename           = prefs.gr2_name_as_filename
+        self.use_modernization          = False
         self.apply_axis_conversion      = prefs.gr2_apply_axis_conversion
         self.scale_object               = prefs.gr2_scale_object
         self.scale_factor               = prefs.gr2_scale_factor
@@ -214,7 +228,7 @@ class ImportCHA(Operator):
 _eye_mat_info = None
 
 
-def read(filepath):
+def read(self, filepath):
     # type: (str) -> Tuple[List, Optional[Dict]]
     '''
     Parses a TORCommunity.com's Character Designer-formatted .json file
@@ -241,13 +255,19 @@ def read(filepath):
 
                 for key in mat_info["ddsPaths"]:
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
-                    if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
-                        tex = "/black.dds"
+                    # if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
+                    #     tex = "/black.dds"
 
-                    mat_info["ddsPaths"][key] = \
-                        path_format(filepath,
-                                    f"/materials/skinMats/{slot_name}"
-                                    f"{tex}")
+                    if self.use_modernization:
+                        mat_info["ddsPaths"][key] = \
+                            path_format(filepath,
+                                        f"/materials_modernization/skinMats/{slot_name}"
+                                        f"{tex}")
+                    else:
+                        mat_info["ddsPaths"][key] = \
+                            path_format(filepath,
+                                        f"/materials/skinMats/{slot_name}"
+                                        f"{tex}")
 
                 to_push["mats"].append({"slot_name": slot_name, "mat_info": mat_info})
 
@@ -266,8 +286,11 @@ def read(filepath):
                 # HairC.
                 if mat_info["otherValues"]["derived"] in ['Creature', 'HairC']:
                     mat_path = entry["materialInfo"]["matPath"]
-                    mat_path = path_format( filepath, f"/materials/{slot_name}/{os.path.basename(mat_path)}" )
-
+                    if self.use_modernization:
+                        mat_path = path_format( filepath, f"/materials_modernization/{slot_name}/{os.path.basename(mat_path)}" )
+                    else:
+                        mat_path = path_format( filepath, f"/materials/{slot_name}/{os.path.basename(mat_path)}" )
+                        
                     try:
                         mat_file = open(mat_path)
                     except FileNotFoundError:
@@ -287,31 +310,43 @@ def read(filepath):
 
                 for key in mat_info["ddsPaths"]:
                     tex = dds_dict[key][dds_dict[key].rfind('/'):]
-                    if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
-                        tex = "/black.dds"
+                    # if dds_dict[key] == "/.dds" or dds_dict[key] == ".dds":
+                    #     tex = "/black.dds"
 
-                    mat_info["ddsPaths"][key] = \
-                        path_format(filepath,
-                                    f"/materials/{slot_name}"
-                                    f"{tex}")
+                    if self.use_modernization:
+                        mat_info["ddsPaths"][key] = \
+                            path_format(filepath,
+                                        f"/materials_modernization/{slot_name}"
+                                        f"{tex}")
+                    else:
+                        mat_info["ddsPaths"][key] = \
+                            path_format(filepath,
+                                        f"/materials/{slot_name}"
+                                        f"{tex}")
 
                 slot = {"slot_name": slot_name, "mat_info": mat_info, "models": models}
 
                 if any(name in slot["slot_name"] for name in {'head', 'creature'}):
-                    eye_mat_info = entry["materialInfo"]["eyeMatInfo"]
-                    dds_dict = eye_mat_info["ddsPaths"]
+                    if "eyeMatInfo" in entry["materialInfo"]:
+                        eye_mat_info = entry["materialInfo"]["eyeMatInfo"]
+                        dds_dict = eye_mat_info["ddsPaths"]
 
-                    for key in eye_mat_info["ddsPaths"]:
-                        eye_mat_info["ddsPaths"][key] = \
-                            path_format(filepath,
-                                        f"/materials/eye{dds_dict[key][dds_dict[key].rfind('/'):]}")
+                        for key in eye_mat_info["ddsPaths"]:
+                            if self.use_modernization:
+                                eye_mat_info["ddsPaths"][key] = \
+                                    path_format(filepath,
+                                                f"/materials_modernization/eye{dds_dict[key][dds_dict[key].rfind('/'):]}")
+                            else:
+                                eye_mat_info["ddsPaths"][key] = \
+                                    path_format(filepath,
+                                                f"/materials/eye{dds_dict[key][dds_dict[key].rfind('/'):]}")
 
-                    _eye_mat_info = {"slot_name": "eye", "mat_info": eye_mat_info}
+                        _eye_mat_info = {"slot_name": "eye", "mat_info": eye_mat_info}
 
                 parsed_objects.append(slot)
             except Exception:
-                print("AN ERROR HAS OCCURRED.")  # TODO: Improve this error handling!
-
+                print("AN ERROR HAS OCCURED.")  # TODO: Improve this error handling! - Crunch Note, Fix for Single Material Creatures
+    #print(parsed_objects)
     return parsed_objects, skin_materials
 
 
@@ -348,16 +383,39 @@ def build(operator, context, slots, skin_mats,
                 derived = "Creature" if derived == "HighQualityCharacter" else derived
                 derived = ("Eye" if any(x in slot["slot_name"] for x in {"head", "creature"})
                            and i == 1 else derived)
+                
+                # HORRIBLE HACK FOR CREATURE IMPORTS WHERE THE SECOND MATERIAL
+                # ISN'T REALLY AN EYE BUT A HIGHQUALITYCHARACTER/CREATURE ONE:
+                # We are using the presence of a malformed paletteMap "/.dds"
+                # texturemap filename (necessary in Eye shaders but not in
+                # Creature ones) as a criteria to change the Derived to Creature.
+                # (This requires to comment out old corrections that converted
+                # such entries to black.dds ones).
+                
+                creature_2nd_mat_is_creature_instead_of_eye = False
+                if i == 1:
+                    if slot["slot_name"] == 'creature' and (
+                        slot['mat_info']['eyeMatInfo']['ddsPaths']['paletteMap'].endswith("\\.dds") or
+                        slot['mat_info']['eyeMatInfo']['ddsPaths']['paletteMap'].endswith("/.dds")
+                        ):
+                        derived = "Creature"
+                        creature_2nd_mat_is_creature_instead_of_eye = True
+
+                
+                
                 new_mat = None
                 mat_idx = '{:0>2}'.format(i + 1) if i + 1 < 10 else str(i + 1)
                 slot_name = slot["slot_name"]
 
                 try:
-                    new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
+                    if not creature_2nd_mat_is_creature_instead_of_eye:
+                        new_mat = bpy.data.materials[f"{mat_idx} {slot_name}{derived}"]
+                    else:
+                        new_mat = bpy.data.materials[f"{mat_idx} {slot_name}Creature"]
                 except KeyError:
                     # This part fails for TORCommunity.com's NPC exports because
                     # the last server restore didn't have the correction to
-                    # include the materialSkinIndex.
+                    # include the materialSkinIndex:
                     #
                     # if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
                     #     if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
@@ -365,8 +423,15 @@ def build(operator, context, slots, skin_mats,
                     #
                     # So, this quick and dirty correction presupposes that any second slot
                     # that falls into this condition is a skin one.
-                    if i == 1 and slot_name != "head":
-                        derived = "SkinB"
+                    
+                    # if i == 1 and slot_name != "head":
+                    #     derived = "SkinB"
+                    
+                    # REVISED TO BE GARMENT-SPECIFIC (armors are the only objects with skin second mats):
+                    if not creature_2nd_mat_is_creature_instead_of_eye:
+                        if i == 1 and (slot_name != "head" and slot_name != 'creature'):
+                            derived = "SkinB"
+
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
                     new_mat.use_nodes = True
@@ -387,12 +452,18 @@ def build(operator, context, slots, skin_mats,
 
                     imgs = bpy.data.images
 
-                    if derived == 'Creature':
+                    if derived == 'Creature' and creature_2nd_mat_is_creature_instead_of_eye is False:
+                        
                         node.derived = 'CREATURE'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
-                        new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                            new_mat.show_transparent_back = False
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
+                            new_mat.use_transparency_overlap = False
 
                         mat_info = slot["mat_info"]
                         other_values = mat_info['otherValues']
@@ -421,11 +492,12 @@ def build(operator, context, slots, skin_mats,
                         else:
                             node.paletteMaskMap = imgs.load(mat_info["ddsPaths"]["paletteMaskMap"])
 
-                        img = path_split(mat_info["ddsPaths"]["directionMap"])
-                        if img in imgs:
-                            node.directionMap = imgs[img]
-                        else:
-                            node.directionMap = imgs.load(mat_info["ddsPaths"]["directionMap"])
+                        if "directionMap" in mat_info["ddsPaths"]:
+                            img = path_split(mat_info["ddsPaths"]["directionMap"])
+                            if img in imgs:
+                                node.directionMap = imgs[img]
+                            else:
+                                node.directionMap = imgs.load(mat_info["ddsPaths"]["directionMap"])
 
                         # try:
                         #     node.directionMap = imgs[path_split(mat_info["ddsPaths"]['directionMap'])]
@@ -439,12 +511,82 @@ def build(operator, context, slots, skin_mats,
                             float(other_values['flush'][2]),
                             1.0,
                         ]
+                        
+                    elif derived == 'Creature' and creature_2nd_mat_is_creature_instead_of_eye is True:
+                        # It feeds a 'Creature' shader but the data it grabs comes from the parsed
+                        # paths.json file's 'eye' shader data. I rather don't try to generalize that
+                        # into a single chunk of code.
+                        
+                        node.derived = 'CREATURE'
+                        # TODO: Read Alpha parameters from paths.json
+                        new_mat.alpha_threshold = node.alpha_test_value = 0.5
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                            new_mat.show_transparent_back = False
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
+                            new_mat.use_transparency_overlap = False
+
+                        mat_info = slot["mat_info"]
+                        other_values = mat_info['eyeMatInfo']['otherValues']
+
+                        img = path_split(mat_info['eyeMatInfo']["ddsPaths"]["diffuseMap"])
+                        if img in imgs:
+                            node.diffuseMap = imgs[img]
+                        else:
+                            node.diffuseMap = imgs.load(mat_info['eyeMatInfo']["ddsPaths"]["diffuseMap"])
+
+                        img = path_split(mat_info['eyeMatInfo']["ddsPaths"]["rotationMap"])
+                        if img in imgs:
+                            node.rotationMap = imgs[img]
+                        else:
+                            node.rotationMap = imgs.load(mat_info['eyeMatInfo']["ddsPaths"]["rotationMap"])
+
+                        img = path_split(mat_info['eyeMatInfo']["ddsPaths"]["glossMap"])
+                        if img in imgs:
+                            node.glossMap = imgs[img]
+                        else:
+                            node.glossMap = imgs.load(mat_info["ddsPaths"]["glossMap"])
+
+                        img = path_split(mat_info['eyeMatInfo']["ddsPaths"]["paletteMaskMap"])
+                        if img in imgs:
+                            node.paletteMaskMap = imgs[img]
+                        else:
+                            node.paletteMaskMap = imgs.load(mat_info['eyeMatInfo']["ddsPaths"]["paletteMaskMap"])
+
+                        if "directionMap" in mat_info['eyeMatInfo']["ddsPaths"]:
+                            img = path_split(mat_info['eyeMatInfo']["ddsPaths"]["directionMap"])
+                            if img in imgs:
+                                node.directionMap = imgs[img]
+                            else:
+                                node.directionMap = imgs.load(mat_info['eyeMatInfo']["ddsPaths"]["directionMap"])
+
+                        # try:
+                        #     node.directionMap = imgs[path_split(mat_info['eyeMatInfo']["ddsPaths"]['directionMap'])]
+                        # except KeyError:
+                        #     node.directionMap = imgs.load(mat_info['eyeMatInfo']["ddsPaths"]['directionMap'])
+
+                        node.flesh_brightness = float(other_values['fleshBrightness'])
+                        node.flush_tone = [
+                            float(other_values['flush'][0]),
+                            float(other_values['flush'][1]),
+                            float(other_values['flush'][2]),
+                            1.0,
+                        ]
+                        
                     elif derived == 'Eye':
+                        
                         node.derived = 'EYE'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
                         new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
+
 
                         mat_info = _eye_mat_info["mat_info"]
                         other_values = mat_info['otherValues']
@@ -495,12 +637,18 @@ def build(operator, context, slots, skin_mats,
                             float(other_values['palette1MetallicSpecular'][2]),
                             1.0,
                         ]
+                        
                     elif derived == 'Garment' or derived == 'GarmentScrolling':
+                        
                         node.derived = 'GARMENT'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
                         new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
 
                         mat_info = slot["mat_info"]
                         other_values = mat_info['otherValues']
@@ -568,12 +716,18 @@ def build(operator, context, slots, skin_mats,
                             float(other_values['palette2MetallicSpecular'][2]),
                             1.0,
                         ]
+                        
                     elif derived == 'HairC':
+                        
                         node.derived = 'HAIRC'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
                         new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
 
                         mat_info = slot["mat_info"]
                         other_values = mat_info['otherValues']
@@ -636,12 +790,18 @@ def build(operator, context, slots, skin_mats,
                             float(other_values['palette1MetallicSpecular'][2]),
                             1.0,
                         ]
+                        
                     elif derived == 'SkinB':
+                        
                         node.derived = 'SKINB'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
                         new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
 
                         skin_mat = next(
                             (mat for mat in skin_mats["mats"] if mat["slot_name"] == slot["slot_name"]),
@@ -725,12 +885,18 @@ def build(operator, context, slots, skin_mats,
                             float(other_values['flush'][2]),
                             1.0,
                         ]
+                        
                     elif derived == 'Uber':
+                        
                         node.derived = 'UBER'
                         # TODO: Read Alpha parameters from paths.json
                         new_mat.alpha_threshold = node.alpha_test_value = 0.5
-                        new_mat.blend_method = node.alpha_mode = 'CLIP'
                         new_mat.show_transparent_back = False
+                        node.alpha_mode = 'CLIP'
+                        if blender_version < 4.2:
+                            new_mat.blend_method = 'CLIP'
+                        else:
+                            new_mat.surface_render_method = "DITHERED"
 
                         mat_info = slot["mat_info"]
                         other_values = mat_info['otherValues']
@@ -767,7 +933,7 @@ def load(operator, context, filepath=""):
     print(f"JSON FILE: {filepath}")
     print( "----------")
 
-    slots, skin_mats = read(filepath)
+    slots, skin_mats = read(operator, filepath)
 
     if slots:
 
