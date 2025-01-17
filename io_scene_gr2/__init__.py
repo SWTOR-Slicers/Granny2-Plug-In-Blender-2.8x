@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 4),
+    "version": (4, 0, 5),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",

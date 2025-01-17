@@ -428,9 +428,14 @@ def build(operator, context, slots, skin_mats,
                     #     derived = "SkinB"
                     
                     # REVISED TO BE GARMENT-SPECIFIC (armors are the only objects with skin second mats):
-                    if not creature_2nd_mat_is_creature_instead_of_eye:
-                        if i == 1 and (slot_name != "head" and slot_name != 'creature'):
+                    
+                    if "materialSkinIndex" in slot["mat_info"]["otherValues"]:
+                        if int(slot["mat_info"]["otherValues"]["materialSkinIndex"]) == i:
                             derived = "SkinB"
+                    else:
+                        if not creature_2nd_mat_is_creature_instead_of_eye:
+                            if i == 1 and (slot_name != "head" and slot_name != 'creature'):
+                                derived = "SkinB"
 
 
                     new_mat = bpy.data.materials.new(f"{mat_idx} {slot_name}{derived}")
