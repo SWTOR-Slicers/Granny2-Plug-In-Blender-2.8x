@@ -13,6 +13,12 @@ from bpy.props import (
 from bpy.types import Context, Image, Operator, ShaderNodeCustomGroup, UILayout
 from nodeitems_utils import NodeCategory, NodeItem
 
+
+# Detect Blender version
+major, minor, _ = bpy.app.version
+blender_version = major + minor / 100
+
+
 # Derived enums
 CREATURE = ('CREATURE', "Creature", "")
 EYE = ('EYE', "Eye", "")
@@ -43,7 +49,11 @@ def update_alpha_mode(self, context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
         mat = context.material
-        mat.blend_method = self.alpha_mode
+        if blender_version < 4.2:
+            mat.blend_method = self.alpha_mode
+        else:
+            new_mat.surface_render_method = "DITHERED"
+
         mat.show_transparent_back = False
         update_alpha_test_value(self, context)
 
@@ -281,7 +291,7 @@ class ShaderNodeHeroEngine(ShaderNodeCustomGroup):
         items=[CREATURE, EYE, GARMENT, HAIRC, SKINB, UBER],
         name="Derived",
         options={'HIDDEN'},
-        update=update_derived)
+        update=update_derived)    
     alpha_mode: EnumProperty(
         default=OPAQUE[0],
         description="How to handle transparancy",

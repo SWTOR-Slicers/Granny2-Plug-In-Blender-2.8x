@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 5),
+    "version": (4, 0, 6),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -28,9 +28,9 @@ from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
 
 from .ops.export_gr2             import ExportGR2
 from .ops.export_gr2_32          import ExportGR2_32
+from .ops.import_gr2             import ImportGR2
 from .ops.import_cha             import ImportCHA
 from .ops.import_clo             import ImportCLO
-from .ops.import_gr2             import ImportGR2
 from .ops.import_jba             import ImportJBA
 
 from .types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
@@ -76,19 +76,19 @@ del importlib, os, sys, depsgraph_update_post
 # Import/Export functions to append to Import/Export menus in register()
 def _import_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportGR2.bl_idname, text="SWTOR 32/64-bit Objects / Skeletons (.gr2)")
+    self.layout.operator(ImportGR2.bl_idname, text="SWTOR Objects and Skeletons (.gr2)")
 
 def _import_cha(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters / NPCs (.json)")
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters and NPCs (.json) - READ THE TOOLTIP")
 
 def _import_jba(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportJBA.bl_idname, text="SWTOR 32-bit Animations (.jba)")
+    self.layout.operator(ImportJBA.bl_idname, text="SWTOR Animations (.jba) 32-bit-only")
 
-def _import_clo(self, _context):
-    # type: (Menu, Context) -> None
-    self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
+# def _import_clo(self, _context):
+#     # type: (Menu, Context) -> None
+#     self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
 
 
 def _export_gr2(self, _context):
@@ -133,9 +133,9 @@ def register():
 
     # Additions to Import-Export menu
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
-    TOPBAR_MT_file_import.append(_import_cha)
-    TOPBAR_MT_file_import.append(_import_clo)
     TOPBAR_MT_file_import.append(_import_gr2)
+    TOPBAR_MT_file_import.append(_import_cha)
+    # TOPBAR_MT_file_import.append(_import_clo)
     TOPBAR_MT_file_import.append(_import_jba)
     TOPBAR_MT_file_export.append(_export_gr2)
     TOPBAR_MT_file_export.append(_export_gr2_32)
@@ -199,7 +199,7 @@ def unregister():
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
     TOPBAR_MT_file_import.remove(_import_cha)
-    TOPBAR_MT_file_import.remove(_import_clo)
+    # TOPBAR_MT_file_import.remove(_import_clo)
     TOPBAR_MT_file_import.remove(_import_gr2)
     TOPBAR_MT_file_import.remove(_import_jba)
     TOPBAR_MT_file_export.remove(_export_gr2)
