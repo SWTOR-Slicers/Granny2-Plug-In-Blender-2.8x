@@ -52,7 +52,7 @@ def update_alpha_mode(self, context):
         if blender_version < 4.2:
             mat.blend_method = self.alpha_mode
         else:
-            new_mat.surface_render_method = "DITHERED"
+            mat.surface_render_method = "DITHERED"
 
         mat.show_transparent_back = False
         update_alpha_test_value(self, context)
