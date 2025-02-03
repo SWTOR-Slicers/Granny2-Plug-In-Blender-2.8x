@@ -104,8 +104,8 @@ class ImportCHA(Operator):
     )
 
     npc_uses_skin: bpy.props.BoolProperty(
-        name="NPC's 2nd Mats Are Skin ",
-        description="When importing a Non-Creature-type NPC, assume that its objects' 2nd. Material Slots are skin.\nIf unticked, a garment material is used, instead.n\n\As TORCommunity.com's NPC database exports don't include 'materialSkinIndex' data\nwhich points out if a piece of garment with two material slots uses a skin or a\ngarment material, we must tell it what the case is. If we know that none of the\nNPC's clothes or armor parts show skin, head aside, we can untick the checkbox",
+        name="NPC Gear Uses Skin ",
+        description="When importing a non-Creature-type NPC, assume that any 2nd. Material Slots\nin armor or clothes are skin. If unticked, use a garment material instead.\n\nMOST NPC GEAR LACK SECOND MATERIALS, ANYWAY.\nTypical case actually using this checkbox: cantina dancers.\n\nIn mixed use cases, the Material Slots' assignments can be easily corrected\nmanually. Skin materials are always created, no matter if not in use.\n\n(TORCommunity.com's non-Creature NPC database exports don't include\n'materialSkinIndex' data indicating whether a piece of garment with\ntwo material slots uses skin or garment for the 2nd one. Hence this\ncheckbox)",
         default = True,
         # options={'HIDDEN'}
     )
