@@ -13,7 +13,6 @@ import math
 import os
 from typing import Optional, Set
 
-import bpy
 from bpy import app
 from bpy.props import BoolProperty, CollectionProperty, FloatProperty, StringProperty
 from bpy.types import Context, Object, Operator, OperatorFileListElement
@@ -23,10 +22,6 @@ from mathutils import Matrix, Quaternion, Vector
 from ..types.jba import JointBoneAnimation
 from ..utils.binary import ArrayBuffer, DataView
 from ..utils.string import path_split, readCString
-
-import json
-
-from ..types.shared import job_results  # add-on-wide global-like dict
 
 
 class ImportJBA(Operator):
@@ -126,11 +121,6 @@ class ImportJBA(Operator):
     def execute(self, context):
         # type: (Context) -> Set[str]
 
-        job_results['anims_names'] = []
-        job_results['job_origin'] = self.bl_idname
-                    
-
-
         paths = [os.path.join(self.directory, file.name) for file in self.files if file.name.lower().endswith(self.filename_ext)]
 
         if not paths:
@@ -147,8 +137,6 @@ class ImportJBA(Operator):
         for path in paths:
             if not load(self, context, path):
                 return {'CANCELLED'}
-
-        bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
 
         return {'FINISHED'}
 
@@ -345,6 +333,7 @@ def read(operator, filepath):
 
 def build(operator, context, filepath, jba):
     # type: (Operator, Context, str, JointBoneAnimation) -> bool
+    import bpy
     # import os
 
     ob: Object = context.active_object
@@ -419,11 +408,6 @@ def build(operator, context, filepath, jba):
         # CHECK THAT THIS QUATERNION ROTATION IS VALID IN ALL CASES!!!
         ob.pose.bones["Bip01"].rotation_quaternion = (1, 0, 0, 0)
 
-    # job_results-filling section
-    job_results['job_origin'] = operator.bl_idname
-    job_results['anims_names'].extend([ob.animation_data.action.name])
-    # bpy.context.scene.io_scene_gr2_last_job = json.dumps(job_results)
-
     return True
 
 
@@ -443,5 +427,5 @@ def load(operator, context, filepath=""):
             if build(operator, context, filepath, animation):
                 progress.leave_substeps(f"Done, finished importing: \'{filepath}\'")
                 return True
-            
-    return False
+
+        return False

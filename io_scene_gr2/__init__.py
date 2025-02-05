@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 4),
+    "version": (4, 0, 6),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -26,13 +26,11 @@ from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
 from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
 
-import json
-
 from .ops.export_gr2             import ExportGR2
 from .ops.export_gr2_32          import ExportGR2_32
+from .ops.import_gr2             import ImportGR2
 from .ops.import_cha             import ImportCHA
 from .ops.import_clo             import ImportCLO
-from .ops.import_gr2             import ImportGR2
 from .ops.import_jba             import ImportJBA
 
 from .types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
@@ -78,19 +76,19 @@ del importlib, os, sys, depsgraph_update_post
 # Import/Export functions to append to Import/Export menus in register()
 def _import_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportGR2.bl_idname, text="SWTOR 32/64-bit Objects / Skeletons (.gr2)")
+    self.layout.operator(ImportGR2.bl_idname, text="SWTOR Objects and Skeletons (.gr2)")
 
 def _import_cha(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters / NPCs (.json)")
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters and NPCs (.json) - READ THE TOOLTIP")
 
 def _import_jba(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportJBA.bl_idname, text="SWTOR 32-bit Animations (.jba)")
+    self.layout.operator(ImportJBA.bl_idname, text="SWTOR Animations (.jba) 32-bit-only")
 
-def _import_clo(self, _context):
-    # type: (Menu, Context) -> None
-    self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
+# def _import_clo(self, _context):
+#     # type: (Menu, Context) -> None
+#     self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
 
 
 def _export_gr2(self, _context):
@@ -135,9 +133,9 @@ def register():
 
     # Additions to Import-Export menu
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
-    TOPBAR_MT_file_import.append(_import_cha)
-    TOPBAR_MT_file_import.append(_import_clo)
     TOPBAR_MT_file_import.append(_import_gr2)
+    TOPBAR_MT_file_import.append(_import_cha)
+    # TOPBAR_MT_file_import.append(_import_clo)
     TOPBAR_MT_file_import.append(_import_jba)
     TOPBAR_MT_file_export.append(_export_gr2)
     TOPBAR_MT_file_export.append(_export_gr2_32)
@@ -149,31 +147,6 @@ def register():
 
     
     from bpy.props import StringProperty
-    
-    
-    # ------------------------------------------------------------------
-    # Define some custom Material properties for helping diagnose issues.
-    bpy.types.Material.swtor_material = bpy.props.StringProperty(
-        name="SWTOR material's .mat filename",
-        description="Name (without '.mat' extension) of the material file this Blender material\was originated from",
-        default='',
-        )
-    bpy.types.Material.swtor_derived = bpy.props.StringProperty(
-        name="SWTOR material's Shader type",
-        description="Name of the <derived> element in the .mat file related to this material",
-        default='',
-        )
-    # This one will record whole dicts of information as strings of .json data.
-    # We don't get the advantages of custom properties' UIs and data handling,
-    # but it gives lots of flexibility and expandability, data-wise.
-    bpy.types.Material.swtor_json_data = bpy.props.StringProperty(
-        name="SWTOR data in .json text format",
-        description="Diverse data related to this material and the object using it\nencoded as .json data text (use json.loads to convert to dict)",
-        default='',
-        )
-
-
-
     bpy.types.Scene.io_scene_gr2_last_job = StringProperty(
         name="io_scene_gr2 Add-on's Last Activity",
         description=".json-format info about the results of the use of this add-on\n (e.g., objects imported) that external operators can use",
@@ -226,7 +199,7 @@ def unregister():
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
     TOPBAR_MT_file_import.remove(_import_cha)
-    TOPBAR_MT_file_import.remove(_import_clo)
+    # TOPBAR_MT_file_import.remove(_import_clo)
     TOPBAR_MT_file_import.remove(_import_gr2)
     TOPBAR_MT_file_import.remove(_import_jba)
     TOPBAR_MT_file_export.remove(_export_gr2)

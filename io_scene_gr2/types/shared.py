@@ -8,9 +8,7 @@
 
 job_results = {'job_origin'        : "",
                'objs_names'        : [],
-               'files_objs_names'  : {},
-               'anims_names'       : [],
-              }
+               'files_objs_names' : {},}
 
 
 # The dict is also converted to .json and placed
@@ -31,10 +29,7 @@ job_results = {'job_origin'        : "",
 
 # 'job_origin': <operator's bl_idname>
 
-# 'objs_names': [<list of resulting Blender object names>]
-#
-# If it's a job done by import_jba.py:
-# 'anim_names': [<imported animation's Blender name>]
+# 'obj_list': [<list of resulting Blender object names>]
 #
 # (As many SWTOR .gr2 object files hold multiple
 # meshes and Blender only supports single mesh objects,
@@ -49,9 +44,9 @@ job_results = {'job_origin'        : "",
 # to spare others the confusion)
 
 # If the Add-on's operators set the job_results_rich parameter
-# to True, 'files_objs_names' is filled with:
+# to True, 'files_and_folders' is filled with:
 
-# 'files_objs_names': {
+# 'files_and_objects': {
 #       <filepath a>: [<list of resulting Blender object names>]
 #       <filepath b>: [<list of resulting Blender object names>]
 #       etc.
