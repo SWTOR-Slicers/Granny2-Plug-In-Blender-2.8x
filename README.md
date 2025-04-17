@@ -1,10 +1,10 @@
-# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2
+# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.4*
 
 **A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
 
 * ### NPC import including Creature-type ones works far better now!
 * ### Compatible with Game Update 7.6 and higher's Modernized PC/NPC skin textures (requires downloading the [latest ZG SWTOR Tools Add-on](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/latest)).
-* ### Not compatible with Blender 4.3 yet (it breaks SWTOR material creation)!
+* ### \*Works with Blender 4.3 and 4.4, but the SWTOR shaders' Alpha Mode menu is inoperative (typically it won't matter). We'll try to solve that later. **We have a 4.4-compatible beta of the ZG SWTOR Tools [here](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/tag/v2.0.9-beta)**.
 
 **For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
@@ -12,7 +12,6 @@
 ---
 
 - [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-42)
-    - [New version with new features:](#new-version-with-new-features)
   - [Download](#download)
   - [Installation](#installation)
   - [Description](#description)
@@ -34,20 +33,6 @@
 
 ---
 
-### New version with new features:
-* **Up to Blender 4.2 compatibility**.
-* **Compatible with SWTOR Game Update 7.6 (requires the [latest ZG SWTOR Tools Add-on](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/latest))**.
-* **New Preferences system with presets for preferred settings**.
-* **Solves most Character Importer issues with NPCs, including Creature-type ones**.
-* **Character Importer applies directionMaps for anisotropic speculars in hair and fur**.
-* Optional scale and axis order conversion at the mesh level.
-* Optional SWTOR Animations importing without 180º turn.
-* Streamlined console output.
-* Means to communicate with other Add-ons and scripts.
-* Simplified Import menu choices (the ones that don't work have been hidden)
-
-
-
 **IF THE NEW PREFERENCES SETTINGS ARE LEFT ALONE, IT BEHAVES LIKE PREVIOUS VERSIONS: NO NEED TO ADJUST ANYTHING!**. And if we do and we mess up things, we can use the **'Neutral' preset** to go back to the old behavior.
 
 **These new features can be big timesavers, but we better think how they might impact our workflow before playing with them, specially if we had many SWTOR models already collected and set in Blender projects and asset libraries.**
@@ -55,8 +40,6 @@
 ## Download
 
 [**DOWNLOAD THE LATEST RELEASE FROM HERE**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the assets list. **DON'T UNZIP IT!** Blender directly handles it as such .zip file.
-
-[**(DOWNLOAD THE LATEST ZG SWTOR TOOLS RELEASE, TOO**](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/latest), as both add-ons typically work together, and they need to keep up with each other's changes)
 
 ## Installation
 
