@@ -69,7 +69,7 @@ Imports and applies SWTOR's .jba animation files. It has some issues but it most
   **SWTOR 32-bit-compatible only. The old 32-bit .jba files can be downloaded from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)**.
   
 
-* **(THE SWTOR .CLO PHYSICS DATA IMPORT IS HIDDEN FOR THE TIME BEING:**  
+* **THE SWTOR .CLO PHYSICS DATA IMPORT IS HIDDEN FOR THE TIME BEING:**  
 It was meant for converting .clo physics-based bones data (clothes, hair, Twi'lek lekku, etc.) to Blender physics simulations instead of using bones as the game does, but it simply wasn't working. We'll try to give it another stab in the future. If you want explore the issue, take into account that the current 64-bit version of the file format introduced such severe changes that the old 32-bit .jba files are probably the best to deal with. **They can be downloaded from [here](https://drive.google.com/drive/folders/1hItkqGGX2ut9FMslTrxQV5GahbHYqT7F)**)
 
 The Add-on also allows us to export objects back to their original format. Sadly, this is of very little use at the moment, as **our game modding tools aren't compatible with SWTOR 64-bit and we don't expect any progress in the medium term**).
