@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 6),
+    "version": (4, 0, 7),
     "blender": (2, 82, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -80,7 +80,7 @@ def _import_gr2(self, _context):
 
 def _import_cha(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SWTOR Player Characters and NPCs (.json) - READ THE TOOLTIP")
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR PC/NPCs (.json) - DO NOT USE!  READ TOOLTIP")
 
 def _import_jba(self, _context):
     # type: (Menu, Context) -> None

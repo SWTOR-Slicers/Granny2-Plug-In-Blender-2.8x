@@ -46,7 +46,7 @@ class ImportCHA(Operator):
     and their gear.
     """
     bl_idname = "import_mesh.gr2_json"  # DO NOT CHANGE
-    bl_description = "(UNLESS TRYING TO DIAGNOSE AN ISSUE,\nUSE THE ZG SWTOR TOOLS ADD-ON'S\nCHARACTER ASSEMBLER INSTEAD\n\nThe Character Assembler calls this importer under the hood\nafter gathering the game assets listed in the .json file for you.\nWe keep this direct import option for diagnosing purposes)\n\n\nImport a 'paths.json' file inside a character folder generated\nby TORCommunity.com's Character Designer\nor its NPC database's 3D Viewers.\n\n• The folder needs to have been filled with the requisite assets\n   by a Character Assembler tool or manually"
+    bl_description = "UNLESS TRYING TO DIAGNOSE AN ISSUE, USE THE\nZG SWTOR TOOLS ADD-ON'S CHARACTER ASSEMBLER\nOR THE JZ SWTOR TOOLS ADD-ON INSTEAD.\n\nTHIS IMPORTER WILL FAIL IF THE PC/NPC FILES\nHAVEN'T BEEN GATHERED BY OTHER TOOLS FIRST.\n\n(The ZG SWTOR Tools' Character Assembler\ncopies the game assets listed in the .json file into\nthe PC/NPC's folder, and then calls this importer.\nWe keep this import menu option to diagnose errors)\n\n---\n\nImport a 'paths.json' file inside a character folder generated\nby TORCommunity.com's Character Designer\nor its NPC database's 3D Viewers.\n\n• The folder needs to have been filled with the requisite assets\n   by a Character Assembler tool or manually."
     bl_label = "Import SWTOR (.json)"
     bl_options = {'UNDO'}
 
