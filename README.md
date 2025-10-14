@@ -1,17 +1,17 @@
-# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.4*
+# SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.x*
 
-**A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them.**
+**A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them (check our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki)).**
 
 * ### NPC import including Creature-type ones works far better now!
 * ### Compatible with Game Update 7.6 and higher's Modernized PC/NPC skin textures (requires downloading the [latest ZG SWTOR Tools Add-on](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/latest)).
-* ### \*Works with Blender 4.3 and 4.4, but the SWTOR shaders' Alpha Mode menu is inoperative (typically it won't matter). We'll try to solve that later. **We have a 4.4-compatible beta of the ZG SWTOR Tools [here](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/tag/v2.0.9-beta)**.
-
+* ### \*Compatible with Blender 4.3 and higher, but the SWTOR shaders' Alpha Mode menu is inoperative (typically it won't matter). We'll try to solve that later.
+* ### (The ZG SWTOR Tools add-on's releases include an up-to-date version of this one. You can download both from [there](https://github.com/SWTOR-Slicers/ZG-SWTOR-Tools/releases/latest))
 **For more information on this Add-on's usage in combination with the rest of our tools, please consult our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki).**
 
 
 ---
 
-- [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.2](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-42)
+- [SWTOR Granny2 (.gr2) Import/Export Add-on for Blender 2.8 to 4.x\*](#swtor-granny2-gr2-importexport-add-on-for-blender-28-to-4x)
   - [Download](#download)
   - [Installation](#installation)
   - [Description](#description)
@@ -23,6 +23,7 @@
     - [.jba animations import settings:](#jba-animations-import-settings)
     - [.json character import settings:](#json-character-import-settings)
     - [Preset settings menu:](#preset-settings-menu)
+- [Advanced features.](#advanced-features)
   - [Paper-trailing.](#paper-trailing)
   - [Using other Add-ons that depend on this one.](#using-other-add-ons-that-depend-on-this-one)
   - [About the older, "Legacy Materials" version of this add-on.](#about-the-older-legacy-materials-version-of-this-add-on)
@@ -40,6 +41,7 @@
 ## Download
 
 [**DOWNLOAD THE LATEST RELEASE FROM HERE**](https://github.com/SWTOR-Slicers/Granny2-Plug-In-Blender-2.8x/releases/latest). It's the ``io_scene_gr2.zip`` file in the assets list. **DON'T UNZIP IT!** Blender directly handles it as such .zip file.
+
 
 ## Installation
 
@@ -159,6 +161,8 @@ The currently available presets are:
   
   That said, if we happen to have a library of imported SWTOR assets already, we would need to decide whether to use these settings for new imports, keep ourselves to the old ones for consistency, or update previous assets to matching characteristics (vía Blender's Apply operators or the ZG SWTOR Tools variant). **Testing before going all in is extremely recommended**.
 
+
+# Advanced features.
 
 ## Paper-trailing.
 
