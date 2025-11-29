@@ -16,7 +16,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 
 # Detect Blender version
 major, minor, _ = bpy.app.version
-blender_version = major + minor / 100
+blender_version = major + minor / 10
 
 
 # Derived enums
@@ -33,6 +33,157 @@ CLIP = ('CLIP', "Test", "")
 OPAQUE = ('OPAQUE', "None", "")
 
 
+# misc. aux functions
+
+def is_first_pixel_white(image):
+    """
+    Function for testing RotationMaps' opacity channel's (Red) background color.
+    SWTOR modernized face skin materials use inverted opacity maps
+    for eyelashes' details (black mask on white background, instead of
+    white mask on black background)
+    
+    Returns True if the first pixel's red channel is of RGB white (so, 1.0),
+    False if it is pure black (0.0).
+    Raises ValueError if the pixel is neither.
+    """
+    if not image:
+        raise ValueError("is_first_pixel_white(image) was fed an empty argument")
+        return False
+    
+    if isinstance(image, str):
+        img = bpy.data.images.get(image)
+        if not img:
+            raise ValueError(f"Image '{image}' not found")
+    else:
+        # Otherwise assume it's image data
+        img = image
+        if not isinstance(img, bpy.types.Image):
+            raise TypeError("Argument must be an image name or bpy.types.Image")
+
+    # Blender stores pixel data as [R, G, B, A, R, G, B, A, ...]
+    first_red = img.pixels[0]
+
+    if first_red == 1.0:
+        return True
+    elif first_red == 0.0:
+        return False
+    else:
+        raise ValueError(f"First pixel red channel is not pure black/white (value={first_red})")
+
+
+# Properties callbacks' updater functions
+# region --------------------------------------------------------------------
+
+# the derived property determines the shader's node tree, and its updater
+# function calls all the updaters related to each SWTOR shader type.
+def update_derived(self, context):
+    # type: ("ShaderNodeHeroEngine", Context) -> None
+    from .node_tree import (
+        creature,
+        eye,
+        garment,
+        hairc,
+        skinb,
+        uber,
+    )
+
+    if self.derived == CREATURE[0]:
+        
+        self.node_tree.nodes.clear()
+        creature(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_diffuseMap(self, context)
+        update_directionMap(self, context)
+        update_glossMap(self, context)
+        update_paletteMaskMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+        update_flesh_brightness(self, context)
+        update_flush_tone(self, context)
+        
+    elif self.derived == EYE[0]:
+        
+        self.node_tree.nodes.clear()
+        eye(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_diffuseMap(self, context)
+        update_glossMap(self, context)
+        update_paletteMap(self, context)
+        update_paletteMaskMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+        update_palette(self, context)
+        
+    elif self.derived == GARMENT[0]:
+        
+        self.node_tree.nodes.clear()
+        garment(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_diffuseMap(self, context)
+        update_glossMap(self, context)
+        update_paletteMap(self, context)
+        update_paletteMaskMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+        update_palette(self, context)
+        
+    elif self.derived == HAIRC[0]:
+        
+        self.node_tree.nodes.clear()
+        hairc(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_diffuseMap(self, context)
+        update_directionMap(self, context)
+        update_glossMap(self, context)
+        update_paletteMap(self, context)
+        update_paletteMaskMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+        update_palette(self, context)
+        
+    elif self.derived == SKINB[0]:
+        
+        self.node_tree.nodes.clear()
+        skinb(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_ageMap(self, context)
+        update_complexionMap(self, context)
+        update_diffuseMap(self, context)
+        update_facepaintMap(self, context)
+        update_glossMap(self, context)
+        update_paletteMap(self, context)
+        update_paletteMaskMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+        update_palette(self, context)
+        update_flesh_brightness(self, context)
+        update_flush_tone(self, context)
+        
+    elif self.derived == UBER[0]:
+        
+        self.node_tree.nodes.clear()
+        uber(self.node_tree)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        
+        update_alpha_mode(self, context)
+        update_alpha_test_value(self, context)
+        update_diffuseMap(self, context)
+        update_glossMap(self, context)
+        update_rotationMap(self, context)  # calls update_alpha_invert() in turn
+
+
 def update_ageMap(self, _context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
     if self.ageMap:
@@ -47,21 +198,40 @@ def update_ageMap(self, _context):
 
 def update_alpha_mode(self, context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
-    if context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
+    if context and context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
         mat = context.material
         if blender_version < 4.2:
             mat.blend_method = self.alpha_mode
+            mat.show_transparent_back = False
         else:
             mat.surface_render_method = "DITHERED"
+            mat.use_transparency_overlap = False
 
-        mat.show_transparent_back = False
-        update_alpha_test_value(self, context)
+    nd_SetAlphaMode = self.node_tree.nodes['SetAlphaMode']
+    if self.alpha_mode == "BLEND":
+        nd_SetAlphaMode.inputs[1].default_value = True
+        nd_SetAlphaMode.inputs[2].default_value = False
+    elif self.alpha_mode == "CLIP":
+        nd_SetAlphaMode.inputs[1].default_value = False
+        nd_SetAlphaMode.inputs[2].default_value = True
+    elif self.alpha_mode == "OPAQUE":
+        nd_SetAlphaMode.inputs[1].default_value = False
+        nd_SetAlphaMode.inputs[2].default_value = False
 
 
 def update_alpha_test_value(self, context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
-    if context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
-        context.material.alpha_threshold = self.alpha_test_value
+    if context and context.space_data.type in {'NODE_EDITOR', 'PROPERTIES'}:
+        if blender_version < 4.2:  # RETIRE THIS OMCE THE NEW SETALPHAMODE NODE WORKS
+            context.material.alpha_threshold = self.alpha_test_value
+
+    nd_SetAlphaMode = self.node_tree.nodes['SetAlphaMode']
+    nd_SetAlphaMode.inputs[3].default_value = self.alpha_test_value
+    
+
+def update_alpha_invert(self, _context):
+    nd_SetAlphaMode = self.node_tree.nodes['SetAlphaMode']
+    nd_SetAlphaMode.inputs[4].default_value = self.alpha_invert
 
 
 def update_complexionMap(self, _context):
@@ -78,77 +248,6 @@ def update_complexionMap(self, _context):
             img = bpy.data.images.new('white.dds', 4, 4)
             img.generated_color = [1.0, 1.0, 1.0, 1.0]
             self.node_tree.nodes['complexionMap'].image = img
-
-
-def update_derived(self, context):
-    # type: ("ShaderNodeHeroEngine", Context) -> None
-    from .node_tree import (
-        creature,
-        eye,
-        garment,
-        hairc,
-        skinb,
-        uber,
-    )
-
-    if self.derived == CREATURE[0]:
-        self.node_tree.nodes.clear()
-        creature(self.node_tree)
-        update_diffuseMap(self, context)
-        update_directionMap(self, context)
-        update_glossMap(self, context)
-        update_paletteMaskMap(self, context)
-        update_rotationMap(self, context)
-        update_flesh_brightness(self, context)
-        update_flush_tone(self, context)
-    elif self.derived == EYE[0]:
-        self.node_tree.nodes.clear()
-        eye(self.node_tree)
-        update_diffuseMap(self, context)
-        update_glossMap(self, context)
-        update_paletteMap(self, context)
-        update_paletteMaskMap(self, context)
-        update_rotationMap(self, context)
-        update_palette(self, context)
-    elif self.derived == GARMENT[0]:
-        self.node_tree.nodes.clear()
-        garment(self.node_tree)
-        update_diffuseMap(self, context)
-        update_glossMap(self, context)
-        update_paletteMap(self, context)
-        update_paletteMaskMap(self, context)
-        update_rotationMap(self, context)
-        update_palette(self, context)
-    elif self.derived == HAIRC[0]:
-        self.node_tree.nodes.clear()
-        hairc(self.node_tree)
-        update_diffuseMap(self, context)
-        update_directionMap(self, context)
-        update_glossMap(self, context)
-        update_paletteMap(self, context)
-        update_paletteMaskMap(self, context)
-        update_rotationMap(self, context)
-        update_palette(self, context)
-    elif self.derived == SKINB[0]:
-        self.node_tree.nodes.clear()
-        skinb(self.node_tree)
-        update_ageMap(self, context)
-        update_complexionMap(self, context)
-        update_diffuseMap(self, context)
-        update_facepaintMap(self, context)
-        update_glossMap(self, context)
-        update_paletteMap(self, context)
-        update_paletteMaskMap(self, context)
-        update_rotationMap(self, context)
-        update_palette(self, context)
-        update_flesh_brightness(self, context)
-        update_flush_tone(self, context)
-    elif self.derived == UBER[0]:
-        self.node_tree.nodes.clear()
-        uber(self.node_tree)
-        update_diffuseMap(self, context)
-        update_glossMap(self, context)
-        update_rotationMap(self, context)
 
 
 def update_diffuseMap(self, _context):
@@ -274,8 +373,18 @@ def update_rotationMap(self, _context):
         self.rotationMap.alpha_mode = 'CHANNEL_PACKED'
         self.rotationMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_n'].image = self.rotationMap
+        # If in a SkinB shader, test updated map's opacity channel
+        # for modernized facial skin-type's black mask on white bg
+        if self.derived == SKINB[0]:
+            self.alpha_invert = is_first_pixel_white(self.rotationMap)
+        else:
+            self.alpha_invert = False
     else:
         self.node_tree.nodes['_n'].image = None
+        # enforce usual opacity channel type (white mask on black bg) 
+        self.alpha_invert = False
+
+# endregion ----------------------------------------------------------------
 
 
 class ShaderNodeHeroEngine(ShaderNodeCustomGroup):
@@ -308,6 +417,12 @@ class ShaderNodeHeroEngine(ShaderNodeCustomGroup):
         options={'HIDDEN'},
         subtype='FACTOR',
         update=update_alpha_test_value)
+    alpha_invert: BoolProperty(
+        default=False,
+        description="Invert the opacity map (for modernized facial SkinB materials)",
+        name="Handle modernized facial material's inverted Alpha",
+        options={'HIDDEN'},
+        update=update_alpha_invert)
 
     # NOTE: Texture maps
     ageMap: PointerProperty(
@@ -497,7 +612,8 @@ class ShaderNodeHeroEngine(ShaderNodeCustomGroup):
         self.node_tree = bpy.data.node_groups.new(self.name, "ShaderNodeTree")
         self.width = 240.0
         update_derived(self, context)
-
+        
+        
     # NOTE: Additional buttons displayed on the node.
     def draw_buttons(self, _context, layout):
         # type: (Context, UILayout) -> None
