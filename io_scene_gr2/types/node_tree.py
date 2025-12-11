@@ -1,12 +1,13 @@
 # <pep8 compliant>
 
+from os import name
 import bpy
 from bpy.types import ShaderNodeTree
 
 
 # Detect Blender version
 major, minor, _ = bpy.app.version
-blender_version = major + minor / 100
+blender_version = float(f"{major}.{minor}")
 
 
 def add_output_socket_if_needed(node_tree):
@@ -25,7 +26,7 @@ def add_output_socket_if_needed(node_tree):
                 if item.in_out == 'OUTPUT':
                     has_output_sockets = True
                     break
-        if has_output_sockets == False:
+        if not has_output_sockets:
             node_tree.interface.new_socket('Shader', in_out='OUTPUT', socket_type='NodeSocketShader')
 
 
@@ -36,6 +37,7 @@ def creature(node_tree):
         get_phong_specular,
         get_specular_lookup,
         normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
     )
 
     # Add output socket to node tree
@@ -166,7 +168,13 @@ def creature(node_tree):
 
     transparentBSDF = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
     transparentBSDF.inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    transparentBSDF.location = (1340.0, -80.0)
+    transparentBSDF.location = (1340.0, -100.0)
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (1320.0, 100.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -201,7 +209,7 @@ def creature(node_tree):
     nr15 = node_tree.nodes.new(type='NodeReroute')
     nr15.location = (840.0, 40.0)
     nr16 = node_tree.nodes.new(type='NodeReroute')
-    nr16.location = (1400.0, 40.0)
+    nr16.location = (1260.0, 40.0)
     nr17 = node_tree.nodes.new(type='NodeReroute')
     nr17.location = (-1140.0, 160.0)
     nr18 = node_tree.nodes.new(type='NodeReroute')
@@ -319,9 +327,11 @@ def creature(node_tree):
     node_tree.links.new(nr21.outputs[0], emission.inputs['Strength'])
     node_tree.links.new(mixShader1.outputs['Shader'], addShader.inputs[0])
     node_tree.links.new(addShader.outputs['Shader'], mixShader2.inputs[1])
-    node_tree.links.new(nr16.outputs[0], mixShader2.inputs['Fac'])
+    
+    node_tree.links.new(nr16.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader2.inputs['Fac'])
+    
     node_tree.links.new(mixShader2.outputs['Shader'], grpOut1.inputs['Shader'])
-
     node_tree.links.new(glossMap.outputs['Color'], nr33.inputs[0])
     node_tree.links.new(glossMap.outputs['Color'], phongSpec.inputs['Specular Color'])
     node_tree.links.new(glossMap.outputs['Alpha'], phongSpec.inputs['Specular Alpha'])
@@ -364,6 +374,9 @@ def creature(node_tree):
     transparentBSDF.inputs['Color'].hide = False
     flushColor.inputs['Flesh Brightness'].hide = False
     flushColor.inputs['Flush Tone'].hide = False
+    setAlphaMode.inputs[1].hide = False
+    setAlphaMode.inputs[2].hide = False
+    setAlphaMode.inputs[3].hide = False
 
 
 def eye(node_tree):
@@ -373,6 +386,7 @@ def eye(node_tree):
         hue_pixel,
         negative_normal,
         normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
     )
 
     # Add output socket to node tree
@@ -488,7 +502,13 @@ def eye(node_tree):
 
     transparentBSDF = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
     transparentBSDF.inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    transparentBSDF.location = (860.0, 40.0)
+    transparentBSDF.location = (860.0, -50.0)
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (840.0, 155.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -561,7 +581,7 @@ def eye(node_tree):
     nr34 = node_tree.nodes.new(type='NodeReroute')
     nr34.location = (520.0, 60.0)
     nr35 = node_tree.nodes.new(type='NodeReroute')
-    nr35.location = (860.0, 60.0)
+    nr35.location = (760.0, 60.0)
     nr36 = node_tree.nodes.new(type='NodeReroute')
     nr36.location = (-760.0, -260.0)
     nr37 = node_tree.nodes.new(type='NodeReroute')
@@ -633,7 +653,8 @@ def eye(node_tree):
     node_tree.links.new(nr32.outputs[0], nr33.inputs[0])
     node_tree.links.new(nr33.outputs[0], nr34.inputs[0])
     node_tree.links.new(nr34.outputs[0], nr35.inputs[0])
-    node_tree.links.new(nr35.outputs[0], mixShader1.inputs['Fac'])
+    node_tree.links.new(nr35.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader1.inputs['Fac'])
     node_tree.links.new(tangentN.outputs['Emission Strength'], nr36.inputs[0])
     node_tree.links.new(nr36.outputs[0], nr37.inputs[0])
     node_tree.links.new(nr37.outputs[0], emissionShader.inputs['Strength'])
@@ -648,6 +669,7 @@ def garment(node_tree):
         get_phong_specular,
         hue_pixel,
         normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
     )
 
     # Add output socket to node tree
@@ -712,7 +734,7 @@ def garment(node_tree):
 
     transparentShader = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
     transparentShader.inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    transparentShader.location = (600.0, 180.0)
+    transparentShader.location = (600.0, 22.0)
 
     paletteMap = node_tree.nodes.new(type='ShaderNodeTexImage')
     paletteMap.inputs['Vector'].hide = True
@@ -732,6 +754,12 @@ def garment(node_tree):
     tangentN.location = (-880.0, -320.0)
     tangentN.node_tree = normal_and_alpha_from_swizzled_texture()
     tangentN.width = 280
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (578.0, 220.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -795,7 +823,7 @@ def garment(node_tree):
     nr30 = node_tree.nodes.new(type='NodeReroute')
     nr30.location = (340.0, 220.0)
     nr31 = node_tree.nodes.new(type='NodeReroute')
-    nr31.location = (720.0, 220.0)
+    nr31.location = (480.0, 220.0)
     nr32 = node_tree.nodes.new(type='NodeReroute')
     nr32.location = (-500.0, -300.0)
     nr33 = node_tree.nodes.new(type='NodeReroute')
@@ -866,7 +894,10 @@ def garment(node_tree):
     node_tree.links.new(nr28.outputs[0], nr29.inputs[0])
     node_tree.links.new(nr29.outputs[0], nr30.inputs[0])
     node_tree.links.new(nr30.outputs[0], nr31.inputs[0])
-    node_tree.links.new(nr31.outputs[0], mixShader.inputs['Fac'])
+        
+    node_tree.links.new(nr31.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader.inputs['Fac'])
+    
     node_tree.links.new(tangentN.outputs['Emission Strength'], nr32.inputs[0])
     node_tree.links.new(nr32.outputs[0], nr33.inputs[0])
     node_tree.links.new(nr33.outputs[0], nr34.inputs[0])
@@ -881,6 +912,7 @@ def hairc(node_tree):
         get_specular_lookup,
         hue_pixel,
         normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
     )
 
     # Add output socket to node tree
@@ -980,7 +1012,13 @@ def hairc(node_tree):
     emission.location = (640.0, 160.0)
 
     transparentBSDF = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
-    transparentBSDF.location = (900.0, 160.0)
+    transparentBSDF.location = (900.0, 0.0)
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (880.0, 210.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -1037,7 +1075,7 @@ def hairc(node_tree):
     nr26 = node_tree.nodes.new(type='NodeReroute')
     nr26.location = (660.0, 200.0)
     nr27 = node_tree.nodes.new(type='NodeReroute')
-    nr27.location = (1000.0, 200.0)
+    nr27.location = (760.0, 200.0)
     nr28 = node_tree.nodes.new(type='NodeReroute')
     nr28.location = (-980.0, -100.0)
     nr29 = node_tree.nodes.new(type='NodeReroute')
@@ -1109,7 +1147,10 @@ def hairc(node_tree):
     node_tree.links.new(nr24.outputs[0], nr25.inputs[0])
     node_tree.links.new(nr25.outputs[0], nr26.inputs[0])
     node_tree.links.new(nr26.outputs[0], nr27.inputs[0])
-    node_tree.links.new(nr27.outputs[0], mixShader.inputs['Fac'])
+    
+    node_tree.links.new(nr27.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader.inputs['Fac'])
+    
     node_tree.links.new(tangentN.outputs['Normal'], nr28.inputs[0])
     node_tree.links.new(nr28.outputs[0], nr29.inputs[0])
     node_tree.links.new(nr29.outputs[0], norMap.inputs['Color'])
@@ -1144,6 +1185,7 @@ def skinb(node_tree):
         get_phong_specular,
         hue_skin_pixel,
         normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
     )
 
     # Add output socket to node tree
@@ -1231,7 +1273,7 @@ def skinb(node_tree):
 
     transparentBSDF = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
     transparentBSDF.inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    transparentBSDF.location = (1120.0, 240.0)
+    transparentBSDF.location = (1120.0, 90.0)
 
     diffuseMap = node_tree.nodes.new(type='ShaderNodeTexImage')
     diffuseMap.inputs['Vector'].hide = True
@@ -1286,6 +1328,12 @@ def skinb(node_tree):
     facepaintMap.label = 'FacepaintMap'
     facepaintMap.location = (-920.0, -280.0)
     facepaintMap.name = 'facepaintMap'
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (1100.0, 300.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -1346,7 +1394,7 @@ def skinb(node_tree):
     nr25 = node_tree.nodes.new(type='NodeReroute')
     nr25.location = (860.0, 320.0)
     nr26 = node_tree.nodes.new(type='NodeReroute')
-    nr26.location = (1260.0, 320.0)
+    nr26.location = (1005.0, 320.0)
 
     nr27 = node_tree.nodes.new(type='NodeReroute')
     nr27.location = (-920.0, 20.0)
@@ -1418,7 +1466,7 @@ def skinb(node_tree):
     nr56 = node_tree.nodes.new(type='NodeReroute')
     nr56.location = (-200.0, 280.0)
     nr57 = node_tree.nodes.new(type='NodeReroute')
-    nr57.location = (40.0, 280.0)
+    nr57.location = (40.0, 300.0)
 
     # Link nodes together
     node_tree.links.new(glossMap.outputs['Color'], nr1.inputs[0])
@@ -1480,7 +1528,8 @@ def skinb(node_tree):
     node_tree.links.new(nr23.outputs[0], nr24.inputs[0])
     node_tree.links.new(nr24.outputs[0], nr25.inputs[0])
     node_tree.links.new(nr25.outputs[0], nr26.inputs[0])
-    node_tree.links.new(nr26.outputs[0], mixShader.inputs['Fac'])
+    node_tree.links.new(nr26.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader.inputs['Fac'])
     node_tree.links.new(tangentN.outputs['Emission Strength'], nr27.inputs[0])
     node_tree.links.new(nr27.outputs[0], nr28.inputs[0])
     node_tree.links.new(nr28.outputs[0], emission.inputs['Strength'])
@@ -1527,8 +1576,11 @@ def skinb(node_tree):
 
 def uber(node_tree):
     # type: (ShaderNodeTree) -> None
-    from .node_group import normal_and_alpha_from_swizzled_texture
-
+    from .node_group import (
+        normal_and_alpha_from_swizzled_texture,
+        set_alpha_mode,
+    )
+    
     # Add output socket to node tree
     add_output_socket_if_needed(node_tree)
 
@@ -1616,7 +1668,7 @@ def uber(node_tree):
 
     transparentBSDF = node_tree.nodes.new(type='ShaderNodeBsdfTransparent')
     transparentBSDF.inputs['Color'].default_value = [1.0, 1.0, 1.0, 1.0]
-    transparentBSDF.location = (780.0, 0.0)
+    transparentBSDF.location = (780.0, -100.0)
 
     rotationMap = node_tree.nodes.new(type='ShaderNodeTexImage')
     rotationMap.label = "_n RotationMap"
@@ -1630,6 +1682,13 @@ def uber(node_tree):
 
     norMap = node_tree.nodes.new(type='ShaderNodeNormalMap')
     norMap.location = (-180.0, -280.0)
+
+    setAlphaMode = node_tree.nodes.new(type='ShaderNodeGroup')
+    setAlphaMode.name = "SetAlphaMode"
+    setAlphaMode.location = (760.0, 100.0)
+    setAlphaMode.node_tree = set_alpha_mode()
+    setAlphaMode.width = 180.0
+
 
     # Add and place reroutes
     nr1 = node_tree.nodes.new(type='NodeReroute')
@@ -1653,11 +1712,11 @@ def uber(node_tree):
     nr10 = node_tree.nodes.new(type='NodeReroute')
     nr10.location = (-200.0, 20.0)
     nr11 = node_tree.nodes.new(type='NodeReroute')
-    nr11.location = (480.0, -20.0)
+    nr11.location = (560.0, -20.0)
     nr12 = node_tree.nodes.new(type='NodeReroute')
-    nr12.location = (540.0, 80.0)
+    nr12.location = (555.0, 80.0)
     nr13 = node_tree.nodes.new(type='NodeReroute')
-    nr13.location = (860.0, 80.0)
+    nr13.location = (638.0, 80.0)
     nr14 = node_tree.nodes.new(type='NodeReroute')
     nr14.location = (-180.0, -240.0)
     nr15 = node_tree.nodes.new(type='NodeReroute')
@@ -1720,8 +1779,12 @@ def uber(node_tree):
     node_tree.links.new(tangentN.outputs['Alpha'], nr14.inputs[0])
     node_tree.links.new(nr14.outputs[0], nr15.inputs[0])
     node_tree.links.new(nr15.outputs[0], nr12.inputs[0])
+    node_tree.links.new(nr15.outputs[0], nr12.inputs[0])
     node_tree.links.new(nr12.outputs[0], nr13.inputs[0])
-    node_tree.links.new(nr13.outputs[0], mixShader.inputs['Fac'])
+        
+    node_tree.links.new(nr13.outputs[0], setAlphaMode.inputs[0])
+    node_tree.links.new(setAlphaMode.outputs[0],  mixShader.inputs['Fac'])
+    
     node_tree.links.new(tangentN.outputs['Emission Strength'], nr16.inputs[0])
     node_tree.links.new(nr16.outputs[0], nr17.inputs[0])
     node_tree.links.new(nr17.outputs[0], emission.inputs['Strength'])
@@ -1744,3 +1807,7 @@ def uber(node_tree):
     gamma1.inputs[1].hide = False
     transparentBSDF.inputs['Color'].hide = False
     norMap.inputs['Strength'].hide = False
+    setAlphaMode.inputs[1].hide = False
+    setAlphaMode.inputs[2].hide = False
+    setAlphaMode.inputs[3].hide = False
+    setAlphaMode.inputs[4].hide = False

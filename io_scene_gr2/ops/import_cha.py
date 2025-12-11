@@ -32,7 +32,8 @@ from ..types.shared import job_results  # add-on-wide global-like dict
 
 # Detect Blender version
 major, minor, _ = bpy.app.version
-blender_version = major + minor / 100
+blender_version = float(f"{major}.{minor}")
+
 
 
 
@@ -399,7 +400,7 @@ def build(operator, context, slots, skin_mats,
                 # texturemap filename (necessary in Eye shaders but not in
                 # Creature ones) as a criteria to change the Derived to Creature
                 # (we used to manually correct those entries in the .json data.
-                # Now we must NOT correct it, as its presence helps us here).
+                # Now we must NOT correct them, as their presence helps us here).
                 
                 creature_2nd_mat_is_creature_instead_of_eye = False
                 if i == 1:

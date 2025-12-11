@@ -3,8 +3,8 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 0, 7),
-    "blender": (2, 82, 0),
+    "version": (4, 1, 0),
+    "blender": (3, 6, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
     "support": 'COMMUNITY',
@@ -37,7 +37,8 @@ from .types.node        import ShaderNodeHeroEngine, NODE_OT_ngroup_edit
 
 # Detect Blender version
 major, minor, _ = bpy.app.version
-blender_version = major + minor / 100
+blender_version = float(f"{major}.{minor}")
+
 
 if blender_version >= 4.0:
     from .ops.add_swtor_shaders_menu import *  # classes and fn for Shader Editor's Add menu functionality in 4.x
