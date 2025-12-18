@@ -367,15 +367,18 @@ def update_paletteMaskMap(self, _context):
         self.node_tree.nodes['_m'].mute = True
 
 
-def update_rotationMap(self, _context):
+def update_rotationMap(self, context):
     # type: ("ShaderNodeHeroEngine", Context) -> None
+    # We are using context here to know the name of the
+    # object being textured to test for "head"
     if self.rotationMap:
         self.rotationMap.alpha_mode = 'CHANNEL_PACKED'
         self.rotationMap.colorspace_settings.name = 'Non-Color'
         self.node_tree.nodes['_n'].image = self.rotationMap
         # If in a SkinB shader, test updated map's opacity channel
-        # for modernized facial skin-type's black mask on white bg
-        if self.derived == SKINB[0]:
+        # for modernized facial skin-type's black mask on white bg.
+        # Iridonian Zabrak horns are SkinB, by the way.
+        if self.derived == SKINB[0] and "head" in context.object.name.lower():
             self.alpha_invert = is_first_pixel_white(self.rotationMap)
         else:
             self.alpha_invert = False
