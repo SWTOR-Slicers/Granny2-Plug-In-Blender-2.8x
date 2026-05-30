@@ -3,6 +3,7 @@
 **A Blender Add-on that lets us import Star Wars: The Old Republic (SWTOR) 3D models, armatures, and even "one-click" auto-assemble/texture/rig whole Player Characters and NPCs. It requires the use of other tools to extract the assets from the game in the first place, and to obtain PC and NPC description files for auto-assembling them (check our [**WikiPedia**](https://github.com/SWTOR-Slicers/WikiPedia/wiki)).**
 
 * ### Blender 5.0-compatible.
+* ### 64-bit .gr2 objects export works to an extent now!
 * ### SWTOR Shaders' Alpha controls now work in Blender 4.x and 5.0, too.
 * ### Support for modernized female characters' eyelashes masks (they don't look that great in close-ups. We are investigating why. To get the old style eyelashes back, turn the head skin shader's Alpha Mode to None).
 
