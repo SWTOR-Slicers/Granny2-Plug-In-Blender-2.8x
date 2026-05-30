@@ -27,7 +27,8 @@ from ..utils.number import encodeHalfFloat
 class ExportGR2(Operator, ExportHelper):
     """Export SWTOR GR2 64-Bit file format (.gr2)"""
     bl_idname = "export_mesh.gr2"
-    bl_label = "Export SWTOR (.gr2)"
+    bl_label = "Export SWTOR Object (.gr2 64-bit)"
+    bl_description = "Export object in SWTOR's current .gr2 64-bit format\n(since Game Update 7.2.1) for modding purposes.\n\nIN BETA STATE!  Please report any issues to our Discord server.\n\nYou can verify its results to an extent by re-importing\nthe exported object and inspecting it before\ncommitting it to a mod."
     bl_options = {'PRESET'}
 
     filename_ext = ".gr2"

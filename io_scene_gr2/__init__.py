@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Star Wars: The Old Republic (.gr2)",
     "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 1, 1),
+    "version": (4, 2, 2),
     "blender": (3, 6, 0),
     "location": "File > Import-Export",
     "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
@@ -75,30 +75,34 @@ del importlib, os, sys, depsgraph_update_post
 
 
 # Import/Export functions to append to Import/Export menus in register()
+
+# Importers
+
 def _import_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportGR2.bl_idname, text="SWTOR Objects and Skeletons (.gr2)")
-
-def _import_cha(self, _context):
-    # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SWTOR PC/NPCs (.json) - DO NOT USE!  READ TOOLTIP")
+    self.layout.operator(ImportGR2.bl_idname, text="SWTOR Objects and Skeletons (.gr2 32/64-bit)")
 
 def _import_jba(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportJBA.bl_idname, text="SWTOR Animations (.jba) 32-bit-only")
+    self.layout.operator(ImportJBA.bl_idname, text="SWTOR Animations (.jba 32-bit)")
 
-# def _import_clo(self, _context):
-#     # type: (Menu, Context) -> None
-#     self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo)")
+def _import_cha(self, _context):
+    # type: (Menu, Context) -> None
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR PC/NPCs (paths.json) - DO NOT USE!  Read Tooltip")
 
+def _import_clo(self, _context):
+    # type: (Menu, Context) -> None
+    self.layout.operator(ImportCLO.bl_idname, text="SWTOR 32-bit Cloth Physics (.clo 32-bit) - DO NOT USE!  Read Tooltip")
+
+# Exporters
 
 def _export_gr2(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ExportGR2.bl_idname, text="SWTOR 64-bit Objects (.gr2)")
+    self.layout.operator(ExportGR2.bl_idname, text="SWTOR 64-bit Objects (.gr2) - BETA:  Read Tooltip")
 
 def _export_gr2_32(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ExportGR2_32.bl_idname, text="SWTOR 32-bit Objects (.gr2)")
+    self.layout.operator(ExportGR2_32.bl_idname, text="SWTOR 32-bit Objects (.gr2) - DO NOT USE!  Read Tooltip")
 
 
 class BoneBounds(PropertyGroup):
@@ -135,9 +139,10 @@ def register():
     # Additions to Import-Export menu
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
     TOPBAR_MT_file_import.append(_import_gr2)
-    TOPBAR_MT_file_import.append(_import_cha)
-    # TOPBAR_MT_file_import.append(_import_clo)
     TOPBAR_MT_file_import.append(_import_jba)
+    TOPBAR_MT_file_import.append(_import_cha)
+    TOPBAR_MT_file_import.append(_import_clo)
+    
     TOPBAR_MT_file_export.append(_export_gr2)
     TOPBAR_MT_file_export.append(_export_gr2_32)
 
@@ -200,7 +205,7 @@ def unregister():
 
     from bpy.types import TOPBAR_MT_file_export, TOPBAR_MT_file_import
     TOPBAR_MT_file_import.remove(_import_cha)
-    # TOPBAR_MT_file_import.remove(_import_clo)
+    TOPBAR_MT_file_import.remove(_import_clo)
     TOPBAR_MT_file_import.remove(_import_gr2)
     TOPBAR_MT_file_import.remove(_import_jba)
     TOPBAR_MT_file_export.remove(_export_gr2)

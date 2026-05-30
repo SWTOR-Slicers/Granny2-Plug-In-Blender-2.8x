@@ -24,8 +24,8 @@ from ..utils.binary import ArrayBuffer, DataView
 class ImportCLO(Operator, ImportHelper):
     """Import SWTOR CLO file format (.clo)"""
     bl_idname = "import_cloth.clo"
-    bl_description = "Import bones to be used in dynamic simulations\nfor objects such as capes, flaps, hair, lekku, etc"
     bl_label = "Import SWTOR (.clo)"
+    bl_description = "NON FUNCTIONAL!\n\nInstead of importing physics bones, it reads its names to select\nthe object's matching vertex groups, separates them as another\nobject, and applies a Blender Cloth Sim. BADLY (pinning fails, for one).\n\nKept available for testing proper Phys Sim bones extraction. Watch this space\n\n---\n\nImport bones to be used in dynamic simulations\nfor objects such as capes, flaps, hair, lekku, etc"
     bl_options = {'UNDO'}
 
     if app.version < (2, 82, 0):
