@@ -269,9 +269,11 @@ def write(gr2, path):
         # Offset mesh name
         dv.setUint64(pos, mesh.offset_mesh_name, 1)
         pos += 8
-        # BitFlag1
-        dv.setUint32(pos, mesh.bit_flag1, 1)
-        pos += 4
+        # LOD (int16) + BitFlag1 (uint16)
+        dv.setInt16(pos, 0, 1)
+        pos += 2
+        dv.setUint16(pos, mesh.bit_flag1, 1)
+        pos += 2
         # Number of sub meshes
         dv.setUint16(pos, mesh.num_pieces, 1)
         pos += 2
@@ -496,77 +498,71 @@ def write(gr2, path):
         dv.setUint8(pos, 0)
         pos += 1
 
-    # Cached offsets
-    dv.setUint32(pos, 80, 1)                     # 0x50
+    # Cached offsets - each entry is (addr: uint32, value: uint32) = 8 bytes
+    # Header pointer entries: v5 layout has uint64 offsets at 0x50, 0x58, 0x60
+    dv.setUint32(pos, 0x50, 1)                               # addr: offsetCachedOffsets
     pos += 4
-    dv.setUint32(pos, pos - 4, 1)
+    dv.setUint32(pos, gr2.offset_cached_offsets, 1)          # value
     pos += 4
-    dv.setUint32(pos, 84, 1)                     # 0x54
+    dv.setUint32(pos, 0x58, 1)                               # addr: offsetMeshHeaders (v5: 0x58)
     pos += 4
-    dv.setUint32(pos, 112, 1)
+    dv.setUint32(pos, gr2.offset_mesh_headers, 1)            # value
     pos += 4
-    dv.setUint32(pos, 88, 1)                     # 0x58
+    dv.setUint32(pos, 0x60, 1)                               # addr: offsetMaterialNameOffsets (v5: 0x60)
     pos += 4
-    dv.setUint32(pos, gr2.offset_material_name_offsets, 1)
+    dv.setUint32(pos, gr2.offset_material_name_offsets, 1)   # value
     pos += 4
 
+    # Mesh header pointer entries - v5 mesh header is 64 bytes:
+    #   +0:  meshNameOffset (uint64)
+    #   +8:  lod+bitFlag1+numPieces+numBones (8 bytes)
+    #   +16: bitFlag2+vertexSize+numVertices+numIndices (16 bytes)
+    #   +32: offsetVertexBuffer (uint64)
+    #   +40: offsetPieceHeaders (uint64)
+    #   +48: offsetIndicesBuffer (uint64)
+    #   +56: offsetBonesBuffer (uint64)
     for i, mesh in gr2.mesh_buffer.items():
+        mesh_base = gr2.offset_mesh_headers + (i * 64)
 
-        cachePos = 112 + (i * 64)
+        dv.setUint32(pos, mesh_base, 1)                      # addr: meshNameOffset field (+0)
+        pos += 4
+        dv.setUint32(pos, mesh.offset_mesh_name, 1)
+        pos += 4
+        dv.setUint32(pos, mesh_base + 32, 1)                 # addr: offsetVertexBuffer field (+32)
+        pos += 4
+        dv.setUint32(pos, mesh.offset_vertex_buffer, 1)
+        pos += 4
+        dv.setUint32(pos, mesh_base + 40, 1)                 # addr: offsetPieceHeaders field (+40)
+        pos += 4
+        dv.setUint32(pos, mesh.offset_piece_headers, 1)
+        pos += 4
+        dv.setUint32(pos, mesh_base + 48, 1)                 # addr: offsetIndicesBuffer field (+48)
+        pos += 4
+        dv.setUint32(pos, mesh.offset_indices_buffer, 1)
+        pos += 4
+        dv.setUint32(pos, mesh_base + 56, 1)                 # addr: offsetBonesBuffer field (+56)
+        pos += 4
+        dv.setUint32(pos, mesh.offset_bones_buffer, 1)
+        pos += 4
 
-        dv.setUint64(pos, cachePos, 1)     # 0x70
-        cachePos += 8
-
-        pos += 8
-        dv.setUint64(pos, mesh.offset_mesh_name, 1)
-        pos += 8
-        # We skip some values that are on the mesh data
-        cachePos += 24
-
-
-        dv.setUint64(pos, cachePos, 1)     # 0x88
-        pos += 8
-        cachePos += 8
-        dv.setUint64(pos, mesh.offset_vertex_buffer, 1)
-        pos += 8
-        dv.setUint64(pos, cachePos, 1)     # 0x8C
-        pos += 8
-        cachePos += 8
-        dv.setUint64(pos, mesh.offset_piece_headers, 1)
-        pos += 8
-        dv.setUint64(pos, cachePos, 1)     # 0x90
-        pos += 8
-        cachePos += 8
-        dv.setUint64(pos, mesh.offset_indices_buffer, 1)
-        pos += 8
-        dv.setUint64(pos, cachePos, 1)     # 0x94
-        pos += 8
-        cachePos += 8
-        dv.setUint64(pos, mesh.offset_bones_buffer, 1)
-        pos += 8
-
+    # Material name pointer entries - material name offsets table has uint64 entries (stride 8)
     offset = offset_material_names
     for i, material_name in gr2.material_names.items():
-        # Offset material name offset
-        dv.setUint64(pos, gr2.offset_material_name_offsets + (8 * i), 1)
-        pos += 8
-
-        # Offset material name
-        dv.setUint64(pos, offset_material_names if i == 0 else offset, 1)
+        dv.setUint32(pos, gr2.offset_material_name_offsets + (8 * i), 1)  # addr: entry in table
+        pos += 4
+        dv.setUint32(pos, offset_material_names if i == 0 else offset, 1)  # value: string location
         offset += len(material_name) + 1
-        pos += 8
+        pos += 4
 
+    # Bone name pointer entries - each bone entry is 32 bytes (uint64 name ptr + 6 floats)
     offset = offset_bone_names
     for mesh in gr2.mesh_buffer.values():
         for i, bone in mesh.bone_buffer.items():
-            # Offset bone name offset
-            dv.setUint64(pos, mesh.offset_bones_buffer + (32 * i), 1)
-            pos += 8
-
-            # Offset bone name
-            dv.setUint64(pos, offset_bone_names if i == 0 else offset, 1)
+            dv.setUint32(pos, mesh.offset_bones_buffer + (32 * i), 1)      # addr: bone name ptr field
+            pos += 4
+            dv.setUint32(pos, offset_bone_names if i == 0 else offset, 1)  # value: string location
             offset += len(bone.name) + 1
-            pos += 8
+            pos += 4
 
     # Zero padding
     while (pos % 16) != 0:

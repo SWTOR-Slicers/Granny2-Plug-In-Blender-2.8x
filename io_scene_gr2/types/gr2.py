@@ -417,7 +417,7 @@ class Granny2:
         # Cached Offsets
         self.offset_cached_offsets = count
         # offset for itself
-        count += self.num_cached_offsets * 16
+        count += self.num_cached_offsets * 8
 
         while (count % 16) != 0:
             count += 1
