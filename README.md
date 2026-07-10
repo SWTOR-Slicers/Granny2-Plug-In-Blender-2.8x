@@ -476,13 +476,15 @@ If files_objs_names is filled (by setting `job_results_rich` to True):
 
 # Current state of the project.
 
-* **We have a working .gr2 54-bit exporter**, for modding. It's not perfect yet, but it produces results that can be evaluated to improve it.
+* **We have a working .gr2 64-bit exporter**, for modding. It's not perfect yet, but it produces results that can be evaluated to improve it.
 
 * .jba Animation Import (**32 bit-only**) works correctly, mostly. It's issues are:
   * **`ad_`-prefixed additive animations don't work**.
   * **There seems to be a long standing bug** (since the importer's creation, maybe) **that makes turns bigger than 360º glitch**: it can be seen in some of the Twi'lek dances.
   * **Some animations' bone translation data comes up exaggerated, leading to too elongated limbs**. There is a ZG SWTOR Tools that eliminates it and leaves only the rotations, although that might require some touching up to avoid self-intersections (which is a small cost for simple poses).
 
-* **.json Character Import** (which other add-ons such as the ZG and JC SWTOR Tools use under their hoods) **works with SWTOR's new modernized PC/NPC textures as long as ther add-ons' Character Assemblers correct the paths.json data and gather the correct assets**. We are adding support to have this and those tools allow for selecting what assets to use (classic or modernized) and keep both sets in a same character folder.
+* **.json Character Import** (which other add-ons such as the ZG and JC SWTOR Tools use under their hoods) **works with SWTOR's new modernized PC/NPC textures as long as ther add-ons' Character Assemblers correct the paths.json data and gather the correct assets**. We are adding support to have this and those tools allow for selecting what assets to use (classic or modernized) and keep both sets in a same character folder.  
+  
+  It also tolerates now unexpected information instead of crashing, important for compatibility with Jedipedia.net's new NPC exporter that will replace TORCommunity.com's own. 
 
 * We are trying to resume work on .clo Physics Import (**32 bit-only**).
