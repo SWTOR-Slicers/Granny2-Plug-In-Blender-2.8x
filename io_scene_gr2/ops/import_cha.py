@@ -253,7 +253,12 @@ def read(self, filepath):
     global _eye_mat_info
 
     for entry in data:
-        if entry["slotName"] == "skinMats":
+        if "slotName" not in entry:
+            # We are toyng with adding additional info elements
+            # such as skeleton filepaths, in-game names, etc.
+            # This lets the importer bypass them instead of breaking.
+            continue
+        elif entry["slotName"] == "skinMats":
             to_push = {"slot_name": "skinMats", "mats": []}
 
             for mat in entry["materialInfo"]["mats"]:
@@ -943,7 +948,12 @@ def load(operator, context, filepath=""):
 
     slots, skin_mats = read(operator, filepath)
 
-    if slots:
+
+    # This was originally a plain "if slots:", but Crunch discovered that
+    # exporting NPC JSON data from Jedipedia IN FIREFOX somehow eats the skinMats key.
+    # Also, stops Jedipedia needing to export the skinmats block for NPCS THAT DON'T HAVE SKINMATS.
+    # if slots:
+    if slots or skin_mats:
 
         if bpy.ops.object.mode_set.poll():
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)

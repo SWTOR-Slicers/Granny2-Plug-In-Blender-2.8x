@@ -643,9 +643,14 @@ def save(operator, context, path, ob, global_matrix=None):
         if not len(bmesh.polygons) + len(bmesh.vertices):
             ob.to_mesh_clear()  # Clean-up
 
-        # Calculate normals and tangents
+        # Calculate normals and tangents.
         if bmesh.polygons:
-            bmesh.calc_normals_split()
+            # Blender 4.0 removed Mesh.calc_normals_split(): custom split normals
+            # are now derived automatically, and calc_tangents() no longer
+            # requires a prior explicit split-normals pass. Use Blender version
+            # (and hasattr, as fallback) to keep 3.6 support intact.
+            if bpy.app.version < (4, 0, 0) and hasattr(bmesh, "calc_normals_split"):
+                bmesh.calc_normals_split()
             bmesh.calc_tangents()
 
         progress.step(f"Parsing Blender Object: \'{ob.name}\' ...", 1)
