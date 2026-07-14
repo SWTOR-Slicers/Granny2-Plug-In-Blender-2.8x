@@ -1,12 +1,12 @@
 # <pep8 compliant>
 
 bl_info = {
-    "name": "Star Wars: The Old Republic (.gr2)",
-    "author": "Darth Atroxa, SWTOR Slicers",
-    "version": (4, 2, 1),
+    "name": "SWTOR: Import/Export Tools",
+    "author": "Darth Atroxa, Crunch, SWTOR Slicers",
+    "version": (5, 0, 2),
     "blender": (3, 6, 0),
     "location": "File > Import-Export",
-    "description": "Import-Export SWTOR skeleton, or model with bone weights, UV's and materials",
+    "description": "Import SWTOR GR2, JBA, CLO Files, and Export SWTOR Compatible GR2 Files",
     "support": 'COMMUNITY',
     "category": "Import-Export",
 }
@@ -24,7 +24,7 @@ from bpy.app.handlers import depsgraph_update_post
 from bpy.props import FloatVectorProperty
 from bpy.types import Context, KeyMap, Menu, PropertyGroup
 
-from .addon_prefs import Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset
+from .addon_prefs import Prefs
 
 from .ops.export_gr2             import ExportGR2
 from .ops.export_gr2_32          import ExportGR2_32
@@ -88,7 +88,7 @@ def _import_jba(self, _context):
 
 def _import_cha(self, _context):
     # type: (Menu, Context) -> None
-    self.layout.operator(ImportCHA.bl_idname, text="SWTOR PC/NPCs (paths.json) - DO NOT USE!  Read Tooltip")
+    self.layout.operator(ImportCHA.bl_idname, text="SWTOR NPC/Character (Jedipedia .json)")
 
 def _import_clo(self, _context):
     # type: (Menu, Context) -> None
@@ -110,7 +110,7 @@ class BoneBounds(PropertyGroup):
 
 
 classes = (
-    Prefs, GR2PREFS_MT_presets_menu, GR2PREFS_OT_set_preset,
+    Prefs,
     BoneBounds,
     ExportGR2,
     ExportGR2_32,
