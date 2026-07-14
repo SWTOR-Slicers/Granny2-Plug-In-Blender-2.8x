@@ -704,6 +704,11 @@ def build(gr2,
         armature.name = filepath.split(os.sep)[-1][:-4]
         armature.display_type = 'STICK'
 
+        # Remove the default bone Blender auto-creates with object.add(type='ARMATURE'),
+        # otherwise every gr2 bone index below ends up off-by-one against armature.edit_bones.
+        for default_bone in list(armature.edit_bones):
+            armature.edit_bones.remove(default_bone)
+
         # Bones creation
         for bone in gr2.bone_buffer.values():
             new_bone = armature.edit_bones.new(bone.name)
