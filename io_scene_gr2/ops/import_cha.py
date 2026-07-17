@@ -76,8 +76,8 @@ def read(filepath):
     Returns:
         meta:
             Dict of the parsed "meta" entry's fields (charType, charName,
-            nppPath, BodyType, errors). Empty dict if no "meta" entry is
-            present. BodyType drives skeleton resolution -- see
+            nppPath, bodyType, errors). Empty dict if no "meta" entry is
+            present. bodyType drives skeleton resolution -- see
             import_skeleton()'s docstring for how.
 
         slots:
@@ -113,7 +113,7 @@ def read(filepath):
                 "charType": entry.get("charType"),
                 "charName": entry.get("charName"),
                 "nppPath": entry.get("nppPath"),
-                "BodyType": entry.get("BodyType"),
+                "bodyType": entry.get("bodyType"),
                 "errors": entry.get("errors", []),
             }
             continue
@@ -567,24 +567,24 @@ def _parse_dyc_skeleton(dyc_path):
 def import_skeleton(operator, context, resources_root, meta):
     # type: (Any, Any, str, Dict[str, Any]) -> Optional[Any]
     """
-    Imports the skeleton for this NPC, resolved via meta["BodyType"]
+    Imports the skeleton for this NPC, resolved via meta["bodyType"]
     rather than a direct path in the json.
 
     This moved server-side (Jedipedia) -> local resolution: Jedipedia
     can't reliably determine the actual skeleton file server-side, but
     it's straightforward locally, in two steps:
 
-        1. "/art/dynamic/spec/<BodyType>.dyc" is read directly (e.g.
-           "bmn.dyc" for BodyType "bmn"). This is an INI-like file whose
+        1. "/art/dynamic/spec/<bodyType>.dyc" is read directly (e.g.
+           "bmn.dyc" for bodyType "bmn"). This is an INI-like file whose
            [SETTINGS] section has a "Skeleton=<filename>.gr2" line
            giving the actual skeleton filename (e.g.
            "bmnnew_skeleton.gr2") -- confirmed this filename does NOT
-           always match "<BodyType>_skeleton.gr2" or similar, hence
+           always match "<bodyType>_skeleton.gr2" or similar, hence
            needing to actually read it rather than guessing a pattern.
         2. That filename lives in the same /art/dynamic/spec/ directory
            as the .dyc file itself.
 
-    Tolerant by design: a missing/empty BodyType, a missing .dyc file, a
+    Tolerant by design: a missing/empty bodyType, a missing .dyc file, a
     .dyc with no [SETTINGS] Skeleton= line, or a skeleton path that
     doesn't resolve to an existing file, is not an error -- it just
     means no skeleton gets imported (spec §8: "should be able to handle
@@ -592,7 +592,7 @@ def import_skeleton(operator, context, resources_root, meta):
 
     Returns the imported armature Object, or None.
     """
-    body_type = meta.get("BodyType")
+    body_type = meta.get("bodyType")
     if not body_type:
         return None
 
