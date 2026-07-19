@@ -44,48 +44,13 @@ class Prefs(bpy.types.AddonPreferences):
         soft_max = 10.0,
         step = 10,
         precision = 2,
-        default=10.0,
+        default=1.0,
         update=update_jba_scale,
     )
     
     gr2_apply_axis_conversion: bpy.props.BoolProperty(
         name="Apply Axis Conversion",
         description="Permanently converts the imported object\nto Blender's 'Z-is-Up' coordinate system\nby 'applying' a x=90º rotation.\n\nSWTOR's coordinate system is 'Y-is-up' vs. Blender's 'Z-is-up'.\nTo compensate for that in a reversible manner, this importer\nnormally sets the object's rotation to X=90º at the Object level.\n\nAs this can be a nuisance outside a modding use case,\nthis option applies it at the Mesh level, instead",
-        default=False,
-    )
-
-
-    # NPC/Character (.json) import ones:
-
-    swtor_resources_dir: bpy.props.StringProperty(
-        name="Resources Directory",
-        description="Local folder containing your SWTOR assets extraction, mirroring the game's\nown layout directly (this folder should directly contain an 'art' subfolder).\n\nUsed by the NPC/Character (.json) importer to read .gr2/.mat/.dds files\ndirectly from here, without a separate asset-gathering/copying step.",
-        subtype='DIR_PATH',
-        default="",
-    )
-    
-    swtor_legacy_resources_dir: bpy.props.StringProperty(
-        name="Legacy Resources Directory",
-        description="Local folder containing your Legacy SWTOR assets extraction, mirroring the game's\nown layout directly (this folder should directly contain an 'art' subfolder).\n\nUsed by the NPC/Character (.json) importer to read .gr2/.mat/.dds files\ndirectly from here, without a separate asset-gathering/copying step.",
-        subtype='DIR_PATH',
-        default="",
-    )
-
-    gr2_import_skeleton_default: bpy.props.BoolProperty(
-        name="Import Skeleton By Default",
-        description="Default state of the NPC/Character importer's 'Import Skeleton' option.\n\nCan still be switched per-import in the importer's own panel",
-        default=False,
-    )
-
-    gr2_bind_to_skeleton_default: bpy.props.BoolProperty(
-        name="Bind To Skeleton By Default",
-        description="Default state of the NPC/Character importer's 'Bind To Skeleton' option.\n\nCan still be switched per-import in the importer's own panel",
-        default=False,
-    )
-
-    gr2_append_character_name_to_collections_default: bpy.props.BoolProperty(
-        name="Append Character Name to Collections By Default",
-        description="Default state of the NPC/Character importer's 'Append Character Name to Collections' option.\n\nCan still be switched per-import in the importer's own panel",
         default=False,
     )
 
@@ -110,26 +75,32 @@ class Prefs(bpy.types.AddonPreferences):
         
         layout = self.layout
         
-        box = layout.box().column(align=True)
-        box.label(text="Common Directories:")
-        box.scale_y = 0.90
-        box.prop(self, 'swtor_resources_dir', text="Resources Directory")
-        box.prop(self, 'swtor_legacy_resources_dir', text="Legacy Resources Directory")
+        split = layout.split(factor=0.5)
+        
+        col=split.column(align=True)
+        col.scale_y = 0.80
 
-        box = layout.box().column(align=True)
-        box.label(text="NPC/CHARACTER (.JSON) IMPORT SETTINGS:")
-        box.scale_y = 0.90
-        row = box.row(align=True)
-        row.prop(self, 'gr2_import_skeleton_default', text="Import Skeleton By Default")
-        row.prop(self, 'gr2_bind_to_skeleton_default', text="Bind To Skeleton By Default")
-        box.prop(self, 'gr2_append_character_name_to_collections_default', text="Append Character Name to Collections By Default")
+        col.label(text="You can set your preferred settings for this")
+        col.label(text="Add-on's importers and exporters here.")
+        col.label(text="(They can be modified on the fly, too).")
 
+        col=split.column(align=True)
+        col.scale_y = 0.80
+        col.label(text="This Menu provides sensible settings for")
+        col.label(text="most typical tasks as a starting point.")
+        col.menu('import_mesh.gr2_presets', text="QUICK PRESETS MENU",)
+
+
+        col = layout.column()
+        col.scale_y = 0.70
+        col.label(text="BEFORE CHANGING ANY SETTING, CAREFULLY CONSIDER HOW THEY MIGHT AFFECT")
+        col.label(text="YOUR WORKFLOW!!!  Use the 'NEUTRAL' preset to return to the default settings.")
+        
         split = layout.split(factor=0.5)
         split_left = split
         split_right = split
         
-        boxcol = split_left.box().column(align=True)
-        boxcol.label(text=".GR2 OBJECTS IMPORT SETTINGS:")
+        boxcol = split_left.box().column(align=True, heading=".GR2 OBJECTS IMPORT SETTINGS:")
         boxcol.scale_y = 0.90
         boxcol.prop(self,'gr2_import_collision')
         boxcol.prop(self,'gr2_name_as_filename', text="Name Imported Objects As Filenames")
@@ -140,8 +111,7 @@ class Prefs(bpy.types.AddonPreferences):
         slider_split.label()
         slider_split.prop(self,'gr2_scale_factor', text="Scale factor")
         
-        boxcol = split_right.box().column(align=True)
-        boxcol.label(text=".JBA ANIMATIONS IMPORT SETTINGS:")
+        boxcol = split_right.box().column(align=True, heading=".JBA ANIMATIONS IMPORT SETTINGS:")
         boxcol.scale_y = 0.90
         boxcol.prop(self,'jba_ignore_facial_bones', text="Ignore Facial Bones' Translation Data")
         boxcol.prop(self,'jba_delete_180')
@@ -150,14 +120,101 @@ class Prefs(bpy.types.AddonPreferences):
         boxcol.label(text="use all the applicable .gr2 Object settings.")
 
 
+class GR2PREFS_MT_presets_menu(bpy.types.Menu):
+    bl_idname = "import_mesh.gr2_presets"
+    bl_label = "Quick Presets Menu"
+    bl_description = "Easy Presets for the SWTOR Importers/Exporters:\nthey adjust the settings to sensible values depending on our goals.\n\nBEFORE CHOOSING A PRESET, CAREFULLY CONSIDER\nHOW IT MIGHT AFFECT YOUR WORKFLOW!"
+        
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        layout.operator('import_mesh.gr2_set_preset', text="NEUTRAL:  replicates the default settings of older versions of this Add-on"              ).preset = 'NEUTRAL'
+
+        layout.operator('import_mesh.gr2_set_preset', text="PORTING:  for porting assets to other Game Engines and VR apps (send us feedback!)."                   ).preset = 'PORTING'
+
+        layout.operator('import_mesh.gr2_set_preset', text="BLENDER:  for creating art directly in Blender or in combination with other 3D Art apps.").preset = 'BLENDER'
+        
+        # layout.operator('import_mesh.gr2_set_preset', text="MODDING:  for modifying SWTOR assets in such a manner that they can be reinserted back." ).preset = 'MODDING'
+
+
+class GR2PREFS_OT_set_preset(bpy.types.Operator):
+    bl_idname = "import_mesh.gr2_set_preset"
+    bl_label = "SW:TOR Importers' Preferences Presets Menu"
+    bl_options = {'REGISTER', "UNDO"}
+    bl_description = "Easy Presets for the SW:TOR Importers"
+
+    preset: bpy.props.StringProperty(
+        name=".gr2 Add-on's Presets",
+        default="BLENDER",)
+
+    def execute(self, context):
+
+        prefs = context.preferences.addons["io_scene_gr2"].preferences
+        
+        if self.preset == 'BLENDER' or self.options is None:
+
+            prefs.gr2_import_collision    = False
+            prefs.gr2_name_as_filename    = True
+            prefs.gr2_scale_object        = True
+            prefs.gr2_scale_factor        = 10.0
+            prefs.gr2_apply_axis_conversion  = True
+
+            prefs.jba_ignore_facial_bones = True
+            prefs.jba_delete_180          = True
+
+        if self.preset == 'PORTING':
+
+            prefs.gr2_import_collision    = False
+            prefs.gr2_name_as_filename    = True
+            prefs.gr2_scale_object        = False
+            prefs.gr2_scale_factor        = 1.0
+            prefs.gr2_apply_axis_conversion  = True
+
+            # SWTOR animations aren't typically
+            # used here. Still…
+            prefs.jba_ignore_facial_bones = True
+            prefs.jba_delete_180          = False
+        
+        if self.preset == 'MODDING':
+
+            prefs.gr2_import_collision    = True
+            prefs.gr2_name_as_filename    = False
+            prefs.gr2_scale_object        = False
+            prefs.gr2_scale_factor        = 1.0
+            prefs.gr2_apply_axis_conversion  = False
+
+            # SWTOR animations aren't typically
+            # used here. Still…
+            prefs.jba_ignore_facial_bones = True
+            prefs.jba_delete_180          = False
+
+        if self.preset == 'NEUTRAL':
+
+            prefs.gr2_import_collision    = False
+            prefs.gr2_name_as_filename    = False
+            prefs.gr2_scale_object        = False
+            prefs.gr2_scale_factor        = 1.0
+            prefs.gr2_apply_axis_conversion  = False
+
+            prefs.jba_ignore_facial_bones = True
+            prefs.jba_delete_180          = False
+           
+        return {"FINISHED"}
+    
+    
 
 # Registrations
 
 def register():
     bpy.utils.register_class(Prefs)
+    bpy.utils.register_class(GR2PREFS_MT_presets_menu)
+    bpy.utils.register_class(GR2PREFS_OT_set_preset)
 
 
 def unregister():
+    bpy.utils.unregister_class(GR2PREFS_OT_set_preset)
+    bpy.utils.unregister_class(GR2PREFS_MT_presets_menu)
     bpy.utils.unregister_class(Prefs)
 
 if __name__ == "__main__":
